@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  # Main ERP Application Only - Minimal setup
+  erp-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.minimal
+    container_name: bki-erp-minimal
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-production}
+      SECRET_KEY: ${SECRET_KEY:-changeme}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-394fb1b1de53de2ffb6c7db0b181269d1fd5c813}
+      ENABLE_UNIFIED_MCP: ${ENABLE_UNIFIED_MCP:-true}
+      MOCK_ERP_DATA: ${MOCK_ERP_DATA:-false}
+      ML_CONFIDENCE_THRESHOLD: ${ML_CONFIDENCE_THRESHOLD:-0.85}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATA_PATH: "/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/5"
+    volumes:
+      - ./:/app
+      - "/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data:/app/ERP Data:ro"
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+    ports:
+      - "5005:5005"
+    restart: unless-stopped
+    networks:
+      - bki-network
+
+networks:
+  bki-network:
+    driver: bridge

@@ -1,0 +1,83 @@
+# Production Dockerfile for Beverly Knits ERP
+# Multi-stage build for optimized image size
+
+# Stage 1: Builder
+FROM python:3.11-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    libssl-dev \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy requirements
+COPY requirements.txt /tmp/
+RUN pip install --upgrade pip setuptools wheel
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Install production dependencies
+RUN pip install --no-cache-dir \
+    gunicorn==21.2.0 \
+    psycopg2-binary==2.9.9 \
+    redis==5.0.1 \
+    celery==5.3.4 \
+    flower==2.0.1 \
+    python-dotenv==1.0.0
+
+# Stage 2: Runtime
+FROM python:3.11-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r bki && useradd -r -g bki -d /app -s /sbin/nologin bki
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Set environment variables
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app \
+    ENVIRONMENT=production
+
+# Create necessary directories
+RUN mkdir -p /app /app/logs /app/static /app/media /app/data && \
+    chown -R bki:bki /app
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY --chown=bki:bki . /app/
+
+# Create static and media directories
+RUN mkdir -p /app/static /app/media && \
+    chown -R bki:bki /app/static /app/media
+
+# Switch to non-root user
+USER bki
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Default command
+CMD ["gunicorn", "--config", "/app/devops/gunicorn_config.py", "beverly_comprehensive_erp:app"]

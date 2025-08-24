@@ -1,0 +1,47 @@
+# Railway-optimized Dockerfile for Beverly Knits ERP
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements-railway.txt requirements.txt* ./
+
+# Install Python dependencies from Railway-specific requirements
+# This includes all ML libraries needed for the application
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements-railway.txt
+
+# Copy application code
+COPY . .
+
+# Copy ERP Data directory with essential files
+# Only 892KB of critical data files for deployment
+COPY "ERP Data" "/app/ERP Data/"
+
+# Set environment variables
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=5005 \
+    FLASK_ENV=production
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/cache /app/data
+
+# Railway uses PORT environment variable
+EXPOSE 5005
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-5005}/api/comprehensive-kpis || exit 1
+
+# Start command - Railway will override this if needed
+CMD ["python", "beverly_comprehensive_erp.py"]

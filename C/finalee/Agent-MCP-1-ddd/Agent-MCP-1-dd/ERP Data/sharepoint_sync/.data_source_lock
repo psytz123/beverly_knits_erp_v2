@@ -1,0 +1,7 @@
+{
+  "data_source": "SHAREPOINT_ONLY",
+  "sharepoint_url": "https://beverlyknits-my.sharepoint.com/:f:/r/personal/psytz_beverlyknits_com/Documents/ERP%20Data?csf=1&web=1&e=ByOLem",
+  "created": "2025-08-23T16:56:52.081170",
+  "warning": "DATA MUST ONLY BE LOADED FROM THE SHAREPOINT ERP DATA FOLDER",
+  "local_path": "C:/finalee/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/sharepoint_sync"
+}

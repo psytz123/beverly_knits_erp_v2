@@ -1,0 +1,90 @@
+{
+  "execution_date": "2025-08-23T17:14:57.436963",
+  "test_categories": {
+    "Unit Tests - Core Business Logic": {
+      "status": "FAIL",
+      "importance": "CRITICAL",
+      "expected": 17,
+      "executed": 17,
+      "passed": 15,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "pass_rate": 88.23529411764706
+    },
+    "Unit Tests - Inventory Analyzer": {
+      "status": "FAIL",
+      "importance": "HIGH",
+      "expected": 15,
+      "executed": 15,
+      "passed": 0,
+      "failed": 0,
+      "errors": 15,
+      "skipped": 0,
+      "pass_rate": 0.0
+    },
+    "Unit Tests - Sales Forecasting": {
+      "status": "FAIL",
+      "importance": "HIGH",
+      "expected": 19,
+      "executed": 16,
+      "passed": 14,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "pass_rate": 87.5
+    },
+    "Unit Tests - Capacity Planning": {
+      "status": "FAIL",
+      "importance": "HIGH",
+      "expected": 15,
+      "executed": 15,
+      "passed": 13,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "pass_rate": 86.66666666666667
+    },
+    "Integration Tests - API Endpoints": {
+      "status": "FAIL",
+      "importance": "CRITICAL",
+      "expected": 30,
+      "executed": 33,
+      "passed": 16,
+      "failed": 15,
+      "errors": 2,
+      "skipped": 0,
+      "pass_rate": 48.484848484848484
+    },
+    "Performance Tests": {
+      "status": "FAIL",
+      "importance": "MEDIUM",
+      "expected": 15,
+      "executed": 14,
+      "passed": 9,
+      "failed": 4,
+      "errors": 1,
+      "skipped": 0,
+      "pass_rate": 64.28571428571429
+    },
+    "Integration Tests - Critical Workflows": {
+      "status": "FAIL",
+      "importance": "HIGH",
+      "expected": 20,
+      "executed": 14,
+      "passed": 8,
+      "failed": 6,
+      "errors": 0,
+      "skipped": 0,
+      "pass_rate": 57.14285714285714
+    }
+  },
+  "overall_stats": {
+    "total_tests": 124,
+    "passed": 75,
+    "failed": 31,
+    "errors": 18,
+    "skipped": 0,
+    "duration": 89.10215902328491
+  }
+}
