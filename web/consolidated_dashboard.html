@@ -181,39 +181,74 @@ const dataSafetyMonitor = {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* eFAB-inspired Color Scheme */
+        :root {
+            --primary-blue: #1e3a6f;
+            --dark-blue: #162850;
+            --light-blue: #2d4a7c;
+            --accent-gray: #9ca3af;
+            --light-gray: #f3f4f6;
+            --white: #ffffff;
+            --success-green: #10b981;
+            --warning-yellow: #f59e0b;
+            --danger-red: #ef4444;
+        }
+
+        /* Reset and Base Styles */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--light-gray);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
         /* Core Styles */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-button { 
             transition: all 0.3s ease;
             position: relative;
+            background: transparent;
+            color: var(--accent-gray);
+            font-weight: 500;
+            padding: 12px 24px;
+            border: none;
+            cursor: pointer;
+        }
+        .tab-button:hover {
+            color: var(--primary-blue);
         }
         .tab-button.active { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; 
+            background: var(--white);
+            color: var(--primary-blue); 
             font-weight: 600;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
         }
         .tab-button.active::after {
             content: '';
             position: absolute;
-            bottom: 0;
+            bottom: -1px;
             left: 0;
             right: 0;
             height: 3px;
-            background: #4c51bf;
+            background: var(--primary-blue);
         }
         
         /* Metric Cards */
         .metric-card { 
             transition: all 0.3s ease;
-            background: white;
-            border-radius: 12px;
+            background: var(--white);
+            border-radius: 8px;
             padding: 24px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
         }
         .metric-card:hover { 
-            transform: translateY(-4px); 
-            box-shadow: 0 12px 24px rgba(0,0,0,0.15); 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
         }
         
         /* Status Indicators */
@@ -230,78 +265,115 @@ const dataSafetyMonitor = {
             50% { opacity: 0.5; } 
             100% { opacity: 1; } 
         }
-        .status-normal { background: #10b981; }
-        .status-warning { background: #f59e0b; }
-        .status-critical { background: #ef4444; }
+        .status-normal { background: var(--success-green); }
+        .status-warning { background: var(--warning-yellow); }
+        .status-critical { background: var(--danger-red); }
         
         /* KPI Styles */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
         }
         .kpi-item {
             text-align: center;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border-radius: 12px;
+            padding: 24px;
+            background: var(--white);
+            border: 1px solid rgba(30, 58, 111, 0.1);
+            border-radius: 8px;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-blue);
         }
         .kpi-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 58, 111, 0.15);
         }
         .kpi-value {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 4px;
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--primary-blue);
         }
         .kpi-label {
             font-size: 0.875rem;
-            opacity: 0.95;
+            color: var(--accent-gray);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-weight: 500;
         }
         
         /* Alert Classes */
-        .alert-high { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .alert-medium { background: linear-gradient(135deg, #f59e0b, #d97706); }
-        .alert-success { background: linear-gradient(135deg, #10b981, #059669); }
+        .alert-high { 
+            background: var(--danger-red);
+            color: white;
+        }
+        .alert-medium { 
+            background: var(--warning-yellow);
+            color: white;
+        }
+        .alert-success { 
+            background: var(--success-green);
+            color: white;
+        }
         
         /* Yarn Intelligence Styles */
         .yarn-metric-card {
+            background: var(--primary-blue);
             color: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(30, 58, 111, 0.2);
         }
         .yarn-critical-list {
             max-height: 400px;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-gray) var(--light-gray);
+        }
+        .yarn-critical-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .yarn-critical-list::-webkit-scrollbar-track {
+            background: var(--light-gray);
+        }
+        .yarn-critical-list::-webkit-scrollbar-thumb {
+            background: var(--accent-gray);
+            border-radius: 4px;
         }
         .yarn-item {
             border-left: 4px solid;
-            padding: 12px;
-            margin-bottom: 8px;
-            background: white;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: var(--white);
             border-radius: 4px;
             transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .yarn-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        .yarn-critical { border-left-color: #ef4444; }
-        .yarn-high { border-left-color: #f59e0b; }
+        .yarn-critical { border-left-color: var(--danger-red); }
+        .yarn-high { border-left-color: var(--warning-yellow); }
         .yarn-medium { border-left-color: #eab308; }
-        .yarn-low { border-left-color: #22c55e; }
+        .yarn-low { border-left-color: var(--success-green); }
         .procurement-card {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            padding: 16px;
+            background: var(--white);
+            border: 1px solid rgba(30, 58, 111, 0.1);
+            padding: 20px;
             border-radius: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .weekly-demand-chart {
             height: 200px;
@@ -325,15 +397,15 @@ const dataSafetyMonitor = {
             transition: all 0.3s ease;
         }
         .stepper-item:hover {
-            transform: scale(1.05);
+            transform: scale(1.02);
         }
         .step-counter {
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: white;
-            border: 4px solid #667eea;
-            color: #667eea;
+            background: var(--white);
+            border: 3px solid var(--accent-gray);
+            color: var(--accent-gray);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -343,14 +415,14 @@ const dataSafetyMonitor = {
             transition: all 0.3s ease;
         }
         .stepper-item.completed .step-counter {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border-color: #764ba2;
+            background: var(--primary-blue);
+            color: var(--white);
+            border-color: var(--primary-blue);
         }
         .step-name {
             margin-top: 10px;
             font-weight: 600;
-            color: #374151;
+            color: var(--dark-blue);
             font-size: 0.875rem;
         }
         .planning-stepper::before {
@@ -359,8 +431,8 @@ const dataSafetyMonitor = {
             top: 25px;
             left: 5%;
             right: 5%;
-            height: 4px;
-            background: #e5e7eb;
+            height: 3px;
+            background: var(--light-gray);
             z-index: 0;
         }
         
@@ -369,23 +441,31 @@ const dataSafetyMonitor = {
             width: 100%;
             border-collapse: collapse;
             margin-top: 16px;
+            background: var(--white);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .data-table th {
-            background: linear-gradient(135deg, #374151, #4b5563);
-            color: white;
-            padding: 12px;
+            background: var(--primary-blue);
+            color: var(--white);
+            padding: 14px 16px;
             text-align: left;
             font-weight: 600;
             font-size: 0.875rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .data-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--light-gray);
+            color: var(--dark-blue);
         }
         .data-table tr:hover {
-            background: rgba(102, 126, 234, 0.05);
+            background: rgba(30, 58, 111, 0.04);
         }
         
         /* Charts Container */
@@ -398,7 +478,7 @@ const dataSafetyMonitor = {
         /* Loading State */
         .loading {
             text-align: center;
-            color: #6b7280;
+            color: var(--accent-gray);
             padding: 40px;
             font-size: 1.125rem;
         }
@@ -427,29 +507,37 @@ const dataSafetyMonitor = {
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body style="background-color: var(--light-gray);">
     <!-- Header -->
-    <header class="bg-white shadow-lg border-b border-gray-200">
+    <header style="background-color: var(--primary-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6 flex items-center justify-between">
+            <div class="py-5 flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                    <div class="text-4xl">🏭</div>
-                    <div>
-                        <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                            Beverly Knits Consolidated ERP
+                    <div style="width: 180px; height: 50px; display: flex; align-items: center;">
+                        <svg viewBox="0 0 180 50" style="width: 100%; height: 100%;">
+                            <rect x="0" y="0" width="180" height="50" fill="var(--primary-blue)"/>
+                            <text x="10" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white">Beverly</text>
+                            <text x="90" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="300" fill="var(--accent-gray)">Knits</text>
+                        </svg>
+                    </div>
+                    <div style="border-left: 2px solid rgba(255,255,255,0.2); padding-left: 16px; margin-left: 8px;">
+                        <h1 style="color: white; font-size: 1.5rem; font-weight: 600; margin: 0;">
+                            ERP Dashboard
                         </h1>
-                        <p class="text-sm text-gray-600 mt-1">AI-Powered Supply Chain Intelligence Platform</p>
+                        <p style="color: rgba(255,255,255,0.7); font-size: 0.875rem; margin: 0;">AI-Powered Supply Chain Intelligence</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <div class="flex flex-col items-end space-y-1">
-                        <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center">
-                            <span class="status-indicator status-normal"></span>
+                        <span style="padding: 6px 16px; background: rgba(255,255,255,0.1); color: white; border-radius: 4px; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center;">
+                            <span class="status-indicator status-normal" style="background: #10b981;"></span>
                             System Active
                         </span>
-                        <span class="text-xs text-gray-500" id="last-update">Last update: --</span>
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6);" id="last-update">Last update: --</span>
                     </div>
-                    <button onclick="refreshAllData()" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl">
+                    <button onclick="refreshAllData()" style="padding: 10px 24px; background: rgba(255,255,255,0.2); color: white; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); font-weight: 500; transition: all 0.3s ease; cursor: pointer;" 
+                            onmouseover="this.style.background='rgba(255,255,255,0.3)'" 
+                            onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                         <i class="fas fa-sync-alt mr-2"></i>Refresh
                     </button>
                 </div>
@@ -458,31 +546,31 @@ const dataSafetyMonitor = {
     </header>
 
     <!-- Main Navigation Tabs -->
-    <div class="bg-white border-b sticky top-0 z-10 shadow-sm">
+    <div style="background: var(--dark-blue); border-top: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; z-index: 10;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex space-x-1 py-2 overflow-x-auto">
-                <button class="tab-button active px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 whitespace-nowrap" onclick="window.switchTab('overview', event)">
+            <div class="flex space-x-0 overflow-x-auto" style="padding: 0;">
+                <button class="tab-button active" onclick="window.switchTab('overview', event)">
                     <i class="fas fa-chart-pie mr-2"></i>Overview
                 </button>
-                <button class="tab-button px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 whitespace-nowrap" onclick="window.switchTab('production', event)">
+                <button class="tab-button" onclick="window.switchTab('production', event)">
                     <i class="fas fa-industry mr-2"></i>Production
                 </button>
-                <button class="tab-button px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 whitespace-nowrap" onclick="window.switchTab('inventory', event)">
+                <button class="tab-button" onclick="window.switchTab('inventory', event)">
                     <i class="fas fa-warehouse mr-2"></i>Inventory
                 </button>
-                <button class="tab-button px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 whitespace-nowrap" onclick="window.switchTab('planning', event)">
+                <button class="tab-button" onclick="window.switchTab('planning', event)">
                     <i class="fas fa-project-diagram mr-2"></i>Planning
                 </button>
-                <button class="tab-button px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 whitespace-nowrap" onclick="window.switchTab('forecasting', event)">
+                <button class="tab-button" onclick="window.switchTab('forecasting', event)">
                     <i class="fas fa-chart-line mr-2"></i>ML Forecasting
                 </button>
-                <button class="tab-button px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 whitespace-nowrap" onclick="window.switchTab('analytics', event)">
+                <button class="tab-button" onclick="window.switchTab('analytics', event)">
                     <i class="fas fa-analytics mr-2"></i>Analytics
                 </button>
-                <button class="tab-button px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 whitespace-nowrap" onclick="window.switchTab('suppliers', event)">
+                <button class="tab-button" onclick="window.switchTab('suppliers', event)">
                     <i class="fas fa-truck mr-2"></i>Suppliers
                 </button>
-                <button class="tab-button px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100 whitespace-nowrap" onclick="window.switchTab('knit-orders', event)">
+                <button class="tab-button" onclick="window.switchTab('knit-orders', event)">
                     <i class="fas fa-industry mr-2"></i>Knit Orders
                 </button>
             </div>
@@ -658,7 +746,7 @@ const dataSafetyMonitor = {
             </div>
 
             <!-- PO Risk Analysis Section -->
-            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6" id="po-risk-analysis">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">
                     <i class="fas fa-exclamation-triangle mr-3 text-red-600"></i>
                     Production Order Risk Analysis
@@ -823,7 +911,7 @@ const dataSafetyMonitor = {
             </div>
 
             <!-- AI Production Suggestions -->
-            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6" id="production-suggestions">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">
                     <i class="fas fa-robot mr-3 text-blue-600"></i>
                     AI-Optimized Production Recommendations
@@ -949,7 +1037,7 @@ const dataSafetyMonitor = {
 
             
             <!-- Enhanced Fabric Inventory Netting -->
-            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6" id="netting-details">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">
                     <i class="fas fa-balance-scale mr-3 text-purple-600"></i>
                     Enhanced Fabric Inventory Netting Analysis
@@ -2273,7 +2361,7 @@ const dataSafetyMonitor = {
 
     <script>
         // Global API configuration
-        const API_BASE_URL = window.location.protocol + '//' + window.location.hostname + ':5005';
+        const API_BASE_URL = window.location.protocol + '//' + window.location.hostname + ':5006';
         
         // Safe DOM element getter - defined early to be available to all functions
         window.safeGetElement = function(selector) {
@@ -2704,7 +2792,7 @@ const dataSafetyMonitor = {
             console.log('Loading forecasted orders with net requirements...');
             
             try {
-                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5005';
+                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
                 
                 // Fetch multiple APIs for comprehensive live data including yarn intelligence
                 const [planningResponse, inventoryResponse, forecastResponse, nettingResponse, kpisResponse, yarnResponse] = await Promise.all([
@@ -2744,10 +2832,16 @@ const dataSafetyMonitor = {
                 console.log('Processing LIVE data for net requirements...');
                 
                 // 1. Calculate total FABRIC demand from ML forecast (90 days) in yards
-                if (forecastData && Array.isArray(forecastData) && forecastData.length > 0) {
-                    const next90Days = forecastData.slice(0, 90);
+                // Handle both array and object response formats
+                let forecastArray = forecastData;
+                if (forecastData && forecastData.forecast_details) {
+                    forecastArray = forecastData.forecast_details;
+                }
+                
+                if (forecastArray && Array.isArray(forecastArray) && forecastArray.length > 0) {
+                    const next90Days = forecastArray.slice(0, 90);
                     // ML forecast is in units, convert to fabric yards (estimate 2 yards per unit)
-                    const totalUnits = next90Days.reduce((sum, day) => sum + (day.Forecast_Quantity || 0), 0);
+                    const totalUnits = next90Days.reduce((sum, day) => sum + (day.Forecast_Quantity || day.forecast_90_days || 0), 0);
                     totalDemand = Math.round(totalUnits * 2); // Convert to fabric yards
                     console.log(`Live ML Forecast: ${totalUnits} units = ${totalDemand} yards of fabric over 90 days`);
                 }
@@ -2763,14 +2857,21 @@ const dataSafetyMonitor = {
                         pipelineInventory += Math.max(0, yarn.on_order || 0);
                     });
                     console.log(`Real yarn inventory: ${totalInventory.toFixed(0)} lbs, Pipeline: ${pipelineInventory.toFixed(0)} lbs`);
-                } else if (nettingData && nettingData.netting_details && nettingData.netting_details.length > 0) {
+                } else if (nettingData) {
                     // Fallback to netting data if yarn intelligence not available
-                    nettingData.netting_details.forEach(item => {
-                        if (item.yarn_id) {
-                            totalInventory += (item.on_hand || 0) + (item.available_to_promise || 0);
-                            pipelineInventory += (item.on_order || 0);
-                        }
-                    });
+                    if (nettingData.yarn_netting && nettingData.yarn_netting.length > 0) {
+                        nettingData.yarn_netting.forEach(item => {
+                            totalInventory += (item.available_stock || 0) + (item.remaining || 0);
+                            pipelineInventory += (item.allocated || 0);
+                        });
+                    } else if (nettingData.netting_details && nettingData.netting_details.length > 0) {
+                        nettingData.netting_details.forEach(item => {
+                            if (item.yarn_id) {
+                                totalInventory += (item.on_hand || 0) + (item.available_to_promise || 0);
+                                pipelineInventory += (item.on_order || 0);
+                            }
+                        });
+                    }
                 }
                 
                 // 3. If still no data, use KPIs as last resort
@@ -2836,8 +2937,8 @@ const dataSafetyMonitor = {
                     }
                     
                     // Calculate daily forecast average from ML data (convert to pounds if needed)
-                    const dailyForecast = forecastData && forecastData.length > 0 
-                        ? Math.round(forecastData.slice(0, 30).reduce((sum, d) => sum + d.Forecast_Quantity, 0) / 30)
+                    const dailyForecast = forecastArray && forecastArray.length > 0 
+                        ? Math.round(forecastArray.slice(0, 30).reduce((sum, d) => sum + (d.Forecast_Quantity || d.forecast_30_days || 0), 0) / 30)
                         : 1000;
                     
                     // Map of style to customer (real customer names from production data)
@@ -2876,10 +2977,44 @@ const dataSafetyMonitor = {
                         let currentFabricInventory = 0;
                         let pipelineFabricInventory = 0;
                         
-                        // Try to get real inventory data from netting details
+                        // Try to get real inventory data from netting details or yarn data
                         let dataFound = false;
-                        if (nettingData && nettingData.netting_details && nettingData.netting_details.length > 0) {
-                            // Find matching style in netting data
+                        
+                        // First check style_netting
+                        if (nettingData && nettingData.style_netting && nettingData.style_netting.length > 0) {
+                            const styleNetting = nettingData.style_netting.find(item => 
+                                item.style === order.style || item.product_id === order.style
+                            );
+                            
+                            if (styleNetting) {
+                                currentFabricInventory = Math.round(styleNetting.available_stock || styleNetting.on_hand || 0);
+                                pipelineFabricInventory = Math.round(styleNetting.allocated || styleNetting.on_order || 0);
+                                dataFound = true;
+                            }
+                        }
+                        
+                        // If not found, check yarn data for this style
+                        if (!dataFound && yarnMap && order.style) {
+                            // Aggregate yarn inventory for this style
+                            let styleYarnInv = 0;
+                            let styleYarnPipeline = 0;
+                            Object.values(yarnMap).forEach(yarn => {
+                                // Check if this yarn is used for this style (simple heuristic)
+                                if (yarn.affected_orders_list && yarn.affected_orders_list.includes(order.style)) {
+                                    styleYarnInv += Math.max(0, yarn.theoretical_balance || 0);
+                                    styleYarnPipeline += Math.max(0, yarn.on_order || 0);
+                                }
+                            });
+                            
+                            if (styleYarnInv > 0 || styleYarnPipeline > 0) {
+                                currentFabricInventory = Math.round(styleYarnInv);
+                                pipelineFabricInventory = Math.round(styleYarnPipeline);
+                                dataFound = true;
+                            }
+                        }
+                        
+                        // Fallback to old netting_details format if available
+                        if (!dataFound && nettingData && nettingData.netting_details && nettingData.netting_details.length > 0) {
                             const styleNetting = nettingData.netting_details.find(item => 
                                 item.style === order.style || item.product_id === order.style
                             );
@@ -2891,47 +3026,25 @@ const dataSafetyMonitor = {
                             }
                         }
                         
-                        // If no real data found, generate unique values
+                        // If no specific style data found, use proportional allocation from total yarn inventory
                         if (!dataFound) {
-                            // CRITICAL FIX: Generate truly unique values for each row
-                            // Use a combination of style string and index to ensure uniqueness
-                            const styleStr = order.style || `STYLE-${index}`;
+                            // Use real total inventory values and allocate proportionally
+                            const numOrders = Math.max(1, planningData.production_schedule.length);
+                            const baseAllocation = totalInventory / numOrders;
+                            const basePipeline = pipelineInventory / numOrders;
                             
-                            // Create a unique seed for each style
-                            let seed = 0;
-                            for (let i = 0; i < styleStr.length; i++) {
-                                seed += styleStr.charCodeAt(i) * (i + 1) * 13;
-                            }
+                            // Add some variation based on order characteristics
+                            const orderValue = order.quantity || order.planned_quantity || 1000;
+                            const allocationFactor = orderValue / 1000; // Scale by order size
                             
-                            // Generate inventory with guaranteed uniqueness
-                            // Base value from seed, then add index-based increments
-                            const invBase = 200 + (seed % 600);
-                            currentFabricInventory = invBase + (index * 75) + ((seed * 7) % 100);
+                            currentFabricInventory = Math.round(baseAllocation * allocationFactor);
+                            pipelineFabricInventory = Math.round(basePipeline * allocationFactor);
                             
-                            // Generate pipeline with different algorithm for uniqueness
-                            const pipeBase = 100 + ((seed * 11) % 300);
-                            pipelineFabricInventory = pipeBase + (index * 45) + ((seed * 5) % 80);
+                            // Ensure minimum values
+                            currentFabricInventory = Math.max(10, currentFabricInventory);
+                            pipelineFabricInventory = Math.max(5, pipelineFabricInventory);
                             
-                            // Apply style-specific adjustments
-                            if (styleStr.includes('CEE')) {
-                                currentFabricInventory += 150;
-                            } else if (styleStr.includes('C1B')) {
-                                currentFabricInventory += 100;
-                                pipelineFabricInventory += 50;
-                            } else if (styleStr.includes('CF')) {
-                                pipelineFabricInventory += 75;
-                            }
-                            
-                            // Final unique adjustment using index squared
-                            currentFabricInventory = Math.round(currentFabricInventory + (index * index * 3.7));
-                            pipelineFabricInventory = Math.round(pipelineFabricInventory + (index * index * 2.3));
-                            
-                            // Ensure reasonable bounds
-                            currentFabricInventory = Math.max(50, Math.min(currentFabricInventory, 2500));
-                            pipelineFabricInventory = Math.max(25, Math.min(pipelineFabricInventory, 1500));
-                            
-                            // Debug log to verify uniqueness
-                            console.log(`Row ${index} - ${styleStr}: Inventory=${currentFabricInventory}, Pipeline=${pipelineFabricInventory}`);
+                            console.log(`Row ${index} - ${order.style}: Allocated from total - Inventory=${currentFabricInventory}, Pipeline=${pipelineFabricInventory}`);
                         } else {
                             console.log(`Row ${index} - ${order.style}: Using real data - Inventory=${currentFabricInventory}, Pipeline=${pipelineFabricInventory}`);
                         }
@@ -3021,7 +3134,7 @@ const dataSafetyMonitor = {
             console.log('Loading AI production suggestions...');
             
             try {
-                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5005';
+                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
                 
                 // Fetch production suggestions
                 const response = await fetch(baseUrl + '/api/production-suggestions');
@@ -3051,9 +3164,9 @@ const dataSafetyMonitor = {
                 if (container) {
                     let html = '';
                     
-                    // Check if we have simple recommendations array (current API structure)
-                    if (data.recommendations && Array.isArray(data.recommendations)) {
-                        data.recommendations.forEach(rec => {
+                    // Check if we have suggestions array (current API structure)
+                    if (data.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+                        data.suggestions.forEach(rec => {
                             html += `
                                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                     <div class="flex items-start">
@@ -3159,7 +3272,7 @@ const dataSafetyMonitor = {
                     }
                     
                     // Optimization opportunities
-                    if (data.recommendations.optimizations) {
+                    if (data.recommendations && data.recommendations.optimizations) {
                         data.recommendations.optimizations.forEach(opt => {
                             html += `
                                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -3218,7 +3331,7 @@ const dataSafetyMonitor = {
                 console.log('Fetching from APIs...');
                 
                 // Use direct fetch without the fetchAPI wrapper to avoid issues
-                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5005';
+                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
                 const [riskResult, suggestionsResult, nettingResult, pipelineResult] = await Promise.allSettled([
                     fetch(baseUrl + '/api/po-risk-analysis'),
                     fetch(baseUrl + '/api/production-suggestions'),
@@ -3260,10 +3373,14 @@ const dataSafetyMonitor = {
                 }
                 
                 // Update inventory netting display
-                if (nettingData && nettingData.status === 'success') {
-                    console.log('Updating netting display with', nettingData.netting_details.length, 'items');
+                if (nettingData) {
+                    const itemCount = (nettingData.yarn_netting ? nettingData.yarn_netting.length : 0) + 
+                                      (nettingData.style_netting ? nettingData.style_netting.length : 0);
+                    console.log('Updating netting display with', itemCount, 'items');
                     updateInventoryNettingDisplay(nettingData);
-                    updateNettingSummaryCards(nettingData.summary);
+                    if (nettingData.netting_summary) {
+                        updateNettingSummaryCards(nettingData.netting_summary);
+                    }
                     
                     // Update coverage analysis
                     if (nettingData.coverage_analysis) {
@@ -4547,7 +4664,7 @@ const dataSafetyMonitor = {
         // Load yarn substitution opportunities
         async function loadYarnSubstitutions() {
             try {
-                const response = await fetch('/api/yarn-substitution-intelligent');
+                const response = await fetch(API_BASE_URL + '/api/yarn-substitution-intelligent');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
@@ -4572,7 +4689,7 @@ const dataSafetyMonitor = {
                     statusEl.innerHTML = '<i class="fas fa-brain fa-spin"></i> Training ML model...';
                 }
                 
-                const response = await fetch('/api/retrain-ml', {
+                const response = await fetch(API_BASE_URL + '/api/retrain-ml', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -4627,7 +4744,7 @@ const dataSafetyMonitor = {
                 // First try to get ML-powered recommendations
                 let mlRecommendations = null;
                 try {
-                    const mlResponse = await fetch('/api/production-recommendations-ml');
+                    const mlResponse = await fetch(API_BASE_URL + '/api/production-recommendations-ml');
                     if (mlResponse.ok) {
                         const mlData = await mlResponse.json();
                         if (mlData.status === 'success' && mlData.recommendations && mlData.recommendations.length > 0) {
@@ -4660,11 +4777,11 @@ const dataSafetyMonitor = {
                 
                 // Fetch all data sources in parallel
                 const dataPromises = [
-                    fetch('/api/production-pipeline').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch('/api/ml-forecast-detailed').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch('/api/inventory-intelligence-enhanced').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch('/api/inventory-netting').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch('/api/po-risk-analysis').then(r => r.ok ? r.json() : null).catch(() => null)
+                    fetch(API_BASE_URL + '/api/production-pipeline').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/ml-forecast-detailed').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/inventory-intelligence-enhanced').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/inventory-netting').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/po-risk-analysis').then(r => r.ok ? r.json() : null).catch(() => null)
                 ];
                 
                 [pipelineData, forecastData, inventoryData, nettingData, poRiskData] = await Promise.all(dataPromises);
@@ -9767,7 +9884,7 @@ const dataSafetyMonitor = {
     </script>
     
     <!-- Live ERP Style Data Integration -->
-    <script src="live_sales_data.js"></script>
+    <!-- <script src="live_sales_data.js"></script> -->
     <script>
         // Generated from QuadS_Finished_Fabric_List.xlsx and eFab_SO_List_202508151159-1.csv
         function updateProductionWithLiveData() {
@@ -10244,13 +10361,13 @@ const dataSafetyMonitor = {
     </script>
     
     <!-- Planning Tab Improvements -->
-    <script src="planning_tab_improvements.js"></script>
+    <!-- <script src="planning_tab_improvements.js"></script> -->
     
     <!-- Enhanced Planning Tab UI -->
-    <script src="planning_tab_ui_improvements.js"></script>
+    <!-- <script src="planning_tab_ui_improvements.js"></script> -->
     
     <!-- 6-Phase Planning Integration Manager -->
-    <script src="tab_integration_manager.js"></script>
+    <!-- <script src="tab_integration_manager.js"></script> -->
     
     <!-- Integration with Planning APIs -->
     <script>
@@ -10319,7 +10436,7 @@ const dataSafetyMonitor = {
     </script>
     
     <!-- Dashboard Performance Optimizer -->
-    <script src="dashboard_performance_optimizer.js"></script>
+    <!-- <script src="dashboard_performance_optimizer.js"></script> -->
     <script>
         // Initialize performance optimizations
         console.log('Dashboard Performance Optimizer loaded');

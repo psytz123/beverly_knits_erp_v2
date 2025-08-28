@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(grep:*)",
+      "Read(//mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/**)",
+      "Read(//mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/**)",
+      "Read(//mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/**)"
     ],
     "deny": [],
     "ask": []

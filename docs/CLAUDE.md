@@ -100,19 +100,21 @@ Single Flask application (7000+ lines) containing four main classes:
 
 ### Primary Data Directory
 ```
-/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/5/
+/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/
 ```
+Note: Data files are distributed across dated subdirectories (08-04, 08-06, 08-09) and the "5" subdirectory
 
 ### Key Data Files & Their Roles
-1. **yarn_inventory (4).xlsx** ⚠️ CRITICAL
+1. **yarn_inventory*.xlsx** ⚠️ CRITICAL
+   - Located in dated subdirectories (e.g., 08-06/yarn_inventory (1).xlsx)
    - Contains `Planning_Balance` column (may appear as `Planning_Ballance` with typo)
    - Fields: Desc#, Planning_Balance, Allocated, On_Order, Theoretical_Balance, Consumed
 
-2. **Sales Activity Report.csv** - Sales transactions (Style#)
-3. **eFab_Styles_20250814.xlsx** - MASTER MAPPING (fStyle# ↔ Style#)
-4. **eFab_Knit_Orders_*.xlsx** - Production orders creating yarn allocations
-5. **Style_BOM.csv** or **BOM_updated.csv** - Bill of Materials (Style# → Desc#)
-6. **eFab_Inventory_[F01|G00|G02|I01]*.xlsx** - Stage inventories (fStyle#)
+2. **Sales Activity Report (6).csv** - Sales transactions in "5" directory (Style#)
+3. **eFab_Styles_*.xlsx** - MASTER MAPPING (fStyle# ↔ Style#) - various dates
+4. **eFab_Knit_Orders_*.xlsx** - Production orders in dated subdirectories
+5. **Style_BOM.csv** or **BOM_updated.csv** - Bill of Materials in "5" directory
+6. **eFab_Inventory_[F01|G00|G02|I01]*.xlsx** - Stage inventories in dated subdirectories
 
 ### Production Flow Stages
 ```
@@ -197,11 +199,11 @@ Note: `Consumed` values in data files are negative (amount used), converted to p
 ## Performance Targets & Metrics
 
 ### Current Performance (After Optimization)
-- Data Load Time: 2.31 seconds for 52,266 records
-- Cache Hit Rate: 20-80% depending on usage patterns
-- API Response Time: <200ms for most endpoints
-- Dashboard Refresh: <3 seconds full update
-- Concurrent Users: Supports 50+ simultaneous users
+- Data Load Time: ~1-2 seconds with parallel loading
+- Cache Hit Rate: Variable depending on cache state
+- API Response Time: Depends on data availability
+- Dashboard Refresh: Varies based on data size
+- Concurrent Users: Flask single-threaded by default
 
 ### System Capacity
 - Yarn Inventory: 1,198 items tracked

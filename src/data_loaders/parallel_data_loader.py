@@ -28,14 +28,33 @@ class ParallelDataLoader:
     def load_yarn_inventory(self) -> pd.DataFrame:
         """Load yarn inventory data"""
         try:
-            # Look for the latest yarn_inventory file
+            # Look for the latest yarn_inventory file in multiple locations
             import glob
-            pattern = os.path.join(self.data_path, "yarn_inventory*.xlsx")
-            files = glob.glob(pattern)
             
-            if not files:
-                pattern = os.path.join(self.data_path, "yarn_inventory*.csv")
-                files = glob.glob(pattern)
+            # Get parent directory if we're in a subdirectory
+            parent_path = os.path.dirname(self.data_path) if "/5" in self.data_path or "\\5" in self.data_path else self.data_path
+            
+            search_patterns = [
+                # Current path
+                os.path.join(self.data_path, "yarn_inventory*.xlsx"),
+                os.path.join(self.data_path, "Yarn_Inventory*.xlsx"),
+                os.path.join(self.data_path, "yarn_inventory*.csv"),
+                # Dated subdirectories
+                os.path.join(parent_path, "08-09", "yarn_inventory*.xlsx"),
+                os.path.join(parent_path, "08-09", "Yarn_Inventory*.xlsx"),
+                os.path.join(parent_path, "08-06", "yarn_inventory*.xlsx"),
+                os.path.join(parent_path, "08-06", "Yarn_Inventory*.xlsx"),
+                os.path.join(parent_path, "08-04", "yarn_inventory*.xlsx"),
+                os.path.join(parent_path, "08-04", "Yarn_ID*.csv"),
+                # Archive paths
+                os.path.join(parent_path, "archive/08-06", "yarn_inventory*.xlsx"),
+                os.path.join(parent_path, "archive/08-06", "Yarn_Inventory*.xlsx"),
+                os.path.join(parent_path, "archive/08-04", "Yarn_ID*.csv"),
+            ]
+            
+            files = []
+            for pattern in search_patterns:
+                files.extend(glob.glob(pattern))
             
             if files:
                 # Get the most recent file
@@ -47,7 +66,7 @@ class ParallelDataLoader:
                 else:
                     return pd.read_csv(latest_file)
             else:
-                logger.warning("No yarn inventory file found")
+                logger.warning(f"No yarn inventory file found. Searched patterns: {search_patterns}")
                 return pd.DataFrame()
                 
         except Exception as e:
@@ -99,8 +118,16 @@ class ParallelDataLoader:
         """Load knit orders data"""
         try:
             import glob
-            pattern = os.path.join(self.data_path, "eFab_Knit_Orders*.xlsx")
-            files = glob.glob(pattern)
+            # Check multiple locations for knit orders
+            search_paths = [
+                os.path.join(self.data_path, "eFab_Knit_Orders*.xlsx"),
+                os.path.join(os.path.dirname(os.path.dirname(self.data_path)), "archive/08-04", "eFab_Knit_Orders*.xlsx"),
+                os.path.join(os.path.dirname(os.path.dirname(self.data_path)), "archive/08-09", "eFab_Knit_Orders*.xlsx"),
+            ]
+            
+            files = []
+            for pattern in search_paths:
+                files.extend(glob.glob(pattern))
             
             if files:
                 latest_file = max(files, key=os.path.getmtime)
@@ -122,8 +149,16 @@ class ParallelDataLoader:
         for stage in stage_names:
             try:
                 import glob
-                pattern = os.path.join(self.data_path, f"eFab_Inventory_{stage}*.xlsx")
-                files = glob.glob(pattern)
+                # Search in multiple locations
+                search_patterns = [
+                    os.path.join(self.data_path, f"eFab_Inventory_{stage}*.xlsx"),
+                    os.path.join(os.path.dirname(os.path.dirname(self.data_path)), "archive/08-04", f"eFab_Inventory_{stage}*.xlsx"),
+                    os.path.join(os.path.dirname(os.path.dirname(self.data_path)), "archive/08-09", f"eFab_Inventory_{stage}*.xlsx"),
+                ]
+                
+                files = []
+                for pattern in search_patterns:
+                    files.extend(glob.glob(pattern))
                 
                 if files:
                     latest_file = max(files, key=os.path.getmtime)

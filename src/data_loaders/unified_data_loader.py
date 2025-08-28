@@ -41,12 +41,15 @@ class UnifiedDataLoader:
     def __init__(self, data_path: Optional[str] = None, cache_dir: Optional[str] = None):
         """Initialize unified data loader"""
         
-        # Data paths - prioritize SharePoint sync, fallback to others
+        # Data paths - prioritize actual data location
         self.data_paths = [
-            Path("/mnt/c/finalee/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/sharepoint_sync"),
-            Path("/mnt/c/finalee/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/08-66"),
-            Path("/mnt/c/finalee/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/08-09"),
-            Path("/mnt/c/finalee/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/5")
+            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data"),  # Primary location
+            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/08-09"),  # Most recent
+            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/08-06"),
+            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/08-04"),
+            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/5"),
+            Path("/mnt/c/finalee/beverly_knits_erp_v2/data/archive/08-04"),
+            Path("/mnt/c/finalee/beverly_knits_erp_v2/data")
         ]
         
         if data_path:

@@ -141,9 +141,15 @@ class OptimizedDataLoader:
         
         def load_stage(stage):
             """Load a single inventory stage."""
-            primary_path = self.data_path / "prompts" / "5"
-            if not primary_path.exists():
-                primary_path = self.data_path / "5"
+            # Check multiple possible paths including dated subdirectories
+            search_paths = [
+                self.data_path / "prompts" / "5",
+                self.data_path / "5",
+                self.data_path / "08-09",  # Most recent
+                self.data_path / "08-06",
+                self.data_path / "08-04",
+                self.data_path  # Root path
+            ]
             
             # Look for files matching the stage pattern
             patterns = [
@@ -151,22 +157,30 @@ class OptimizedDataLoader:
                 f"eFab_Inventory_{stage}_*.csv"
             ]
             
-            for pattern in patterns:
-                files = list(primary_path.glob(pattern))
-                if files:
-                    # Use the most recent file
-                    latest_file = sorted(files)[-1]
-                    try:
-                        if latest_file.suffix == '.xlsx':
-                            data = pd.read_excel(latest_file)
-                        else:
-                            data = pd.read_csv(latest_file)
-                        
-                        return stage, data
-                    except Exception as e:
-                        logger.error(f"Error loading {stage}: {e}")
-                        return stage, pd.DataFrame()
+            all_files = []
+            for path in search_paths:
+                if not path.exists():
+                    continue
+                for pattern in patterns:
+                    files = list(path.glob(pattern))
+                    all_files.extend(files)
             
+            if all_files:
+                # Use the most recent file based on modification time
+                latest_file = sorted(all_files, key=lambda x: x.stat().st_mtime, reverse=True)[0]
+                try:
+                    if latest_file.suffix == '.xlsx':
+                        data = pd.read_excel(latest_file)
+                    else:
+                        data = pd.read_csv(latest_file)
+                    
+                    logger.info(f"Loaded {stage} from {latest_file}")
+                    return stage, data
+                except Exception as e:
+                    logger.error(f"Error loading {stage}: {e}")
+                    return stage, pd.DataFrame()
+            
+            logger.warning(f"No files found for stage {stage}")
             return stage, pd.DataFrame()
         
         # Load all stages in parallel
@@ -192,13 +206,41 @@ class OptimizedDataLoader:
         if cached_data is not None:
             return cached_data
         
-        # Load fresh data - check multiple possible paths
+        # Load fresh data - check multiple possible paths including dated subdirectories
         possible_paths = [
-            self.data_path,  # Direct path (e.g., ERP Data/5)
-            self.data_path / "5",  # In case path is ERP Data
-            self.data_path / "prompts" / "5"  # Legacy path
+            self.data_path,  # Direct path (e.g., ERP Data)
+            self.data_path / "5",  # In case path is ERP Data/5
+            self.data_path / "prompts" / "5",  # Legacy path
+            self.data_path / "08-09",  # Most recent dated directory
+            self.data_path / "08-06",  # Previous dated directory
+            self.data_path / "08-04"   # Older dated directory
         ]
         
+        # Also check for yarn inventory files anywhere in the data path
+        yarn_files = []
+        if self.data_path.exists():
+            # Search for yarn inventory files in all subdirectories
+            yarn_files.extend(self.data_path.glob("**/yarn_inventory*.xlsx"))
+            yarn_files.extend(self.data_path.glob("**/Yarn_Inventory*.xlsx"))
+            yarn_files.extend(self.data_path.glob("**/yarn_inventory*.csv"))
+        
+        # Sort by modification time to get most recent
+        if yarn_files:
+            yarn_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+            latest_file = yarn_files[0]
+            logger.info(f"Loading most recent yarn inventory: {latest_file}")
+            try:
+                if latest_file.suffix == '.xlsx':
+                    data = pd.read_excel(latest_file)
+                else:
+                    data = pd.read_csv(latest_file)
+                self.save_to_cache(data, 'yarn_inventory')
+                self.cache_stats['loads'] += 1
+                return data
+            except Exception as e:
+                logger.error(f"Error loading yarn inventory from {latest_file}: {e}")
+        
+        # Fallback to checking specific paths
         for primary_path in possible_paths:
             if not primary_path.exists():
                 continue
