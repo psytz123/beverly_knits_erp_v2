@@ -10,7 +10,12 @@ import psutil
 import numpy as np
 from datetime import datetime
 import pandas as pd
-from memory_profiler import profile
+try:
+    from memory_profiler import profile
+except ImportError:
+    # Make profile a no-op decorator if memory_profiler is not installed
+    def profile(func):
+        return func
 import requests
 
 # No specific imports needed for performance tests

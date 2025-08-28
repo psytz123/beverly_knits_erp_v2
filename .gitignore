@@ -128,3 +128,5 @@ models/*.bin
 # Keep sample data
 !data/sample/*.csv
 !data/sample/*.json
+.gemini/
+gha-creds-*.json

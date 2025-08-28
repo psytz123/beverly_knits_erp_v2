@@ -71,7 +71,7 @@ class TestCapacityPlanningEngine:
     def test_capacity_calculation(self, capacity_service, sample_production_plan):
         """Test basic capacity requirement calculation"""
         # Calculate capacity requirements
-        requirements = capacity_service.calculate_capacity_requirements(
+        requirements = capacity_service.calculate_finite_capacity_requirements(
             sample_production_plan,
             time_horizon_days=30
         )

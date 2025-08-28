@@ -387,8 +387,8 @@ class EnhancedForecastingEngine:
         
         weekly_data = data['demand'].resample('W').sum()
         
-        # Fill missing values
-        weekly_data = weekly_data.fillna(method='ffill').fillna(0)
+        # Fill missing values - using ffill() instead of deprecated fillna(method='ffill')
+        weekly_data = weekly_data.ffill().fillna(0)
         
         return weekly_data
     

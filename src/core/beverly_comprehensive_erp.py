@@ -278,12 +278,19 @@ def favicon():
 # Root route removed - defined later in the file at line 7377
 
 # Register planning APIs
-try:
-    from planning_data_api import planning_api
-    app.register_blueprint(planning_api)
-    ml_logger.info("Planning APIs registered successfully")
-except ImportError as e:
-    ml_logger.warning(f"Planning APIs not available: {e}")
+# Note: planning_api is already imported and created above
+if PLANNING_API_AVAILABLE and 'planning_api' in locals():
+    try:
+        # Check if planning_api has blueprint functionality
+        if hasattr(planning_api, 'blueprint'):
+            app.register_blueprint(planning_api.blueprint)
+            ml_logger.info("Planning APIs registered successfully")
+        else:
+            ml_logger.info("Planning API loaded but no blueprint to register")
+    except Exception as e:
+        ml_logger.warning(f"Could not register planning APIs: {e}")
+else:
+    ml_logger.warning("Planning APIs not available")
 # Detect if running on Windows or WSL/Linux
 import platform
 
@@ -2965,7 +2972,7 @@ class ManufacturingSupplyChainAI:
         # Ensure daily data sync BEFORE loading any data
         if EXCLUSIVE_DATA_CONFIG:
             try:
-                from daily_data_sync import ensure_daily_data_sync
+                from data_sync.daily_data_sync import ensure_daily_data_sync
                 print("\n[DAILY SYNC] Checking for latest data from SharePoint...")
                 if ensure_daily_data_sync():
                     print("[DAILY SYNC] Data is up to date!")
@@ -7515,8 +7522,8 @@ if AI_OPTIMIZATION_AVAILABLE:
         live_data_path = DATA_PATH / "prompts" / "5"
         if not live_data_path.exists():
             live_data_path = DATA_PATH / "5"
-        ai_optimizer = InventoryIntelligenceAPI(data_path=str(live_data_path))
-        print(f"OK AI Inventory Optimization initialized with live data from: {live_data_path}")
+        ai_optimizer = InventoryIntelligenceAPI()
+        print(f"OK AI Inventory Optimization initialized")
     except Exception as e:
         print(f"WARNING Could not initialize AI Inventory Optimization: {e}")
         AI_OPTIMIZATION_AVAILABLE = False

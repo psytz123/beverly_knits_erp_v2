@@ -14,6 +14,8 @@ import os
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
+# Also add src directory for module imports
+sys.path.append(str(Path(__file__).parent.parent / 'src'))
 
 
 # ==================== Sample Data Fixtures ====================
@@ -161,7 +163,7 @@ def temp_data_directory():
 def mock_inventory_analyzer():
     """Mock InventoryAnalyzer for testing"""
     from unittest.mock import Mock
-    import beverly_comprehensive_erp as erp
+    import core.beverly_comprehensive_erp as erp
     
     analyzer = Mock(spec=erp.InventoryAnalyzer)
     analyzer.yarn_inventory = pd.DataFrame({
@@ -180,7 +182,7 @@ def mock_inventory_analyzer():
 @pytest.fixture
 def mock_flask_app():
     """Mock Flask application for testing with proper context handling"""
-    import beverly_comprehensive_erp as erp
+    import core.beverly_comprehensive_erp as erp
     
     erp.app.config['TESTING'] = True
     erp.app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for testing
