@@ -97,6 +97,22 @@ class MLTrainingPipeline:
                         df[date_cols[0]] = pd.to_datetime(df[date_cols[0]], errors='coerce')
                         df = df.dropna(subset=[date_cols[0]])
                     
+                    # Clean price columns - remove $ signs and spaces, convert to float
+                    price_cols = [col for col in df.columns if 'price' in col.lower()]
+                    for col in price_cols:
+                        if col in df.columns:
+                            df[col] = df[col].astype(str).str.replace('$', '').str.replace(',', '').str.strip()
+                            df[col] = pd.to_numeric(df[col], errors='coerce')
+                    
+                    # Clean other potentially problematic numeric columns
+                    for col in df.columns:
+                        if df[col].dtype == 'object':
+                            # Check if it's a numeric column with formatting issues
+                            sample_val = str(df[col].iloc[0]) if len(df) > 0 else ""
+                            if '$' in sample_val or ',' in sample_val:
+                                df[col] = df[col].astype(str).str.replace('$', '').str.replace(',', '').str.strip()
+                                df[col] = pd.to_numeric(df[col], errors='coerce')
+                    
                     data_info['records'] = len(df)
                     data_info['columns'] = df.columns.tolist()
                     

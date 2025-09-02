@@ -1,0 +1,18 @@
+{
+  "trained_at": "2025-09-02T06:32:58.029751",
+  "models_attempted": 2,
+  "models_succeeded": 0,
+  "models_failed": 0,
+  "results": {
+    "arima": {
+      "model": "arima",
+      "status": "skipped",
+      "reason": "Not scheduled"
+    },
+    "xgboost": {
+      "model": "xgboost",
+      "status": "skipped",
+      "reason": "Not scheduled"
+    }
+  }
+}

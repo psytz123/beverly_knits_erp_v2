@@ -41,6 +41,7 @@ class ProductionCapacityManager:
         self.machine_utilization = {}  # machine_id -> utilization %
         self.machine_assignments = {}  # machine_id -> current_style
         self.work_center_loads = {}    # work_center -> current load
+        self.machine_workload_lbs = {}  # machine_id -> remaining work in lbs
         
         if capacity_file_path:
             self.load_capacity_data(capacity_file_path)
@@ -55,8 +56,70 @@ class ProductionCapacityManager:
             try:
                 self.machine_mapper = get_machine_mapper()
                 logger.info("Machine mapper initialized successfully")
+                # Load machine workloads after mapper is initialized
+                self.load_machine_workloads()
             except Exception as e:
                 logger.warning(f"Failed to initialize machine mapper: {e}")
+    
+    def load_machine_workloads(self):
+        """Load actual machine workloads from eFab Knit Orders"""
+        try:
+            import pandas as pd
+            from pathlib import Path
+            
+            # Try to load knit orders file
+            knit_orders_path = Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/8-28-2025/eFab_Knit_Orders.csv")
+            
+            if not knit_orders_path.exists():
+                logger.warning("Knit orders file not found, using default machine utilization")
+                return
+            
+            df = pd.read_csv(knit_orders_path)
+            
+            # Clear existing assignments
+            self.machine_workload_lbs.clear()
+            self.machine_assignments.clear()
+            self.machine_utilization.clear()
+            
+            # Process each knit order with machine assignment
+            for _, row in df.iterrows():
+                machine_id = row.get('Machine')
+                balance_lbs = row.get('Balance (lbs)')
+                style = row.get('Style #')
+                
+                if pd.notna(machine_id) and pd.notna(balance_lbs):
+                    machine_id = str(int(machine_id))  # Convert to string for consistency
+                    
+                    # Clean balance value (remove commas)
+                    if isinstance(balance_lbs, str):
+                        balance_lbs = float(balance_lbs.replace(',', ''))
+                    
+                    # Accumulate workload for machines with multiple orders
+                    if machine_id in self.machine_workload_lbs:
+                        self.machine_workload_lbs[machine_id] += balance_lbs
+                    else:
+                        self.machine_workload_lbs[machine_id] = balance_lbs
+                    
+                    # Assign style (latest assignment wins)
+                    if pd.notna(style):
+                        self.machine_assignments[machine_id] = str(style)
+            
+            # Calculate utilization based on workload
+            for machine_id, workload_lbs in self.machine_workload_lbs.items():
+                # Assume machine capacity is ~616 lbs/day and calculate utilization
+                daily_capacity = self.default_capacity
+                days_of_work = workload_lbs / daily_capacity
+                
+                # Convert days of work to utilization percentage (cap at 100%)
+                # More than 5 days = 100% utilization
+                utilization = min(100.0, (days_of_work / 5.0) * 100.0)
+                self.machine_utilization[machine_id] = utilization
+            
+            logger.info(f"Loaded workloads for {len(self.machine_workload_lbs)} machines from knit orders")
+            
+        except Exception as e:
+            logger.error(f"Error loading machine workloads: {e}")
+            # Continue with default behavior
     
     def load_capacity_data(self, file_path: str) -> bool:
         """Load production capacity data from Excel file"""
@@ -396,15 +459,20 @@ class ProductionCapacityManager:
         
         # Collect machine-level data
         for machine_id, machine_info in self.machine_mapper.machine_info.items():
+            utilization = self.get_machine_utilization(machine_id)
+            workload_lbs = self.machine_workload_lbs.get(machine_id, 0)
+            
             status = {
                 'machine_id': machine_id,
-                'work_center': machine_info.work_center,
-                'utilization': self.get_machine_utilization(machine_id),
+                'work_center': self.machine_mapper.get_work_center_for_machine(machine_id),
+                'utilization': utilization,
                 'assigned_style': self.get_machine_assignment(machine_id),
                 'capacity_lbs_day': self.get_style_capacity(
                     self.get_machine_assignment(machine_id) or 'default'
                 ),
-                'status': 'RUNNING' if self.get_machine_utilization(machine_id) > 50 else 'IDLE'
+                'workload_lbs': workload_lbs,
+                'days_of_work': round(workload_lbs / self.default_capacity, 1) if workload_lbs > 0 else 0,
+                'status': 'RUNNING' if utilization > 20 else 'IDLE'
             }
             machine_status.append(status)
         

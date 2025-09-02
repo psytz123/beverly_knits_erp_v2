@@ -221,24 +221,32 @@ class MachineWorkCenterMapper:
             
             # Build work center to machines mapping (supports multiple machines per work center)
             for _, row in df.iterrows():
-                machine_id = str(row[machine_id_col]).strip()
-                work_center = str(row[work_center_col]).strip()
+                # CSV structure: WC contains machine patterns, MACH contains numeric IDs
+                machine_pattern = str(row[machine_id_col]).strip()  # e.g., "1.17.29.F"
+                machine_number = str(row[work_center_col]).strip()  # e.g., "161"
                 
-                if machine_id and work_center and machine_id != 'nan' and work_center != 'nan':
-                    # Add to work center mapping (multiple machines per work center supported)
-                    if work_center not in self.work_center_to_machines:
-                        self.work_center_to_machines[work_center] = []
+                if machine_pattern and machine_pattern != 'nan':
+                    # The full pattern IS the work center (e.g., "9.30.16.M", "6.30.14.F")
+                    # Pattern: [knit_construction].[diameter].[needle_cut].[type]
+                    work_center = machine_pattern  # Full pattern is work center
+                    # Machine ID is the numeric ID from the second column
+                    machine_id = machine_number if machine_number and machine_number != 'nan' else machine_pattern
                     
-                    # Avoid duplicates
-                    if machine_id not in self.work_center_to_machines[work_center]:
-                        self.work_center_to_machines[work_center].append(machine_id)
-                    
-                    # Create machine info (overwrite if duplicate - keep latest)
-                    self.machine_info[machine_id] = MachineInfo(
-                        machine_id=machine_id,
-                        work_center=work_center,
-                        status="IDLE"  # Default status
-                    )
+                    if work_center and machine_id:
+                        # Add to work center mapping (multiple machines per work center supported)
+                        if work_center not in self.work_center_to_machines:
+                            self.work_center_to_machines[work_center] = []
+                        
+                        # Avoid duplicates
+                        if machine_id not in self.work_center_to_machines[work_center]:
+                            self.work_center_to_machines[work_center].append(machine_id)
+                        
+                        # Create machine info (overwrite if duplicate - keep latest)
+                        self.machine_info[machine_id] = MachineInfo(
+                            machine_id=machine_id,
+                            work_center=work_center,
+                            status="IDLE"  # Default status
+                        )
             
             self.machine_report_loaded = True
             total_machines = sum(len(machines) for machines in self.work_center_to_machines.values())
@@ -309,7 +317,10 @@ class MachineWorkCenterMapper:
     def get_work_center_for_machine(self, machine_id: str) -> Optional[str]:
         """Get work center that contains a machine"""
         machine = self.machine_info.get(machine_id)
-        return machine.work_center if machine else None
+        if machine:
+            return machine.work_center
+        
+        return None
     
     def get_styles_for_work_center(self, work_center: str) -> List[str]:
         """Get all styles assigned to a work center"""

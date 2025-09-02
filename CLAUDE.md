@@ -4,9 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## System Overview
 
-Beverly Knits ERP v2 - Production-ready textile manufacturing ERP with real-time inventory intelligence, ML-powered forecasting, and 6-phase supply chain optimization. The system manages 1,199 yarn items, 28,653 BOM entries, and 194 active production orders.
+Beverly Knits ERP v2 - Production-ready textile manufacturing ERP with real-time inventory intelligence, ML-powered forecasting, and 6-phase supply chain optimization.
 
-**Current System Health**: 75% operational (Day 0 fixes implemented, Phase 3 testing complete, Phase 4 ML configured)
+**Current System Stats**:
+- 1,199 yarn items tracked
+- 28,653 BOM entries (style to yarn mappings)
+- 194 production orders (154 assigned to machines, 40 pending assignment)
+- 91 work centers with 285 total machines
+- 557,671 lbs total production workload
+- Machine utilization tracking via eFab Knit Orders integration
 
 ## Primary Commands
 
@@ -162,20 +168,33 @@ src/
 ### Critical Data Paths
 ```
 Primary: /mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/
-Fallback: /mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/
+8-28-2025 subfolder: Contains latest eFab_Knit_Orders.csv and other current data
 ```
 
-### Key Data Files
+### Key Data Files & Their Purpose
 1. **yarn_inventory.xlsx** - Contains 'Planning Balance' column (with space)
-2. **BOM_updated.csv** - Bill of Materials (preferred over Style_BOM.csv)
-3. **eFab_Knit_Orders.xlsx** - Active production orders
-4. **Sales Activity Report.csv** - Historical sales data
+2. **BOM_updated.csv** - Bill of Materials (28,653 entries mapping styles to yarns)
+3. **eFab_Knit_Orders.csv** - 194 production orders (154 assigned, 40 unassigned)
+4. **QuadS_greigeFabricList_(1).xlsx** - Style to Work Center mappings (columns C=style, D=work_center)
+5. **Machine Report fin1.csv** - Machine to Work Center mappings (WC column=machine patterns, MACH=machine IDs)
+6. **Sales Activity Report.csv** - Historical sales data for forecasting
+
+### Work Center & Machine Structure
+- **Work Center Pattern**: `x.xx.xx.X` where:
+  - First digit = knit construction
+  - Second pair = machine diameter  
+  - Third pair = needle cut
+  - Letter = type (F/M/C/V etc.)
+  - Example: `9.38.20.F` = construction 9, diameter 38, needle 20, type F
+- **Machine IDs**: Simple numeric values (e.g., 161, 224, 110)
+- **Machine Pattern Mapping**: Each work center can have multiple machines
 
 ### Column Name Handling
 The system handles multiple column name variations:
 - 'Planning Balance' vs 'Planning_Balance' 
 - 'Desc#' vs 'desc_num' vs 'YarnID'
 - 'fStyle#' vs 'Style#' for style mapping
+- 'Balance (lbs)' may contain commas that need cleaning
 
 ### Production Flow Stages
 ```
@@ -184,7 +203,7 @@ G00 (Greige) → G02 (Greige Stage 2) → I01 (QC) → F01 (Finished Goods)
 
 ## API Endpoints (Post-Consolidation)
 
-### Critical Dashboard APIs (12 endpoints)
+### Critical Dashboard APIs
 All working at `/api/`:
 - `production-planning` - Production schedule with parameter support
 - `inventory-intelligence-enhanced` - Inventory analytics with views
@@ -198,6 +217,8 @@ All working at `/api/`:
 - `yarn-substitution-intelligent` - ML-based substitutions
 - `production-recommendations-ml` - ML recommendations
 - `knit-orders` - Order management
+- `machine-assignment-suggestions` - Suggests machines for unassigned orders using QuadS mappings
+- `factory-floor-ai-dashboard` - Machine planning data with work center groupings
 
 ### Consolidated Endpoint Parameters
 ```
@@ -257,6 +278,19 @@ FEATURE_FLAGS = {
 }
 ```
 Then restart the server.
+
+### Machine Planning Dashboard Issues
+If Machine Planning tab shows errors:
+- Check `fetchAPI` function is used (not `fetchWithErrorHandling`)
+- Ensure NaN values are handled in API responses (convert to null/0)
+- Work centers display full pattern (e.g., `9.38.20.F`), not just first digit
+- Machine workloads are loaded from `eFab_Knit_Orders.csv` Machine column
+
+### JSON Serialization Errors
+If APIs return NaN or invalid JSON:
+- Wrap date fields: `str(value) if pd.notna(value) else ''`
+- Convert numeric fields: `float(value) if pd.notna(value) else 0`
+- Use `int()` for counts to avoid float serialization
 
 ## Testing Requirements
 

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Planning - Schedule Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .schedule-bar {
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .schedule-bar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .timeline-grid {
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 7.14%,
+                rgba(75, 85, 99, 0.3) 7.14%,
+                rgba(75, 85, 99, 0.3) 7.24%
+            );
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-calendar-alt mr-2 text-blue-600"></i>
+                    Machine Production Schedule Board
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-500" id="currentDate"></span>
+                    <button onclick="refreshSchedule()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Board -->
+        <div class="bg-gray-900 rounded-xl shadow-2xl p-6">
+            <div class="mb-4">
+                <h2 class="text-xl font-bold text-white mb-2">14-Day Production Schedule</h2>
+                <p class="text-gray-400 text-sm">Real-time machine scheduling by work center</p>
+            </div>
+
+            <!-- Date Timeline Header -->
+            <div class="mb-4 overflow-x-auto">
+                <div class="flex min-w-max">
+                    <div class="w-64 pr-4"></div>
+                    <div class="flex-1">
+                        <div class="grid grid-cols-14 text-xs text-gray-400 text-center border-b border-gray-700 pb-2" id="dateHeader">
+                            <!-- Dynamic dates will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Grid -->
+            <div id="scheduleGrid" class="space-y-1 overflow-x-auto">
+                <!-- Loading indicator -->
+                <div class="text-center py-8 text-gray-400" id="loadingIndicator">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>Loading production schedule...</p>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="mt-6 pt-4 border-t border-gray-700">
+                <div class="flex flex-wrap items-center gap-6 text-sm">
+                    <span class="text-gray-400 font-medium">Status:</span>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-red-500 rounded mr-2"></div>
+                        <span class="text-red-400">Urgent/Overdue</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-orange-500 rounded mr-2"></div>
+                        <span class="text-orange-400">High Priority</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
+                        <span class="text-yellow-400">Normal Priority</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                        <span class="text-green-400">On Schedule</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-500 rounded mr-2"></div>
+                        <span class="text-blue-400">Planned</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-gray-500 rounded mr-2"></div>
+                        <span class="text-gray-400">Unassigned</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDateHeader();
+            loadScheduleData();
+            updateCurrentDate();
+        });
+
+        // Update current date display
+        function updateCurrentDate() {
+            const now = new Date();
+            document.getElementById('currentDate').textContent = 
+                `Today: ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+        }
+
+        // Generate date header for next 14 days
+        function updateDateHeader() {
+            const header = document.getElementById('dateHeader');
+            header.innerHTML = '';
+            
+            const today = new Date();
+            for (let i = 0; i < 14; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                
+                const day = date.getDate();
+                const month = date.toLocaleDateString('en-US', { month: 'short' });
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+                
+                const div = document.createElement('div');
+                div.className = i === 0 ? 'border-r border-gray-700 bg-blue-900 bg-opacity-20' : 'border-r border-gray-700';
+                div.innerHTML = `
+                    <div class="font-medium">${weekday}</div>
+                    <div>${month} ${day}</div>
+                `;
+                header.appendChild(div);
+            }
+        }
+
+        // Load actual schedule data
+        async function loadScheduleData() {
+            try {
+                // Fetch both production planning and factory floor data
+                const [planningResponse, factoryResponse] = await Promise.all([
+                    fetch('http://localhost:5006/api/production-planning'),
+                    fetch('http://localhost:5006/api/factory-floor-ai-dashboard')
+                ]);
+
+                const planningData = await planningResponse.json();
+                const factoryData = await factoryResponse.json();
+
+                // Process and render the schedule
+                renderSchedule(planningData, factoryData);
+            } catch (error) {
+                console.error('Error loading schedule:', error);
+                document.getElementById('loadingIndicator').innerHTML = 
+                    '<p class="text-red-400">Error loading schedule data</p>';
+            }
+        }
+
+        // Render the schedule board
+        function renderSchedule(planningData, factoryData) {
+            const grid = document.getElementById('scheduleGrid');
+            grid.innerHTML = '';
+
+            // Get production schedule
+            const schedule = planningData.production_schedule || [];
+            
+            // Group orders by machine
+            const machineOrders = {};
+            schedule.forEach(order => {
+                const machine = order.machine || 'Unassigned';
+                if (!machineOrders[machine]) {
+                    machineOrders[machine] = [];
+                }
+                machineOrders[machine].push(order);
+            });
+
+            // Get work centers from factory data
+            const workCenters = factoryData.work_center_groups || [];
+            const machineToWC = {};
+            
+            workCenters.forEach(wc => {
+                (wc.machines || []).forEach(m => {
+                    machineToWC[m.machine_id] = wc.work_center_id;
+                });
+            });
+
+            // Render rows for each machine with orders
+            let rowCount = 0;
+            Object.entries(machineOrders).forEach(([machine, orders]) => {
+                if (rowCount >= 15) return; // Limit display to 15 rows
+                
+                const row = createScheduleRow(machine, orders, machineToWC[machine]);
+                grid.appendChild(row);
+                rowCount++;
+            });
+
+            // Show message if no data
+            if (rowCount === 0) {
+                grid.innerHTML = '<div class="text-center py-8 text-gray-400">No scheduled production orders</div>';
+            }
+        }
+
+        // Create a schedule row for a machine
+        function createScheduleRow(machineId, orders, workCenter) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center hover:bg-gray-800 rounded p-1 transition-colors min-w-max';
+
+            // Machine label
+            const label = document.createElement('div');
+            label.className = 'w-64 pr-4 text-sm text-gray-300';
+            
+            if (machineId === 'Unassigned') {
+                label.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium text-gray-500">Unassigned Orders</span>
+                        <span class="text-xs text-gray-600">${orders.length} orders</span>
+                    </div>
+                `;
+            } else {
+                label.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-medium">Machine ${machineId}</span>
+                            ${workCenter ? `<span class="text-xs text-gray-500 ml-2">WC ${workCenter}</span>` : ''}
+                        </div>
+                        <span class="text-xs text-gray-500">${orders.reduce((sum, o) => sum + (o.quantity_lbs || 0), 0).toLocaleString()} lbs</span>
+                    </div>
+                `;
+            }
+            row.appendChild(label);
+
+            // Schedule timeline
+            const timeline = document.createElement('div');
+            timeline.className = 'flex-1 relative h-10 bg-gray-800 rounded timeline-grid';
+            
+            // Add order bars
+            orders.forEach(order => {
+                const bar = createOrderBar(order, machineId === 'Unassigned');
+                timeline.appendChild(bar);
+            });
+
+            row.appendChild(timeline);
+            return row;
+        }
+
+        // Create an order bar
+        function createOrderBar(order, isUnassigned) {
+            const bar = document.createElement('div');
+            
+            // Calculate position based on dates
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const startDate = new Date(order.start_date);
+            const endDate = order.end_date ? new Date(order.end_date) : new Date(startDate.getTime() + 86400000);
+            
+            const daysDiff = Math.floor((startDate - today) / 86400000);
+            const duration = Math.ceil((endDate - startDate) / 86400000) || 1;
+            
+            // Position and width (14 days = 100%)
+            const left = Math.max(0, Math.min(95, (daysDiff / 14) * 100));
+            const width = Math.max(3, Math.min(100 - left, (duration / 14) * 100));
+            
+            // Determine color based on priority and status
+            let bgColor = 'bg-blue-500';
+            if (isUnassigned) {
+                bgColor = 'bg-gray-500';
+            } else if (daysDiff < 0) {
+                bgColor = 'bg-red-500'; // Overdue
+            } else if (order.priority === 'High') {
+                bgColor = 'bg-orange-500';
+            } else if (order.priority === 'Normal') {
+                bgColor = 'bg-yellow-500';
+            } else if (order.status === 'Scheduled') {
+                bgColor = 'bg-green-500';
+            }
+            
+            bar.className = `absolute ${bgColor} rounded-sm schedule-bar cursor-pointer`;
+            bar.style.left = `${left}%`;
+            bar.style.width = `${width}%`;
+            bar.style.top = '50%';
+            bar.style.transform = 'translateY(-50%)';
+            bar.style.height = '28px';
+            bar.style.minWidth = '40px';
+            
+            // Add order code
+            bar.innerHTML = `
+                <div class="flex items-center justify-center h-full px-1">
+                    <span class="text-white text-xs font-bold truncate">
+                        ${order.style || order.order_id || 'Order'}
+                    </span>
+                </div>
+            `;
+            
+            // Add tooltip
+            bar.title = `
+Order: ${order.order_id || 'N/A'}
+Style: ${order.style || 'N/A'}
+Quantity: ${(order.quantity_lbs || 0).toLocaleString()} lbs
+Priority: ${order.priority || 'Normal'}
+Status: ${order.status || 'Planned'}
+Start: ${startDate.toLocaleDateString()}
+End: ${endDate.toLocaleDateString()}
+Customer: ${order.customer || 'Unknown'}
+            `.trim();
+            
+            // Click handler
+            bar.onclick = () => showOrderDetails(order);
+            
+            return bar;
+        }
+
+        // Show order details
+        function showOrderDetails(order) {
+            alert(`
+Production Order Details
+========================
+Order ID: ${order.order_id || 'N/A'}
+Style: ${order.style || 'N/A'}
+Machine: ${order.machine || 'Unassigned'}
+Quantity: ${(order.quantity_lbs || 0).toLocaleString()} lbs
+Priority: ${order.priority || 'Normal'}
+Status: ${order.status || 'Planned'}
+Customer: ${order.customer || 'Unknown'}
+
+Schedule:
+Start: ${new Date(order.start_date).toLocaleDateString()}
+End: ${order.end_date ? new Date(order.end_date).toLocaleDateString() : 'TBD'}
+
+This would open a detailed modal with:
+- Full production requirements
+- Material allocation
+- Quality specifications
+- Work instructions
+            `);
+        }
+
+        // Refresh schedule
+        function refreshSchedule() {
+            document.getElementById('scheduleGrid').innerHTML = 
+                '<div class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><p>Refreshing...</p></div>';
+            loadScheduleData();
+        }
+    </script>
+</body>
+</html>
