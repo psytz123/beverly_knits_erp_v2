@@ -4917,8 +4917,11 @@ const dataSafetyMonitor = {
                 
             } catch (error) {
                 console.error('Error loading forecasted orders:', error);
-                document.getElementById('forecastedOrdersTable').innerHTML = 
-                    '<tr><td colspan="10" class="text-center text-red-500 py-4">Failed to load forecasted orders</td></tr>';
+                const forecastTableEl = document.getElementById('forecastedOrdersTable');
+                if (forecastTableEl) {
+                    forecastTableEl.innerHTML = 
+                        '<tr><td colspan="10" class="text-center text-red-500 py-4">Failed to load forecasted orders</td></tr>';
+                }
             }
         }
         
@@ -5091,8 +5094,11 @@ const dataSafetyMonitor = {
                 
             } catch (error) {
                 console.error('Error loading AI suggestions:', error);
-                document.getElementById('aiProductionSuggestions').innerHTML = 
-                    '<div class="text-red-500 text-center py-4">Failed to load AI suggestions</div>';
+                const aiSuggestionsEl = document.getElementById('aiProductionSuggestions');
+                if (aiSuggestionsEl) {
+                    aiSuggestionsEl.innerHTML = 
+                        '<div class="text-red-500 text-center py-4">Failed to load AI suggestions</div>';
+                }
             }
         }
         
@@ -6478,11 +6484,18 @@ const dataSafetyMonitor = {
                         }
                     });
                     
-                    // Update the display
-                    document.getElementById('criticalCount').textContent = critical;
-                    document.getElementById('highRiskCount').textContent = high;
-                    document.getElementById('mediumRiskCount').textContent = medium;
-                    document.getElementById('lowRiskCount').textContent = low;
+                    // Update the display with null checks
+                    const criticalEl = document.getElementById('criticalCount');
+                    if (criticalEl) criticalEl.textContent = critical;
+                    
+                    const highRiskEl = document.getElementById('highRiskCount');
+                    if (highRiskEl) highRiskEl.textContent = high;
+                    
+                    const mediumRiskEl = document.getElementById('mediumRiskCount');
+                    if (mediumRiskEl) mediumRiskEl.textContent = medium;
+                    
+                    const lowRiskEl = document.getElementById('lowRiskCount');
+                    if (lowRiskEl) lowRiskEl.textContent = low;
                 }
             } catch (error) {
                 console.error('Error updating risk counts:', error);
@@ -6499,13 +6512,19 @@ const dataSafetyMonitor = {
                     updateYarnSubstitutionDisplay(data);
                 } else {
                     console.error('Error in substitution data:', data.error);
-                    document.getElementById('yarn-substitutions').innerHTML = 
-                        '<div class="text-red-500 p-4">Error loading substitution data</div>';
+                    const yarnSubEl = document.getElementById('yarn-substitutions');
+                    if (yarnSubEl) {
+                        yarnSubEl.innerHTML = 
+                            '<div class="text-red-500 p-4">Error loading substitution data</div>';
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch substitution opportunities:', error);
-                document.getElementById('yarn-substitutions').innerHTML = 
-                    '<div class="text-red-500 p-4">Failed to load substitution opportunities</div>';
+                const yarnSubEl = document.getElementById('yarn-substitutions');
+                if (yarnSubEl) {
+                    yarnSubEl.innerHTML = 
+                        '<div class="text-red-500 p-4">Failed to load substitution opportunities</div>';
+                }
             }
         }
         
@@ -8876,6 +8895,13 @@ const dataSafetyMonitor = {
 
         function displayCriticalYarns(yarns) {
             const container = document.getElementById('yarnCriticalList');
+            
+            // Add null check for container
+            if (!container) {
+                console.warn('yarnCriticalList element not found');
+                return;
+            }
+            
             if (!yarns || yarns.length === 0) {
                 container.innerHTML = '<div class="text-gray-500">No critical yarns</div>';
                 return;
