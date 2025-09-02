@@ -212,5 +212,117 @@
       "d": 1,
       "q": 2
     }
+  },
+  {
+    "model_type": "arima",
+    "status": "success",
+    "trained_at": "2025-09-02T07:54:29.517244",
+    "adf_statistic": -14.76387255994387,
+    "adf_pvalue": 2.379178607157887e-27,
+    "model_path": "/mnt/c/finalee/beverly_knits_erp_v2/models/arima_20250902_075431.pkl",
+    "metrics": {
+      "mape": Infinity,
+      "rmse": 4.098573433690826,
+      "train_size": 1232,
+      "test_size": 308
+    },
+    "parameters": {
+      "p": 2,
+      "d": 1,
+      "q": 2
+    }
+  },
+  {
+    "model_type": "prophet",
+    "status": "success",
+    "trained_at": "2025-09-02T07:54:31.733175",
+    "model_path": "/mnt/c/finalee/beverly_knits_erp_v2/models/prophet_20250902_075432.pkl",
+    "metrics": {
+      "mape": Infinity,
+      "rmse": 6.204570241225323,
+      "train_size": 1232,
+      "test_size": 308
+    }
+  },
+  {
+    "model_type": "lstm",
+    "status": "failed",
+    "error": "Model not implemented"
+  },
+  {
+    "model_type": "xgboost",
+    "status": "success",
+    "trained_at": "2025-09-02T07:54:35.980620",
+    "model_path": "/mnt/c/finalee/beverly_knits_erp_v2/models/xgboost_20250902_075442.pkl",
+    "scaler_path": "/mnt/c/finalee/beverly_knits_erp_v2/models/xgboost_20250902_075442_scaler.pkl",
+    "metrics": {
+      "mape": 19.351261498094022,
+      "rmse": 1.7196205002311387,
+      "r2": -0.2229627857411287,
+      "train_size": 20,
+      "test_size": 5
+    },
+    "top_features": [
+      [
+        "Line Price",
+        "0.32502735"
+      ],
+      [
+        "Unit Price_rolling_mean_30",
+        "0.21357433"
+      ],
+      [
+        "Unit Price_rolling_std_14",
+        "0.14629507"
+      ],
+      [
+        "Unit Price_rolling_mean_14",
+        "0.12823828"
+      ],
+      [
+        "Unit Price_rolling_std_7",
+        "0.07145782"
+      ],
+      [
+        "Unit Price_lag_7",
+        "0.029873822"
+      ],
+      [
+        "Unit Price_lag_14",
+        "0.029634133"
+      ],
+      [
+        "Unit Price_rolling_mean_7",
+        "0.015473547"
+      ],
+      [
+        "Unit Price_lag_30",
+        "0.015412279"
+      ],
+      [
+        "Unit Price_lag_1",
+        "0.014599272"
+      ]
+    ],
+    "feature_columns": [
+      "Yds_ordered",
+      "Line Price",
+      "Commission",
+      "Unit Price_lag_1",
+      "Unit Price_lag_7",
+      "Unit Price_lag_14",
+      "Unit Price_lag_30",
+      "Unit Price_rolling_mean_7",
+      "Unit Price_rolling_std_7",
+      "Unit Price_rolling_mean_14",
+      "Unit Price_rolling_std_14",
+      "Unit Price_rolling_mean_30",
+      "Unit Price_rolling_std_30"
+    ]
+  },
+  {
+    "model_type": "ensemble",
+    "status": "failed",
+    "error": "Model not implemented"
   }
 ]

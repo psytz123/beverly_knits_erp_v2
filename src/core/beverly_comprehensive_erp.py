@@ -10870,7 +10870,9 @@ def get_fabric_forecast():
                         fabric_requirements[fabric_type]['styles'].append(style)
                         fabric_requirements[fabric_type]['total_required'] += target_qty
                         fabric_requirements[fabric_type]['current_inventory'] += current_inv
-                        fabric_requirements[fabric_type]['on_order'] += target_qty  # Knit orders are "on order"
+                        # Don't accumulate target_qty as on_order - this is incorrect
+                        # on_order should come from actual yarn inventory data
+                        # fabric_requirements[fabric_type]['on_order'] stays at 0 or gets real value from yarn data
                         
                         # Get lead time from knit order dates if available
                         lead_time = 14  # Default
@@ -11067,6 +11069,7 @@ def get_fabric_forecast():
                 order_qty = order.get('quantity', 0)
                 order_current_inv = order.get('current_inventory', 0)
                 order_net_req = order.get('net_required', 0)
+                order_on_order = order.get('on_order', on_order)  # Use order-level on_order or fallback to fabric-level
                 
                 fabric_forecast_items.append({
                     'style': order['style'],
@@ -11074,8 +11077,8 @@ def get_fabric_forecast():
                     'description': f"{fabric_type} - Production Grade",
                     'forecasted_qty': round(order_qty, 2),
                     'current_inventory': round(order_current_inv, 2),
-                    'on_order': round(order_qty, 2),
-                    'net_position': round(order_current_inv - order_net_req, 2),
+                    'on_order': round(order_on_order, 2),
+                    'net_position': round(order_current_inv + order_on_order - order_qty, 2),
                     'lead_time': lead_time,
                     'target_date': order.get('target_date', (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')),
                     'status': status,
@@ -12124,13 +12127,17 @@ def get_yarn_intelligence():
                             elif days_until_shortage < 45:
                                 urgency = 'MEDIUM'
                             
+                            # Calculate net position: positive = surplus, negative = shortage
+                            net_position = planning_balance - forecasted_requirement
+                            
                             forecasted_shortages.append({
                                 'yarn_id': yarn.get('yarn_id', ''),
                                 'description': yarn.get('description', ''),
                                 'forecasted_requirement': round(forecasted_requirement, 2),
-                                'current_inventory': round(yarn.get('available', 0), 2),
+                                'current_inventory': round(yarn.get('theoretical_balance', 0), 2),  # Use theoretical_balance for current inventory
                                 'planning_balance': round(planning_balance, 2),
-                                'net_shortage': round(net_shortage, 2),
+                                'net_shortage': round(-net_position if net_position < 0 else 0, 2),  # Show shortage as positive only when there IS a shortage
+                                'net_position': round(net_position, 2),  # Add for clarity
                                 'urgency': urgency,
                                 'days_until_shortage': min(days_until_shortage, 90),
                                 'affected_orders': yarn.get('affected_orders', 0)
@@ -14877,13 +14884,17 @@ def get_yarn_forecast_shortages():
                         forecast_response['summary']['critical_shortages'] += 1
                     
                     # Add to shortage list
+                    # Calculate net position: positive means surplus, negative means shortage
+                    net_position = yarn['planning_balance'] - forecasted_requirement
+                    
                     forecast_response['yarn_shortages'].append({
                         'yarn_id': yarn['yarn_id'],
                         'description': yarn['description'],
                         'forecasted_requirement': round(forecasted_requirement, 2),
                         'current_inventory': round(yarn['theoretical'], 2),
                         'planning_balance': round(yarn['planning_balance'], 2),
-                        'net_shortage': round(net_shortage, 2),
+                        'net_shortage': round(-net_position if net_position < 0 else 0, 2),  # Show shortage as positive number
+                        'net_position': round(net_position, 2),  # Add net position for clarity
                         'urgency': urgency,
                         'days_until_shortage': min(days_until_shortage, 90),
                         'affected_styles': affected_styles
@@ -14901,7 +14912,7 @@ def get_yarn_forecast_shortages():
         # Sort shortages by urgency and amount
         forecast_response['yarn_shortages'].sort(key=lambda x: (
             {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}[x['urgency']],
-            -x['net_shortage']
+            -x.get('net_shortage', 0)
         ))
         
         # Round summary values
@@ -15362,14 +15373,36 @@ def production_planning_api():
             if pd.isna(status_value) or status_value == '' or status_value is None:
                 status_value = 'Scheduled'
             
+            # Format start_date properly
+            start_date_raw = order.get('Start Date', order.get('Start_Date', datetime.now()))
+            if isinstance(start_date_raw, str):
+                start_date = start_date_raw
+            elif pd.notna(start_date_raw):
+                try:
+                    start_date = pd.to_datetime(start_date_raw).strftime('%Y-%m-%d')
+                except:
+                    start_date = datetime.now().strftime('%Y-%m-%d')
+            else:
+                start_date = datetime.now().strftime('%Y-%m-%d')
+            
+            # Format end_date properly
+            end_date_raw = order.get('End_Date', None)
+            if end_date_raw and pd.notna(end_date_raw):
+                try:
+                    end_date = pd.to_datetime(end_date_raw).strftime('%Y-%m-%d')
+                except:
+                    end_date = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d')
+            else:
+                end_date = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d')
+            
             schedule_item = {
                 "order_id": str(order.get('Order #', order.get('Machine#', f"ORD-{idx+1}"))),
                 "style": str(style) if not pd.isna(style) else 'Unknown',
                 "customer": str(customer_value),
                 "quantity_lbs": quantity_lbs,
                 "planned_quantity": safe_float(order.get('Planned_Pounds', quantity_lbs)),
-                "start_date": order.get('Start Date', order.get('Start_Date', datetime.now().strftime('%Y-%m-%d'))),
-                "end_date": order.get('End_Date', (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d')),
+                "start_date": start_date,
+                "end_date": end_date,
                 "machine": str(machine_value),
                 "status": str(status_value),
                 "priority": "High" if idx < 3 else "Normal"
@@ -15653,14 +15686,30 @@ def po_risk_analysis():
             risk_score = 0
             risk_factors = []
             
+            # Pre-check: Determine if production has started before calculating overdue status
+            g00_status = order.get(actual_columns['g00_lbs'], 0)
+            shipped_lbs = order.get(actual_columns['shipped_lbs'], 0)
+            balance = order.get(actual_columns['balance_lbs'], 0)
+            
+            # Order has started if it has G00 production OR has shipped any quantity
+            production_has_started = (not pd.isna(g00_status) and g00_status > 0) or (not pd.isna(shipped_lbs) and shipped_lbs > 0)
+            
             # 1. Delivery risk (40% weight)
             days_until = order['days_until_start']
             if days_until < -30:
-                delivery_risk = 40  # Maximum delivery risk
-                risk_factors.append(f"Overdue by {abs(days_until)} days")
+                if production_has_started:
+                    delivery_risk = 15  # Reduced risk since production started
+                    risk_factors.append(f"Production started (was due {abs(days_until)} days ago)")
+                else:
+                    delivery_risk = 40  # Maximum delivery risk
+                    risk_factors.append(f"Overdue by {abs(days_until)} days")
             elif days_until < 0:
-                delivery_risk = 30 + (abs(days_until) / 3)  # Scale based on how overdue
-                risk_factors.append(f"Overdue by {abs(days_until)} days")
+                if production_has_started:
+                    delivery_risk = 10  # Reduced risk since production started
+                    risk_factors.append(f"Production started (was due {abs(days_until)} days ago)")
+                else:
+                    delivery_risk = 30 + (abs(days_until) / 3)  # Scale based on how overdue
+                    risk_factors.append(f"Overdue by {abs(days_until)} days")
             elif days_until < 7:
                 delivery_risk = 20
                 risk_factors.append(f"Due in {days_until} days")
@@ -15669,7 +15718,7 @@ def po_risk_analysis():
             risk_score += delivery_risk
             
             # 2. Balance/quantity risk (30% weight)
-            balance = order.get(actual_columns['balance_lbs'], 0)
+            # balance already defined above
             if balance < 25:
                 # Orders with less than 25 lbs balance are essentially complete
                 quantity_risk = 0
@@ -15686,15 +15735,13 @@ def po_risk_analysis():
             risk_score += quantity_risk
             
             # 3. Production status risk (20% weight)
-            g00_status = order.get(actual_columns['g00_lbs'], 0)
-            shipped_lbs = order.get(actual_columns['shipped_lbs'], 0)
+            # g00_status and shipped_lbs already defined above, production_has_started calculated
             
             # Special case: if balance < 25 lbs, consider it complete regardless of status
             if balance < 25:
                 production_risk = 0  # No production risk for essentially complete orders
                 risk_factors.append("Production complete")
-            # Consider order as started if it has G00 production OR has shipped any quantity
-            elif (pd.isna(g00_status) or g00_status == 0) and (pd.isna(shipped_lbs) or shipped_lbs == 0):
+            elif not production_has_started:
                 production_risk = 20
                 risk_factors.append("Not started")
             else:

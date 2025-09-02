@@ -1,0 +1,12 @@
+{
+  "prophet": {
+    "path": "/mnt/c/finalee/beverly_knits_erp_v2/models/production/prophet_production.pkl",
+    "deployed_at": "2025-09-02T07:55:46.727874",
+    "source_path": "/mnt/c/finalee/beverly_knits_erp_v2/models/prophet_demand_model.pkl"
+  },
+  "xgboost": {
+    "path": "/mnt/c/finalee/beverly_knits_erp_v2/models/production/xgboost_production.pkl",
+    "deployed_at": "2025-09-02T07:55:53.431029",
+    "source_path": "/mnt/c/finalee/beverly_knits_erp_v2/models/xgboost_features.pkl"
+  }
+}
