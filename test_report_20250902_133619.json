@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-09-02T13:36:19.998238",
+  "summary": {
+    "total_tests": 23,
+    "passed": 23,
+    "failed": 0,
+    "warnings": 3,
+    "pass_rate": 100.0
+  },
+  "details": {
+    "passed": [
+      "PO Loader Initialization",
+      "Load PO Deliveries (CSV)",
+      "Load PO Deliveries (Excel)",
+      "Column Cleaning",
+      "Map to Weekly Buckets",
+      "Aggregate by Yarn",
+      "Calculate Total On Order",
+      "Get Delivery Timeline",
+      "Get Next Receipt Week",
+      "Export Time-Phased Data",
+      "Planning Engine Init",
+      "Calculate Weekly Balance",
+      "Identify Shortage Periods",
+      "Calculate Expedite Requirements",
+      "Calculate Coverage Weeks",
+      "Generate Shortage Summary",
+      "Process Yarn Time-Phased",
+      "Create Mock Demand Schedule",
+      "End-to-End Integration",
+      "Data Consistency",
+      "Loading Performance",
+      "Processing Performance",
+      "Yarn 18884 Accuracy"
+    ],
+    "failed": [],
+    "warnings": [
+      "PO Delivery Schedule API",
+      "Yarn Shortage Timeline API",
+      "Time-Phased Planning API"
+    ]
+  }
+}

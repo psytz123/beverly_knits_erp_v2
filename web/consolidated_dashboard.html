@@ -1179,46 +1179,9 @@ const dataSafetyMonitor = {
                 </div>
             </div>
 
-            <!-- Production Pipeline & KPIs -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <!-- Production Pipeline Status -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-cogs mr-3 text-blue-600"></i>
-                        Production Pipeline Status
-                    </h2>
-                    <div class="space-y-3" id="pipelineStatus">
-                        <div class="loading">Loading pipeline data</div>
-                    </div>
-                </div>
+            <!-- Production Pipeline & KPIs section removed -->
 
-                <!-- Top KPIs -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-chart-bar mr-3 text-purple-600"></i>
-                        Key Performance Indicators
-                    </h2>
-                    <div class="kpi-grid" id="kpiDashboard">
-                        <div class="loading">Loading KPIs</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Inventory Trend</h2>
-                    <div class="chart-container">
-                        <canvas id="inventoryChart"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Production Output</h2>
-                    <div class="chart-container">
-                        <canvas id="productionChart"></canvas>
-                    </div>
-                </div>
-            </div>
+            <!-- Charts Section removed -->
         </div>
 
         <!-- Fabric Production & Inventory Netting Tab -->
@@ -1731,102 +1694,7 @@ const dataSafetyMonitor = {
 
         <!-- Inventory Tab -->
         <div id="inventory-tab" class="tab-content">
-            <!-- Enhanced Yarn Intelligence Section -->
-            <div class="yarn-intelligence-section">
-                <!-- Yarn Metrics Overview -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div class="yarn-metric-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                        <div class="text-3xl font-bold" id="yarnCriticalCount">0</div>
-                        <div class="text-sm opacity-90">Critical Yarns</div>
-                        <div class="text-xs mt-1 opacity-75">Immediate action required</div>
-                    </div>
-                    <div class="yarn-metric-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                        <div class="text-3xl font-bold" id="yarnShortageTotal">0 lbs</div>
-                        <div class="text-sm opacity-90">Total Shortage</div>
-                        <div class="text-xs mt-1 opacity-75">Across all yarns</div>
-                    </div>
-                    <div class="yarn-metric-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-                        <div class="text-3xl font-bold" id="yarnOnOrderTotal">$0</div>
-                        <div class="text-sm opacity-90">On Order</div>
-                        <div class="text-xs mt-1 opacity-75">Expected deliveries</div>
-                    </div>
-                    <div class="yarn-metric-card" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-                        <div class="text-3xl font-bold" id="yarnProcurementNeeded">$0</div>
-                        <div class="text-sm opacity-90">Procurement Needed</div>
-                        <div class="text-xs mt-1 opacity-75">Urgent orders</div>
-                    </div>
-                </div>
-
-                <!-- Substitution Opportunities Alert -->
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6" id="substitutionAlert" style="display:none;">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-exchange-alt text-blue-400"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-blue-700">
-                                <strong id="substitutionCount">0</strong> yarns with negative balance have available substitutes!
-                                Total shortage that can be mitigated: <strong id="substitutionShortage">0</strong> lbs
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Main Yarn Analysis Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    <!-- Critical Yarns List -->
-                    <div class="bg-white rounded-xl shadow-md p-6">
-                        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
-                            Critical Yarn Shortages
-                        </h3>
-                        <div class="yarn-critical-list" id="yarnCriticalList">
-                            <div class="text-gray-500 text-center py-4">Loading yarn data...</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Weekly Demand Pattern -->
-                    <div class="bg-white rounded-xl shadow-md p-6">
-                        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-chart-bar text-blue-500 mr-2"></i>
-                            Weekly Yarn Demand
-                        </h3>
-                        <div class="weekly-demand-chart">
-                            <canvas id="yarnWeeklyDemandChart"></canvas>
-                        </div>
-                        <div class="mt-3 text-sm text-gray-600">
-                            <div id="yarnPeakWeek" class="font-medium"></div>
-                            <div id="yarnAvgDemand" class="text-xs"></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-
-            <!-- Risk Assessment Dashboard -->
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-red-50 rounded-lg p-4 border-l-4 border-red-500">
-                    <h4 class="font-semibold text-red-700">Critical Risk</h4>
-                    <div class="text-2xl font-bold text-red-600" id="criticalCount">0</div>
-                    <div class="text-sm text-gray-600">Items < 7 days</div>
-                </div>
-                <div class="bg-orange-50 rounded-lg p-4 border-l-4 border-orange-500">
-                    <h4 class="font-semibold text-orange-700">High Risk</h4>
-                    <div class="text-2xl font-bold text-orange-600" id="highRiskCount">0</div>
-                    <div class="text-sm text-gray-600">Items 7-14 days</div>
-                </div>
-                <div class="bg-yellow-50 rounded-lg p-4 border-l-4 border-yellow-500">
-                    <h4 class="font-semibold text-yellow-700">Medium Risk</h4>
-                    <div class="text-2xl font-bold text-yellow-600" id="mediumRiskCount">0</div>
-                    <div class="text-sm text-gray-600">Items 14-30 days</div>
-                </div>
-                <div class="bg-green-50 rounded-lg p-4 border-l-4 border-green-500">
-                    <h4 class="font-semibold text-green-700">Low Risk</h4>
-                    <div class="text-2xl font-bold text-green-600" id="lowRiskCount">0</div>
-                    <div class="text-sm text-gray-600">Items > 30 days</div>
-                </div>
-            </div>
+            <!-- All cards removed from Inventory tab -->
 
 
 
@@ -3778,7 +3646,7 @@ const dataSafetyMonitor = {
             }
         }
         
-        // Load overview data on page load
+        // Load overview data on page load - simplified to avoid table creation
         loadOverviewData = async function() {
             console.log('Loading overview data...');
             try {
@@ -4609,50 +4477,46 @@ const dataSafetyMonitor = {
         }
         
         // Data loading functions
+        // Helper function to safely update elements
+        function safeUpdateElement(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value;
+            } else {
+                console.warn(`Element '${elementId}' not found`);
+            }
+        }
+
+        // Simplified Overview Data Loading - NO TABLES, ONLY CARDS
         window.loadOverviewData = async function() {
+            console.log('Loading clean overview data (no tables)...');
             try {
-                // Ensure required elements exist
-                const requiredElements = ['inventoryStatus', 'productionStatus', 'demandStatus', 'planningStatus'];
-                const missingElements = requiredElements.filter(id => !document.getElementById(id));
-                if (missingElements.length > 0) {
-                    console.warn('Missing required elements:', missingElements);
-                }
-                // Load KPIs
+                // Load only KPI data for status cards
                 const kpiData = await fetchAPI('/api/comprehensive-kpis');
-                updateKPIs(kpiData);
                 
-                // Load inventory summary
-                // Try inventory-overview, fallback to yarn-intelligence if not found
-                let invData = {};
-                try {
-                    invData = await fetchAPI('/api/inventory-overview');
-                } catch (error) {
-                    console.log('Inventory overview not available, using yarn intelligence');
-                    const yarnResponse = await fetchAPI('/api/yarn-intelligence');
-                    const yarnData = await yarnResponse.json();
-                    invData = {
-                        total_items: yarnData.criticality_analysis?.total_yarns || 0,
-                        critical_items: yarnData.criticality_analysis?.critical_count || 0,
-                        low_stock_items: yarnData.criticality_analysis?.yarns_with_shortage || 0
-                    };
-                }
-                updateInventorySummary(invData);
+                // Update status cards only
+                safeUpdateElement('inventoryValue', kpiData.inventory_value || '--');
+                safeUpdateElement('inventoryCount', (kpiData.total_yarns || '--') + ' items');
+                safeUpdateElement('activeOrders', kpiData.active_knit_orders || '--');
+                safeUpdateElement('orderValue', kpiData.order_value || '--');
+                safeUpdateElement('alertCount', kpiData.critical_alerts || '0');
+                safeUpdateElement('costSavings', kpiData.cost_savings || '--');
                 
-                // Load production pipeline
-                const pipeData = await fetchAPI('/api/production-pipeline');
-                updatePipelineStatus(pipeData);
+                // Update status indicators (simple text only)
+                safeUpdateElement('inventoryStatus', 'Loading...');
+                safeUpdateElement('productionStatus', 'Loading...');
+                safeUpdateElement('demandStatus', 'Loading...');
+                safeUpdateElement('planningStatus', 'Loading...');
                 
-                // Initialize charts
-                if (typeof initializeCharts === 'function') {
-                    initializeCharts();
-                } else {
-                    console.warn('initializeCharts function not available');
-                }
+                console.log('Overview data loaded successfully (table-free)');
                 
-                // Update last refresh time
-                updateLastRefresh();
             } catch (error) {
                 console.error('Error loading overview data:', error);
+                // Set default values on error
+                safeUpdateElement('inventoryValue', '--');
+                safeUpdateElement('activeOrders', '--');
+                safeUpdateElement('alertCount', '0');
+                safeUpdateElement('costSavings', '--');
             }
         }
         

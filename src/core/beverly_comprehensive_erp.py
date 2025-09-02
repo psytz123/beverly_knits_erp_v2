@@ -3299,6 +3299,11 @@ class ManufacturingSupplyChainAI:
         self.alerts = []
         self.last_update = datetime.now()
         
+        # Time-phased planning components (NEW)
+        self.po_delivery_data = None  # PO delivery schedules
+        self.yarn_weekly_receipts = {}  # Yarn ID -> weekly receipt schedule
+        self.time_phased_enabled = False  # Feature flag
+        
         # Use parallel data loader if available (preferred), otherwise optimized loader
         if PARALLEL_LOADER_AVAILABLE:
             # Check if "5" subdirectory exists, otherwise use main path
@@ -3745,7 +3750,111 @@ class ManufacturingSupplyChainAI:
 
         except Exception as e:
             print(f"Error loading data: {e}")
+            
+        # Initialize time-phased PO delivery data after all base data is loaded
+        self.initialize_time_phased_data()
     
+    def initialize_time_phased_data(self):
+        """
+        Initialize time-phased PO delivery schedules and planning
+        Integrates Expected_Yarn_Report.xlsx with existing yarn data
+        """
+        try:
+            # Import time-phased components
+            from src.data_loaders.po_delivery_loader import PODeliveryLoader
+            from src.production.time_phased_planning import TimePhasedPlanning
+            
+            # Initialize loaders
+            po_loader = PODeliveryLoader()
+            time_planner = TimePhasedPlanning()
+            
+            # Find Expected_Yarn_Report file
+            expected_yarn_paths = [
+                self.data_path / "production" / "5" / "ERP Data" / "8-28-2025" / "Expected_Yarn_Report.xlsx",
+                self.data_path / "production" / "5" / "ERP Data" / "8-28-2025" / "Expected_Yarn_Report.csv",
+                self.data_path / "production" / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx",
+                self.data_path / "production" / "5" / "ERP Data" / "Expected_Yarn_Report.csv",
+                self.data_path / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx",
+                self.data_path / "5" / "ERP Data" / "Expected_Yarn_Report.csv"
+            ]
+            
+            po_file = None
+            for path in expected_yarn_paths:
+                if path.exists():
+                    po_file = path
+                    break
+            
+            if po_file:
+                # Load PO delivery data
+                po_data = po_loader.load_po_deliveries(str(po_file))
+                self.po_delivery_data = po_data
+                
+                # Map to weekly buckets
+                weekly_data = po_loader.map_to_weekly_buckets(po_data)
+                
+                # Aggregate by yarn
+                self.yarn_weekly_receipts = po_loader.aggregate_by_yarn(weekly_data)
+                
+                # Enable time-phased features
+                self.time_phased_enabled = True
+                
+                print(f"[TIME-PHASED] Loaded PO deliveries for {len(self.yarn_weekly_receipts)} yarns from {po_file}")
+                print(f"[TIME-PHASED] Time-phased planning enabled")
+                
+            else:
+                print("[TIME-PHASED] Expected_Yarn_Report not found, time-phased planning disabled")
+                self.time_phased_enabled = False
+                
+        except ImportError as e:
+            print(f"[TIME-PHASED] Time-phased modules not available: {e}")
+            self.time_phased_enabled = False
+        except Exception as e:
+            print(f"[TIME-PHASED] Error initializing time-phased data: {e}")
+            self.time_phased_enabled = False
+    
+    def get_yarn_time_phased_data(self, yarn_id: str) -> dict:
+        """
+        Get time-phased analysis for a specific yarn
+        
+        Args:
+            yarn_id: Yarn identifier
+            
+        Returns:
+            Complete time-phased analysis including weekly balances and shortage timeline
+        """
+        if not self.time_phased_enabled:
+            return {'error': 'Time-phased planning not available'}
+        
+        try:
+            from src.production.time_phased_planning import TimePhasedPlanning, create_mock_demand_schedule
+            
+            # Find yarn in current data
+            yarn_data = None
+            if self.yarn_data is not None and not self.yarn_data.empty:
+                # Look for yarn by Desc# (yarn ID)
+                yarn_matches = self.yarn_data[self.yarn_data['Desc#'].astype(str) == str(yarn_id)]
+                if not yarn_matches.empty:
+                    yarn_data = yarn_matches.iloc[0].to_dict()
+            
+            if yarn_data is None:
+                return {'error': f'Yarn {yarn_id} not found in inventory data'}
+            
+            # Get weekly receipts for this yarn
+            weekly_receipts = self.yarn_weekly_receipts.get(str(yarn_id), {})
+            
+            # Create mock demand schedule based on allocated amount
+            allocated = yarn_data.get('Allocated', 0)
+            weekly_demand = create_mock_demand_schedule(yarn_id, allocated, 9)
+            
+            # Process time-phased analysis
+            planner = TimePhasedPlanning()
+            result = planner.process_yarn_time_phased(yarn_data, weekly_receipts, weekly_demand)
+            
+            return result
+            
+        except Exception as e:
+            return {'error': f'Error processing time-phased data for yarn {yarn_id}: {e}'}
+
     def load_knit_orders(self):
         """
         Task 3.1: Comprehensive Knit Order Data Loading
@@ -12246,6 +12355,274 @@ def clean_for_json(obj):
         return None
     else:
         return obj
+
+# Time-Phased Planning API Endpoints (NEW)
+@app.route("/api/yarn-shortage-timeline")
+def yarn_shortage_timeline():
+    """
+    Returns weekly shortage progression for all yarns with time-phased analysis
+    
+    Parameters:
+    - yarn_id: specific yarn to analyze (optional)
+    - weeks: number of weeks horizon (default: 9)
+    - format: response format (json|detailed)
+    
+    Response format:
+    {
+        "yarns": {
+            "18884": {
+                "weekly_balance": {"week_36": -6349.71, "week_37": -14943.50, ...},
+                "shortage_weeks": [36, 37, 38, 39, 40, 41, 42],
+                "recovery_week": 43,
+                "expedite_recommendations": [...]
+            }
+        }
+    }
+    """
+    global new_api_count
+    new_api_count += 1
+    
+    try:
+        # Get parameters
+        yarn_id = request.args.get('yarn_id')
+        weeks_horizon = int(request.args.get('weeks', '9'))
+        response_format = request.args.get('format', 'json')
+        
+        if not analyzer.time_phased_enabled:
+            return jsonify({
+                'error': 'Time-phased planning not enabled',
+                'message': 'Expected_Yarn_Report.xlsx not found or time-phased modules unavailable'
+            }), 501
+        
+        result = {'yarns': {}, 'summary': {}, 'timestamp': datetime.now().isoformat()}
+        
+        # Process specific yarn or all yarns with PO data
+        if yarn_id:
+            yarn_analysis = analyzer.get_yarn_time_phased_data(yarn_id)
+            if 'error' not in yarn_analysis:
+                result['yarns'][yarn_id] = yarn_analysis
+        else:
+            # Process all yarns with weekly receipts
+            processed_count = 0
+            for yarn_id in list(analyzer.yarn_weekly_receipts.keys())[:20]:  # Limit for performance
+                yarn_analysis = analyzer.get_yarn_time_phased_data(yarn_id)
+                if 'error' not in yarn_analysis:
+                    result['yarns'][yarn_id] = yarn_analysis
+                    processed_count += 1
+            
+            result['summary'] = {
+                'processed_yarns': processed_count,
+                'total_available': len(analyzer.yarn_weekly_receipts),
+                'shortage_yarns': sum(1 for y in result['yarns'].values() if y.get('has_shortage', False))
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/po-delivery-schedule")
+def po_delivery_schedule():
+    """
+    Returns PO receipt timing by yarn with weekly breakdown
+    
+    Parameters:
+    - yarn_id: specific yarn (optional)
+    - include_totals: include summary totals (default: true)
+    
+    Response format:
+    {
+        "deliveries": {
+            "18884": {
+                "past_due": 20161.30,
+                "week_36": 0, "week_37": 0, ..., 
+                "week_43": 4000, "week_44": 4000,
+                "later": 8000,
+                "total_on_order": 36161.30
+            }
+        }
+    }
+    """
+    global new_api_count
+    new_api_count += 1
+    
+    try:
+        yarn_id = request.args.get('yarn_id')
+        include_totals = request.args.get('include_totals', 'true').lower() == 'true'
+        
+        if not analyzer.time_phased_enabled:
+            return jsonify({
+                'error': 'Time-phased planning not enabled'
+            }), 501
+        
+        result = {'deliveries': {}, 'timestamp': datetime.now().isoformat()}
+        
+        if yarn_id:
+            if str(yarn_id) in analyzer.yarn_weekly_receipts:
+                receipts = analyzer.yarn_weekly_receipts[str(yarn_id)]
+                if include_totals:
+                    receipts['total_on_order'] = sum(receipts.values())
+                result['deliveries'][yarn_id] = receipts
+            else:
+                return jsonify({'error': f'No PO delivery data found for yarn {yarn_id}'}), 404
+        else:
+            # Return all yarns with PO data
+            for yarn_id, receipts in analyzer.yarn_weekly_receipts.items():
+                delivery_data = receipts.copy()
+                if include_totals:
+                    delivery_data['total_on_order'] = sum(receipts.values())
+                result['deliveries'][yarn_id] = delivery_data
+        
+        result['summary'] = {
+            'total_yarns': len(result['deliveries']),
+            'total_on_order_amount': sum(
+                d.get('total_on_order', 0) for d in result['deliveries'].values()
+            ) if include_totals else None
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/time-phased-planning")
+def time_phased_planning():
+    """
+    Complete weekly planning view with demand, receipts, and balance projections
+    
+    Parameters:
+    - yarn_id: specific yarn (optional)
+    - weeks: planning horizon (default: 9)
+    - include_demand: include demand projections (default: true)
+    
+    Response combines PO deliveries with projected demand to show weekly balance evolution
+    """
+    global new_api_count
+    new_api_count += 1
+    
+    try:
+        yarn_id = request.args.get('yarn_id')
+        weeks_horizon = int(request.args.get('weeks', '9'))
+        include_demand = request.args.get('include_demand', 'true').lower() == 'true'
+        
+        if not analyzer.time_phased_enabled:
+            return jsonify({
+                'error': 'Time-phased planning not enabled'
+            }), 501
+        
+        result = {
+            'planning_data': {},
+            'summary': {},
+            'configuration': {
+                'planning_horizon': weeks_horizon,
+                'current_week': 36,  # Base week
+                'include_demand': include_demand
+            },
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        if yarn_id:
+            # Single yarn analysis
+            planning_data = analyzer.get_yarn_time_phased_data(yarn_id)
+            if 'error' not in planning_data:
+                result['planning_data'][yarn_id] = planning_data
+        else:
+            # Multi-yarn analysis (limited for performance)
+            processed = 0
+            for yarn_id in list(analyzer.yarn_weekly_receipts.keys())[:10]:  # Top 10 for demo
+                planning_data = analyzer.get_yarn_time_phased_data(yarn_id)
+                if 'error' not in planning_data:
+                    result['planning_data'][yarn_id] = planning_data
+                    processed += 1
+        
+        # Generate summary
+        all_planning = result['planning_data'].values()
+        result['summary'] = {
+            'analyzed_yarns': len(all_planning),
+            'yarns_with_shortages': sum(1 for p in all_planning if p.get('has_shortage', False)),
+            'total_expedite_recommendations': sum(
+                len(p.get('expedite_recommendations', [])) for p in all_planning
+            )
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Enhanced existing yarn intelligence with time-phased option
+@app.route("/api/yarn-intelligence-enhanced")
+def yarn_intelligence_with_time_phased():
+    """
+    Enhanced yarn intelligence that optionally includes time-phased data
+    
+    Parameters:
+    - include_timing: include time-phased analysis (default: false)
+    - All parameters from /api/yarn-intelligence
+    """
+    global new_api_count
+    new_api_count += 1
+    
+    include_timing = request.args.get('include_timing', 'false').lower() == 'true'
+    
+    try:
+        # Get base yarn intelligence response
+        base_response = get_yarn_intelligence()
+        base_data = base_response.get_json()
+        
+        # Add time-phased data if requested and available
+        if include_timing and analyzer.time_phased_enabled:
+            # Enhance yarn data with time-phased information
+            enhanced_yarns = []
+            
+            for yarn in base_data.get('criticality_analysis', {}).get('yarns', []):
+                yarn_id = yarn.get('yarn_id') or yarn.get('Desc#')
+                if yarn_id and str(yarn_id) in analyzer.yarn_weekly_receipts:
+                    # Get time-phased data
+                    time_phased = analyzer.get_yarn_time_phased_data(str(yarn_id))
+                    if 'error' not in time_phased:
+                        # Add time-phased fields
+                        yarn['next_receipt_week'] = time_phased.get('next_receipt_week')
+                        yarn['weeks_until_receipt'] = time_phased.get('coverage_weeks')
+                        yarn['shortage_timeline'] = time_phased.get('shortage_periods', [])
+                        yarn['weekly_balances'] = time_phased.get('weekly_balances', {})
+                        yarn['time_phased_enabled'] = True
+                
+                enhanced_yarns.append(yarn)
+            
+            # Update response
+            base_data['criticality_analysis']['yarns'] = enhanced_yarns
+            base_data['time_phased_summary'] = {
+                'enabled': True,
+                'yarns_with_timing': len([y for y in enhanced_yarns if y.get('time_phased_enabled')])
+            }
+        else:
+            base_data['time_phased_summary'] = {
+                'enabled': analyzer.time_phased_enabled,
+                'reason': 'Not requested' if not include_timing else 'Not available'
+            }
+        
+        return jsonify(base_data)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/api/debug-time-phased-init")
+def debug_time_phased_init():
+    """Debug endpoint to manually trigger time-phased initialization"""
+    try:
+        result = analyzer.initialize_time_phased_data()
+        return jsonify({
+            'status': 'initialization_attempted',
+            'time_phased_enabled': analyzer.time_phased_enabled,
+            'yarn_weekly_receipts_count': len(analyzer.yarn_weekly_receipts),
+            'result': str(result)
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        })
 
 @app.route("/api/inventory-intelligence-enhanced")
 def get_inventory_intelligence_enhanced():

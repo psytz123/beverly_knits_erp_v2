@@ -5,7 +5,10 @@
       "Bash(curl:*)",
       "Bash(python3:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(pkill:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)"
     ],
     "deny": [],
     "ask": []
