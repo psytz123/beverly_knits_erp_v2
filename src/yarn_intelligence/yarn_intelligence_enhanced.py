@@ -12,6 +12,34 @@ import json
 import platform
 import math
 
+# Import column standardizer for flexible column detection
+try:
+    from src.utils.column_standardization import ColumnStandardizer
+except ImportError:
+    try:
+        from utils.column_standardization import ColumnStandardizer
+    except ImportError:
+        ColumnStandardizer = None
+
+# Helper function for flexible column detection
+def find_column(df, variations):
+    """Find first matching column from list of variations"""
+    if ColumnStandardizer:
+        return ColumnStandardizer.find_column(df, variations)
+    else:
+        if hasattr(df, 'columns'):
+            for col in variations:
+                if col in df.columns:
+                    return col
+    return None
+
+# Common column variations
+YARN_ID_VARIATIONS = ['Desc#', 'desc#', 'Yarn', 'yarn', 'Yarn_ID', 'YarnID', 'yarn_id']
+PLANNING_BALANCE_VARIATIONS = ['Planning Balance', 'Planning_Balance', 'Planning_Ballance', 'planning_balance']
+ALLOCATED_VARIATIONS = ['Allocated', 'allocated']
+ON_ORDER_VARIATIONS = ['On Order', 'On_Order', 'on_order']
+THEORETICAL_BALANCE_VARIATIONS = ['Theoretical Balance', 'Theoretical_Balance', 'theoretical_balance']
+
 def clean_for_json(obj):
     """Clean NaN and Infinity values for JSON serialization"""
     if isinstance(obj, dict):
@@ -106,7 +134,9 @@ class YarnIntelligenceEngine:
         
         # Merge inventory and demand data
         for idx, yarn_inv in self.yarn_inventory.iterrows():
-            yarn_id = yarn_inv['Desc#']
+            # Use flexible column detection for yarn ID
+            yarn_id_col = find_column(pd.DataFrame([yarn_inv]), YARN_ID_VARIATIONS)
+            yarn_id = yarn_inv.get(yarn_id_col, yarn_inv.get('Desc#', 'Unknown'))
             description = yarn_inv.get('Description', '')
             supplier = yarn_inv.get('Supplier', 'Unknown')
             
@@ -440,7 +470,12 @@ class YarnIntelligenceEngine:
         substitution_opportunities = []
         
         # Get yarns with negative planning balance
-        negative_yarns = self.yarn_inventory[self.yarn_inventory['Planning Balance'] < 0].copy()
+        # Find Planning Balance column
+        planning_col = find_column(self.yarn_inventory, PLANNING_BALANCE_VARIATIONS)
+        if not planning_col:
+            return []
+        
+        negative_yarns = self.yarn_inventory[self.yarn_inventory[planning_col] < 0].copy()
         
         for _, neg_yarn in negative_yarns.iterrows():
             yarn_id = neg_yarn['Desc#']

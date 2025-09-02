@@ -1,10 +1,29 @@
 # Data file configuration for Beverly Knits ERP
-# Points to the latest data files in prompts/5 directory
+# Integrated with PostgreSQL database and centralized data source
 
 import os
+import json
+from pathlib import Path
 
-# Base data directory
-DATA_BASE_DIR = "/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/prompts/5"
+# Load unified configuration
+config_path = Path(__file__).parent.parent / 'config' / 'unified_config.json'
+if config_path.exists():
+    with open(config_path, 'r') as f:
+        unified_config = json.load(f)
+else:
+    unified_config = {"data_source": {"files": {"primary_path": "/mnt/c/Users/psytz/sc data/ERP Data"}}}
+
+# Base data directory - now points to centralized location
+DATA_BASE_DIR = unified_config["data_source"]["files"]["primary_path"]
+
+# Fallback to latest data if primary path doesn't have files
+if not os.path.exists(DATA_BASE_DIR) or not os.listdir(DATA_BASE_DIR):
+    # Try to find most recent data folder
+    for date_folder in ['8-28-2025', '8-26-2025', '8-24-2025', '8-22-2025']:
+        test_path = os.path.join(DATA_BASE_DIR, date_folder)
+        if os.path.exists(test_path):
+            DATA_BASE_DIR = test_path
+            break
 
 # Define file paths for each data type
 DATA_FILES = {

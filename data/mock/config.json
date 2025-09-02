@@ -1,0 +1,20 @@
+{
+  "data_source": {
+    "type": "mock",
+    "files": {
+      "primary_path": "/mnt/c/finalee/beverly_knits_erp_v2/data/mock",
+      "fallback_path": "/mnt/c/finalee/beverly_knits_erp_v2/data/mock/5/ERP Data"
+    }
+  },
+  "mock_settings": {
+    "enabled": true,
+    "realistic": true,
+    "record_counts": {
+      "yarns": 1200,
+      "styles": 300,
+      "sales": 10000,
+      "knit_orders": 1500,
+      "bom_entries": 28000
+    }
+  }
+}

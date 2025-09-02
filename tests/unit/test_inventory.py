@@ -23,6 +23,14 @@ class TestInventoryAnalyzer:
     """Test suite for InventoryAnalyzer class"""
     
     @pytest.fixture
+    def inventory_analyzer(self, sample_yarn_data, sample_demand_data):
+        """Create a properly initialized InventoryAnalyzer"""
+        analyzer = erp.InventoryAnalyzer()
+        analyzer.yarn_inventory = sample_yarn_data
+        analyzer.yarn_demand = sample_demand_data
+        return analyzer
+    
+    @pytest.fixture
     def sample_yarn_data(self):
         """Create sample yarn inventory data"""
         return pd.DataFrame({
@@ -231,6 +239,8 @@ class TestInventoryAnalyzer:
     
     def test_json_serialization(self, inventory_analyzer):
         """Test JSON serialization of numpy types"""
+        analyzer = inventory_analyzer
+        
         # This tests the clean_for_json function
         data = {
             'numpy_float': np.float64(10.5),

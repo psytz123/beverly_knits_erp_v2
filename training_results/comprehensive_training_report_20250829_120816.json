@@ -1,0 +1,133 @@
+{
+  "training_timestamp": "2025-08-29T12:08:16.718375",
+  "data_sources": {
+    "erp_data_path": "/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data",
+    "historical_periods": [
+      "current",
+      "8-22-2025",
+      "8-24-2025",
+      "8-26-2025",
+      "8-28-2025"
+    ],
+    "total_records": {
+      "yarn_inventory": 4795,
+      "knit_orders": 596,
+      "sales_orders": 532,
+      "yarn_demand": 5178,
+      "bom_entries": 28653
+    }
+  },
+  "models_trained": {
+    "demand_forecasting": {
+      "models_trained": [
+        "ARIMA",
+        "Prophet",
+        "XGBoost",
+        "LSTM"
+      ],
+      "training_samples": 386,
+      "date_range": "2024-09-23 00:00:00 to 2025-10-13 00:00:00",
+      "metrics": {
+        "arima": {
+          "mape": Infinity,
+          "aic": 9072.240070500033,
+          "bic": 9103.866017174336
+        },
+        "prophet": {
+          "mape": 276.88504994530643,
+          "trend_strength": 1.8915059440969726
+        },
+        "xgboost": {
+          "mape": 1.120707902985103e+21,
+          "feature_importance": {
+            "day_of_week": 0.009862669743597507,
+            "month": 0.0037274055648595095,
+            "quarter": 0.0,
+            "day_of_month": 0.008089164271950722,
+            "lag_1": 0.02060098759829998,
+            "lag_7": 0.01549446675926447,
+            "lag_14": 0.19708256423473358,
+            "lag_30": 0.2891562879085541,
+            "rolling_mean_7": 0.044386837631464005,
+            "rolling_std_7": 0.14769145846366882,
+            "rolling_mean_14": 0.03896968811750412,
+            "rolling_std_14": 0.017024416476488113,
+            "rolling_mean_30": 0.20349712669849396,
+            "rolling_std_30": 0.004417031537741423
+          },
+          "test_size": 72
+        },
+        "lstm": {
+          "mape": Infinity,
+          "final_loss": 0.007875652052462101,
+          "epochs_trained": 32
+        }
+      }
+    },
+    "production_efficiency": {
+      "model": "GradientBoosting",
+      "samples": 95,
+      "avg_efficiency": 0.1405523367862229,
+      "mae": 0.0389515948902187,
+      "r2_score": 0.7917677776335798
+    }
+  },
+  "model_metrics": {
+    "arima": {
+      "mape": Infinity,
+      "aic": 9072.240070500033,
+      "bic": 9103.866017174336
+    },
+    "prophet": {
+      "mape": 276.88504994530643,
+      "trend_strength": 1.8915059440969726
+    },
+    "xgboost": {
+      "mape": 1.120707902985103e+21,
+      "feature_importance": {
+        "day_of_week": 0.009862669743597507,
+        "month": 0.0037274055648595095,
+        "quarter": 0.0,
+        "day_of_month": 0.008089164271950722,
+        "lag_1": 0.02060098759829998,
+        "lag_7": 0.01549446675926447,
+        "lag_14": 0.19708256423473358,
+        "lag_30": 0.2891562879085541,
+        "rolling_mean_7": 0.044386837631464005,
+        "rolling_std_7": 0.14769145846366882,
+        "rolling_mean_14": 0.03896968811750412,
+        "rolling_std_14": 0.017024416476488113,
+        "rolling_mean_30": 0.20349712669849396,
+        "rolling_std_30": 0.004417031537741423
+      },
+      "test_size": 72
+    },
+    "lstm": {
+      "mape": Infinity,
+      "final_loss": 0.007875652052462101,
+      "epochs_trained": 32
+    }
+  },
+  "model_files": {
+    "demand_forecasting": [
+      "/mnt/c/finalee/beverly_knits_erp_v2/models/arima_demand_model.pkl",
+      "/mnt/c/finalee/beverly_knits_erp_v2/models/prophet_demand_model.pkl",
+      "/mnt/c/finalee/beverly_knits_erp_v2/models/xgboost_demand_model.pkl",
+      "/mnt/c/finalee/beverly_knits_erp_v2/models/lstm_demand_model.h5"
+    ],
+    "yarn_optimization": [
+      "/mnt/c/finalee/beverly_knits_erp_v2/models/yarn_optimization_rf.pkl",
+      "/mnt/c/finalee/beverly_knits_erp_v2/models/yarn_features.pkl"
+    ],
+    "production_efficiency": [
+      "/mnt/c/finalee/beverly_knits_erp_v2/models/production_efficiency_model.pkl",
+      "/mnt/c/finalee/beverly_knits_erp_v2/models/production_features.pkl"
+    ]
+  },
+  "recommendations": {
+    "best_performing_model": "prophet",
+    "deployment_ready": true,
+    "suggested_retraining_frequency": "Weekly",
+    "data_quality_notes": "Ensure consistent date formats and complete yarn IDs for optimal performance"
+  }
+}

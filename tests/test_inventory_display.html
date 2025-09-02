@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Data Test</title>
+</head>
+<body>
+    <h1>Beverly Knits Inventory Data Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const API_BASE = 'http://localhost:5006';
+        const resultsDiv = document.getElementById('results');
+        
+        async function testAPIs() {
+            resultsDiv.innerHTML = '<h2>Testing APIs...</h2>';
+            
+            // Test yarn-intelligence
+            try {
+                const resp1 = await fetch(API_BASE + '/api/yarn-intelligence');
+                const data1 = await resp1.json();
+                resultsDiv.innerHTML += `
+                    <h3>✅ Yarn Intelligence API:</h3>
+                    <ul>
+                        <li>Total Yarns: ${data1.criticality_analysis.summary.total_yarns}</li>
+                        <li>Yarns with Shortage: ${data1.criticality_analysis.summary.yarns_with_shortage}</li>
+                        <li>Critical Count: ${data1.criticality_analysis.summary.critical_count}</li>
+                        <li>High Count: ${data1.criticality_analysis.summary.high_count}</li>
+                        <li>Total Shortage: ${data1.criticality_analysis.summary.total_shortage_lbs.toFixed(2)} lbs</li>
+                    </ul>
+                `;
+                
+                // Show first 3 shortage yarns
+                if (data1.criticality_analysis.yarns && data1.criticality_analysis.yarns.length > 0) {
+                    resultsDiv.innerHTML += '<h4>Top 3 Shortages:</h4><ol>';
+                    data1.criticality_analysis.yarns.slice(0, 3).forEach(yarn => {
+                        resultsDiv.innerHTML += `<li>${yarn.description} - Shortage: ${yarn.shortage.toFixed(2)} lbs</li>`;
+                    });
+                    resultsDiv.innerHTML += '</ol>';
+                }
+            } catch (e) {
+                resultsDiv.innerHTML += `<p>❌ Error loading yarn-intelligence: ${e.message}</p>`;
+            }
+            
+            // Test inventory-intelligence-enhanced
+            try {
+                const resp2 = await fetch(API_BASE + '/api/inventory-intelligence-enhanced?realtime=true');
+                const data2 = await resp2.json();
+                resultsDiv.innerHTML += `
+                    <h3>✅ Inventory Intelligence Enhanced API:</h3>
+                    <ul>
+                        <li>Overall Health: ${data2.summary.overall_health}</li>
+                        <li>Total Risk Value: ${data2.summary.total_risk_value.toFixed(2)} lbs</li>
+                        <li>Action Items: ${data2.summary.action_items_count}</li>
+                    </ul>
+                `;
+            } catch (e) {
+                resultsDiv.innerHTML += `<p>❌ Error loading inventory-intelligence-enhanced: ${e.message}</p>`;
+            }
+            
+            // Test comprehensive-kpis
+            try {
+                const resp3 = await fetch(API_BASE + '/api/comprehensive-kpis');
+                const data3 = await resp3.json();
+                resultsDiv.innerHTML += `
+                    <h3>✅ Comprehensive KPIs API:</h3>
+                    <ul>
+                        <li>Total Yarns: ${data3.total_yarns}</li>
+                        <li>Low Stock Items: ${data3.low_stock_items}</li>
+                        <li>Critical Alerts: ${data3.critical_alerts}</li>
+                        <li>Inventory Value: ${data3.inventory_value}</li>
+                    </ul>
+                `;
+            } catch (e) {
+                resultsDiv.innerHTML += `<p>❌ Error loading comprehensive-kpis: ${e.message}</p>`;
+            }
+        }
+        
+        // Run tests on load
+        testAPIs();
+    </script>
+</body>
+</html>

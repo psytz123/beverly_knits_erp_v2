@@ -5,9 +5,26 @@
       "Bash(grep:*)",
       "Read(//mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/**)",
       "Read(//mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/**)",
-      "Read(//mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/**)"
+      "Read(//mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/**)",
+      "Bash(find:*)",
+      "Bash(python test:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(sed:*)",
+      "Bash(cd:*)",
+      "Bash(for file in *.xlsx)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)",
+      "Bash(head:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "filesystem",
+    "memory",
+    "git"
+  ]
 }

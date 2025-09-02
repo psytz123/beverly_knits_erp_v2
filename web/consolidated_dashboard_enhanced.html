@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<!-- Version: 2025-08-29-enhanced-ui-ux -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Beverly Knits Enhanced ERP Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* Enhanced Color Scheme */
+        :root {
+            --primary-blue: #1e3a6f;
+            --dark-blue: #162850;
+            --light-blue: #2d4a7c;
+            --accent-gray: #9ca3af;
+            --light-gray: #f3f4f6;
+            --white: #ffffff;
+            --success-green: #10b981;
+            --warning-yellow: #f59e0b;
+            --danger-red: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: linear-gradient(180deg, var(--light-gray) 0%, #e5e7eb 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Enhanced Tab Navigation */
+        .tab-navigation {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: var(--dark-blue);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+
+        .tab-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .tab-container::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        .tab-button {
+            position: relative;
+            padding: 12px 24px;
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-button:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .tab-button.active {
+            background: var(--white);
+            color: var(--primary-blue);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: var(--primary-blue);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .tab-badge {
+            background: var(--danger-red);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Enhanced Cards */
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--light-blue));
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Enhanced Table with Sticky Header */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .table-header {
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-scroll-wrapper {
+            max-height: 500px;
+            overflow-y: auto;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-track {
+            background: var(--light-gray);
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-thumb {
+            background: var(--accent-gray);
+            border-radius: 4px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .data-table th {
+            background: var(--primary-blue);
+            color: white;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            user-select: none;
+        }
+
+        .data-table th.sortable {
+            cursor: pointer;
+        }
+
+        .data-table th.sortable:hover {
+            background: var(--light-blue);
+        }
+
+        .data-table th.sortable::after {
+            content: '⇅';
+            position: absolute;
+            right: 8px;
+            opacity: 0.3;
+            font-size: 12px;
+        }
+
+        .data-table th.sorted-asc::after {
+            content: '↑';
+            opacity: 1;
+        }
+
+        .data-table th.sorted-desc::after {
+            content: '↓';
+            opacity: 1;
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .data-table tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(30, 58, 111, 0.05);
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: rgba(243, 244, 246, 0.5);
+        }
+
+        /* Pagination Controls */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: white;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .pagination-info {
+            color: var(--accent-gray);
+            font-size: 0.875rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .pagination-button {
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            color: var(--dark-blue);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .pagination-button:hover:not(:disabled) {
+            background: var(--light-gray);
+            border-color: var(--primary-blue);
+        }
+
+        .pagination-button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-button.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .page-size-selector {
+            padding: 6px 10px;
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            background: white;
+            color: var(--dark-blue);
+            font-size: 0.875rem;
+            margin-left: 8px;
+        }
+
+        /* Search and Filter Bar */
+        .search-filter-bar {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: white;
+            border-bottom: 1px solid var(--light-gray);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-container {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30, 58, 111, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-gray);
+        }
+
+        .filter-dropdown {
+            position: relative;
+        }
+
+        .filter-button {
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            color: var(--dark-blue);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-button:hover {
+            background: var(--light-gray);
+        }
+
+        .filter-button.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        /* Loading States */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--light-gray);
+            border-top-color: var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .skeleton-loader {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+            border-radius: 4px;
+            height: 20px;
+            margin: 8px 0;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            background: var(--primary-blue);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            background: var(--light-blue);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 8px;
+            padding: 16px 20px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success-green);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger-red);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning-yellow);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .tab-button {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+            }
+
+            .metric-card {
+                padding: 16px;
+            }
+
+            .search-filter-bar {
+                flex-direction: column;
+            }
+
+            .search-container {
+                width: 100%;
+            }
+
+            .pagination-container {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Header -->
+    <header style="background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue)); box-shadow: var(--shadow-lg);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-5 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div style="width: 180px; height: 50px; display: flex; align-items: center;">
+                        <svg viewBox="0 0 180 50" style="width: 100%; height: 100%;">
+                            <text x="10" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white">Beverly</text>
+                            <text x="90" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="300" fill="#9ca3af">Knits</text>
+                        </svg>
+                    </div>
+                    <div style="border-left: 2px solid rgba(255,255,255,0.2); padding-left: 16px;">
+                        <h1 style="color: white; font-size: 1.5rem; font-weight: 600; margin: 0;">
+                            ERP Dashboard
+                        </h1>
+                        <p style="color: rgba(255,255,255,0.7); font-size: 0.875rem; margin: 0;">
+                            AI-Powered Supply Chain Intelligence
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex flex-col items-end">
+                        <span style="padding: 6px 16px; background: rgba(255,255,255,0.1); color: white; border-radius: 4px; font-size: 0.875rem; font-weight: 500; display: flex; align-items: center;">
+                            <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                            System Active
+                        </span>
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6);" id="lastUpdate">
+                            Last update: --
+                        </span>
+                    </div>
+                    <button onclick="refreshAllData()" class="px-6 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-all duration-200 flex items-center gap-2">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="tab-container">
+                <button class="tab-button active" onclick="switchTab('overview', event)">
+                    <i class="fas fa-chart-pie"></i>
+                    Overview
+                    <span class="tab-badge" id="overviewBadge" style="display: none;">0</span>
+                </button>
+                <button class="tab-button" onclick="switchTab('production', event)">
+                    <i class="fas fa-industry"></i>
+                    Production
+                    <span class="tab-badge" id="productionBadge" style="display: none;">0</span>
+                </button>
+                <button class="tab-button" onclick="switchTab('inventory', event)">
+                    <i class="fas fa-warehouse"></i>
+                    Inventory
+                    <span class="tab-badge" id="inventoryBadge" style="display: none;">0</span>
+                </button>
+                <button class="tab-button" onclick="switchTab('planning', event)">
+                    <i class="fas fa-project-diagram"></i>
+                    Planning
+                </button>
+                <button class="tab-button" onclick="switchTab('forecasting', event)">
+                    <i class="fas fa-chart-line"></i>
+                    ML Forecasting
+                </button>
+                <button class="tab-button" onclick="switchTab('analytics', event)">
+                    <i class="fas fa-analytics"></i>
+                    Analytics
+                </button>
+                <button class="tab-button" onclick="switchTab('suppliers', event)">
+                    <i class="fas fa-truck"></i>
+                    Suppliers
+                </button>
+                <button class="tab-button" onclick="switchTab('knitOrders', event)">
+                    <i class="fas fa-clipboard-list"></i>
+                    Knit Orders
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content active">
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Total Inventory Value</p>
+                            <p class="text-3xl font-bold text-green-600" id="inventoryValue">
+                                <span class="skeleton-loader" style="width: 100px; display: inline-block;">⠀</span>
+                            </p>
+                            <p class="text-xs text-gray-500 mt-2" id="inventoryCount">-- items</p>
+                        </div>
+                        <div class="text-3xl text-green-500 opacity-20">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Active Orders</p>
+                            <p class="text-3xl font-bold text-blue-600" id="activeOrders">
+                                <span class="skeleton-loader" style="width: 60px; display: inline-block;">⠀</span>
+                            </p>
+                            <p class="text-xs text-gray-500 mt-2" id="orderValue">-- value</p>
+                        </div>
+                        <div class="text-3xl text-blue-500 opacity-20">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Critical Alerts</p>
+                            <p class="text-3xl font-bold text-orange-600" id="alertCount">
+                                <span class="skeleton-loader" style="width: 40px; display: inline-block;">⠀</span>
+                            </p>
+                            <p class="text-xs text-gray-500 mt-2" id="alertTypes">-- types</p>
+                        </div>
+                        <div class="text-3xl text-orange-500 opacity-20">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Forecast Accuracy</p>
+                            <p class="text-3xl font-bold text-purple-600" id="forecastAccuracy">
+                                <span class="skeleton-loader" style="width: 80px; display: inline-block;">⠀</span>
+                            </p>
+                            <p class="text-xs text-gray-500 mt-2" id="forecastModel">-- model</p>
+                        </div>
+                        <div class="text-3xl text-purple-500 opacity-20">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2 class="text-lg font-bold">Inventory Trends</h2>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="inventoryChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2 class="text-lg font-bold">Production Output</h2>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="productionChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Tab with Enhanced Table -->
+        <div id="production-tab" class="tab-content">
+            <div class="table-container mb-6">
+                <div class="table-header">
+                    <h2 class="text-lg font-bold">Production Orders</h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportTable('production')" class="px-4 py-2 bg-white bg-opacity-20 rounded hover:bg-opacity-30 transition">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Search and Filter Bar -->
+                <div class="search-filter-bar">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="productionSearch" 
+                            class="search-input" 
+                            placeholder="Search orders..."
+                            onkeyup="filterTable('production')"
+                        >
+                    </div>
+                    
+                    <div class="filter-dropdown">
+                        <button class="filter-button" onclick="toggleFilter('status')">
+                            <i class="fas fa-filter"></i>
+                            Status
+                        </button>
+                    </div>
+                    
+                    <div class="filter-dropdown">
+                        <button class="filter-button" onclick="toggleFilter('priority')">
+                            <i class="fas fa-flag"></i>
+                            Priority
+                        </button>
+                    </div>
+                    
+                    <button class="filter-button" onclick="clearFilters('production')">
+                        <i class="fas fa-times"></i>
+                        Clear
+                    </button>
+                </div>
+                
+                <!-- Table with Scrolling -->
+                <div class="table-scroll-wrapper">
+                    <table class="data-table" id="productionTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortTable('production', 0)">Order #</th>
+                                <th class="sortable" onclick="sortTable('production', 1)">Style</th>
+                                <th class="sortable" onclick="sortTable('production', 2)">Quantity</th>
+                                <th class="sortable" onclick="sortTable('production', 3)">Due Date</th>
+                                <th class="sortable" onclick="sortTable('production', 4)">Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productionTableBody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Showing <span id="productionStart">1</span> to <span id="productionEnd">10</span> 
+                        of <span id="productionTotal">0</span> entries
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="pagination-button" onclick="changePage('production', 'prev')" id="productionPrevBtn">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div id="productionPageNumbers" class="flex gap-2">
+                            <!-- Dynamic page numbers -->
+                        </div>
+                        <button class="pagination-button" onclick="changePage('production', 'next')" id="productionNextBtn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <select class="page-size-selector" onchange="changePageSize('production', this.value)">
+                            <option value="10">10 per page</option>
+                            <option value="25">25 per page</option>
+                            <option value="50">50 per page</option>
+                            <option value="100">100 per page</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Tab with Enhanced Features -->
+        <div id="inventory-tab" class="tab-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <h2 class="text-lg font-bold">Yarn Inventory</h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportTable('inventory')" class="px-4 py-2 bg-white bg-opacity-20 rounded hover:bg-opacity-30 transition">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Search and Filter Bar -->
+                <div class="search-filter-bar">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="inventorySearch" 
+                            class="search-input" 
+                            placeholder="Search yarn..."
+                            onkeyup="filterTable('inventory')"
+                        >
+                    </div>
+                    
+                    <button class="filter-button" onclick="toggleFilter('shortage')">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Shortages Only
+                    </button>
+                    
+                    <button class="filter-button" onclick="toggleFilter('lowStock')">
+                        <i class="fas fa-box"></i>
+                        Low Stock
+                    </button>
+                </div>
+                
+                <!-- Table with Scrolling -->
+                <div class="table-scroll-wrapper">
+                    <table class="data-table" id="inventoryTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortTable('inventory', 0)">Yarn ID</th>
+                                <th class="sortable" onclick="sortTable('inventory', 1)">Description</th>
+                                <th class="sortable" onclick="sortTable('inventory', 2)">Available</th>
+                                <th class="sortable" onclick="sortTable('inventory', 3)">Allocated</th>
+                                <th class="sortable" onclick="sortTable('inventory', 4)">Planning Balance</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Showing <span id="inventoryStart">1</span> to <span id="inventoryEnd">10</span> 
+                        of <span id="inventoryTotal">0</span> entries
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="pagination-button" onclick="changePage('inventory', 'prev')">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <div id="inventoryPageNumbers" class="flex gap-2">
+                            <!-- Dynamic page numbers -->
+                        </div>
+                        <button class="pagination-button" onclick="changePage('inventory', 'next')">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <select class="page-size-selector" onchange="changePageSize('inventory', this.value)">
+                            <option value="10">10 per page</option>
+                            <option value="25">25 per page</option>
+                            <option value="50">50 per page</option>
+                            <option value="100">100 per page</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other tabs remain similar but with enhanced features -->
+        <div id="planning-tab" class="tab-content">
+            <div class="metric-card">
+                <h2 class="text-xl font-bold mb-4">Planning Dashboard</h2>
+                <p>Enhanced planning features coming soon...</p>
+            </div>
+        </div>
+
+        <div id="forecasting-tab" class="tab-content">
+            <div class="metric-card">
+                <h2 class="text-xl font-bold mb-4">ML Forecasting</h2>
+                <p>Enhanced forecasting features coming soon...</p>
+            </div>
+        </div>
+
+        <div id="analytics-tab" class="tab-content">
+            <div class="metric-card">
+                <h2 class="text-xl font-bold mb-4">Analytics Dashboard</h2>
+                <p>Enhanced analytics features coming soon...</p>
+            </div>
+        </div>
+
+        <div id="suppliers-tab" class="tab-content">
+            <div class="metric-card">
+                <h2 class="text-xl font-bold mb-4">Supplier Management</h2>
+                <p>Enhanced supplier features coming soon...</p>
+            </div>
+        </div>
+
+        <div id="knitOrders-tab" class="tab-content">
+            <div class="metric-card">
+                <h2 class="text-xl font-bold mb-4">Knit Orders</h2>
+                <p>Enhanced knit order features coming soon...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+
+    <script>
+        // Enhanced JavaScript functionality
+        let currentPage = {};
+        let pageSize = {};
+        let tableData = {};
+        let filteredData = {};
+        let sortState = {};
+
+        // Initialize pagination for each table
+        ['production', 'inventory'].forEach(table => {
+            currentPage[table] = 1;
+            pageSize[table] = 10;
+            tableData[table] = [];
+            filteredData[table] = [];
+            sortState[table] = { column: -1, ascending: true };
+        });
+
+        // Tab switching with animation
+        function switchTab(tabName, event) {
+            if (event) event.preventDefault();
+            
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName + '-tab');
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to clicked button
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+            
+            // Load tab-specific data
+            loadTabData(tabName);
+        }
+
+        // Load tab-specific data
+        function loadTabData(tabName) {
+            showLoading();
+            
+            setTimeout(() => {
+                // Simulate data loading
+                if (tabName === 'production') {
+                    loadProductionData();
+                } else if (tabName === 'inventory') {
+                    loadInventoryData();
+                }
+                hideLoading();
+            }, 500);
+        }
+
+        // Pagination functions
+        function changePage(table, direction) {
+            const totalPages = Math.ceil(filteredData[table].length / pageSize[table]);
+            
+            if (direction === 'prev' && currentPage[table] > 1) {
+                currentPage[table]--;
+            } else if (direction === 'next' && currentPage[table] < totalPages) {
+                currentPage[table]++;
+            } else if (typeof direction === 'number') {
+                currentPage[table] = direction;
+            }
+            
+            renderTable(table);
+            updatePaginationControls(table);
+        }
+
+        function changePageSize(table, size) {
+            pageSize[table] = parseInt(size);
+            currentPage[table] = 1;
+            renderTable(table);
+            updatePaginationControls(table);
+        }
+
+        function updatePaginationControls(table) {
+            const total = filteredData[table].length;
+            const totalPages = Math.ceil(total / pageSize[table]);
+            const start = (currentPage[table] - 1) * pageSize[table] + 1;
+            const end = Math.min(currentPage[table] * pageSize[table], total);
+            
+            // Update info
+            document.getElementById(table + 'Start').textContent = start;
+            document.getElementById(table + 'End').textContent = end;
+            document.getElementById(table + 'Total').textContent = total;
+            
+            // Update buttons
+            const prevBtn = document.getElementById(table + 'PrevBtn');
+            const nextBtn = document.getElementById(table + 'NextBtn');
+            
+            if (prevBtn) prevBtn.disabled = currentPage[table] === 1;
+            if (nextBtn) nextBtn.disabled = currentPage[table] === totalPages;
+            
+            // Update page numbers
+            const pageNumbersDiv = document.getElementById(table + 'PageNumbers');
+            if (pageNumbersDiv) {
+                pageNumbersDiv.innerHTML = '';
+                
+                // Show max 5 page numbers
+                let startPage = Math.max(1, currentPage[table] - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = 'pagination-button';
+                    if (i === currentPage[table]) {
+                        pageBtn.classList.add('active');
+                    }
+                    pageBtn.textContent = i;
+                    pageBtn.onclick = () => changePage(table, i);
+                    pageNumbersDiv.appendChild(pageBtn);
+                }
+            }
+        }
+
+        // Table sorting
+        function sortTable(table, column) {
+            const ascending = sortState[table].column === column ? !sortState[table].ascending : true;
+            sortState[table] = { column, ascending };
+            
+            filteredData[table].sort((a, b) => {
+                const aVal = Object.values(a)[column];
+                const bVal = Object.values(b)[column];
+                
+                if (ascending) {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+            
+            // Update header styles
+            const headers = document.querySelectorAll(`#${table}Table th.sortable`);
+            headers.forEach((th, index) => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (index === column) {
+                    th.classList.add(ascending ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+            
+            currentPage[table] = 1;
+            renderTable(table);
+            updatePaginationControls(table);
+        }
+
+        // Table filtering
+        function filterTable(table) {
+            const searchInput = document.getElementById(table + 'Search');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            
+            if (searchTerm) {
+                filteredData[table] = tableData[table].filter(row => {
+                    return Object.values(row).some(value => 
+                        String(value).toLowerCase().includes(searchTerm)
+                    );
+                });
+            } else {
+                filteredData[table] = [...tableData[table]];
+            }
+            
+            currentPage[table] = 1;
+            renderTable(table);
+            updatePaginationControls(table);
+        }
+
+        // Clear filters
+        function clearFilters(table) {
+            const searchInput = document.getElementById(table + 'Search');
+            if (searchInput) searchInput.value = '';
+            
+            filteredData[table] = [...tableData[table]];
+            currentPage[table] = 1;
+            renderTable(table);
+            updatePaginationControls(table);
+            
+            showToast('Filters cleared', 'info');
+        }
+
+        // Render table with pagination
+        function renderTable(table) {
+            const tbody = document.getElementById(table + 'TableBody');
+            if (!tbody) return;
+            
+            const start = (currentPage[table] - 1) * pageSize[table];
+            const end = start + pageSize[table];
+            const pageData = filteredData[table].slice(start, end);
+            
+            tbody.innerHTML = pageData.map(row => {
+                const cells = Object.values(row).map(value => `<td>${value}</td>`).join('');
+                return `<tr>${cells}<td>
+                    <button onclick="viewDetails('${table}', '${row.id || ''}')" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td></tr>`;
+            }).join('');
+        }
+
+        // Loading states
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            }[type];
+            
+            toast.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Scroll to top
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Export table data
+        function exportTable(table) {
+            showToast('Exporting data...', 'info');
+            // Implementation for CSV export
+            setTimeout(() => {
+                showToast('Export completed!', 'success');
+            }, 1000);
+        }
+
+        // Refresh all data
+        function refreshAllData() {
+            showLoading();
+            showToast('Refreshing data...', 'info');
+            
+            setTimeout(() => {
+                loadOverviewData();
+                updateLastUpdateTime();
+                hideLoading();
+                showToast('Data refreshed successfully!', 'success');
+            }, 1500);
+        }
+
+        // Update last update time
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('lastUpdate').textContent = `Last update: ${timeString}`;
+        }
+
+        // Sample data loaders
+        function loadProductionData() {
+            // Sample production data
+            tableData['production'] = Array.from({ length: 50 }, (_, i) => ({
+                id: `PO-${1000 + i}`,
+                style: `STYLE-${Math.floor(Math.random() * 100)}`,
+                quantity: Math.floor(Math.random() * 1000) + 100,
+                dueDate: new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                status: ['In Progress', 'Pending', 'Completed', 'On Hold'][Math.floor(Math.random() * 4)]
+            }));
+            
+            filteredData['production'] = [...tableData['production']];
+            renderTable('production');
+            updatePaginationControls('production');
+        }
+
+        function loadInventoryData() {
+            // Sample inventory data
+            tableData['inventory'] = Array.from({ length: 100 }, (_, i) => ({
+                id: `YRN-${2000 + i}`,
+                description: `Yarn Type ${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`,
+                available: Math.floor(Math.random() * 5000),
+                allocated: Math.floor(Math.random() * 2000),
+                planningBalance: Math.floor(Math.random() * 3000) - 1500,
+                status: Math.random() > 0.7 ? 'Low Stock' : 'Normal'
+            }));
+            
+            filteredData['inventory'] = [...tableData['inventory']];
+            renderTable('inventory');
+            updatePaginationControls('inventory');
+        }
+
+        function loadOverviewData() {
+            // Sample overview data
+            document.getElementById('inventoryValue').textContent = '$1,245,678';
+            document.getElementById('inventoryCount').textContent = '1,198 items';
+            document.getElementById('activeOrders').textContent = '47';
+            document.getElementById('orderValue').textContent = '$892,345';
+            document.getElementById('alertCount').textContent = '8';
+            document.getElementById('alertTypes').textContent = '3 types';
+            document.getElementById('forecastAccuracy').textContent = '92.5%';
+            document.getElementById('forecastModel').textContent = 'Ensemble';
+            
+            // Initialize charts
+            initializeCharts();
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Inventory Chart
+            const invCtx = document.getElementById('inventoryChart');
+            if (invCtx) {
+                new Chart(invCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Inventory Value',
+                            data: [1200000, 1250000, 1180000, 1300000, 1245678, 1280000],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Production Chart
+            const prodCtx = document.getElementById('productionChart');
+            if (prodCtx) {
+                new Chart(prodCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                        datasets: [{
+                            label: 'Production Output',
+                            data: [45000, 52000, 48000, 55000],
+                            backgroundColor: '#3b82f6'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOverviewData();
+            updateLastUpdateTime();
+            
+            // Update badges with sample alerts
+            const inventoryBadge = document.getElementById('inventoryBadge');
+            if (inventoryBadge) {
+                inventoryBadge.textContent = '3';
+                inventoryBadge.style.display = 'inline-block';
+            }
+            
+            const productionBadge = document.getElementById('productionBadge');
+            if (productionBadge) {
+                productionBadge.textContent = '5';
+                productionBadge.style.display = 'inline-block';
+            }
+            
+            // Show welcome toast
+            setTimeout(() => {
+                showToast('Dashboard loaded successfully', 'success');
+            }, 500);
+        });
+
+        // Auto-refresh every 60 seconds
+        setInterval(() => {
+            refreshAllData();
+        }, 60000);
+    </script>
+</body>
+</html>

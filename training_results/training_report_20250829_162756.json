@@ -1,0 +1,26 @@
+{
+  "training_date": "2025-08-29T16:27:56.340940",
+  "models_trained": {
+    "yarn_demand": {
+      "error": "'Style'"
+    },
+    "production_optimization": {
+      "error": "Input y contains NaN."
+    },
+    "validation": {}
+  },
+  "data_statistics": {
+    "sales_records": 1540,
+    "inventory_items": 1199,
+    "bom_entries": 28653,
+    "production_orders": 194
+  },
+  "model_locations": {
+    "arima": "/mnt/c/finalee/beverly_knits_erp_v2/models/arima_model.pkl",
+    "prophet": "/mnt/c/finalee/beverly_knits_erp_v2/models/prophet_model.pkl",
+    "xgboost": "/mnt/c/finalee/beverly_knits_erp_v2/models/xgboost_model.pkl",
+    "lstm": "/mnt/c/finalee/beverly_knits_erp_v2/models/lstm_model.h5",
+    "yarn_demand": "/mnt/c/finalee/beverly_knits_erp_v2/models/yarn_demand_model.pkl",
+    "production_efficiency": "/mnt/c/finalee/beverly_knits_erp_v2/models/production_efficiency_model.pkl"
+  }
+}

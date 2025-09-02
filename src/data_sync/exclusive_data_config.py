@@ -17,11 +17,15 @@ logger = logging.getLogger(__name__)
 class ExclusiveDataConfig:
     """Manages exclusive data source configuration"""
     
-    # SINGLE SOURCE OF TRUTH - SharePoint ERP Data folder
+    # SINGLE SOURCE OF TRUTH - Integrated PostgreSQL Database and centralized data
+    DATABASE_PRIMARY = True  # Use database as primary source
     SHAREPOINT_URL = "https://beverlyknits-my.sharepoint.com/:f:/r/personal/psytz_beverlyknits_com/Documents/ERP%20Data?csf=1&web=1&e=ByOLem"
     
-    # Local directory for SharePoint synced data ONLY
-    EXCLUSIVE_DATA_PATH = Path("C:/finalee/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/sharepoint_sync")
+    # Primary data path - now points to centralized sc data location
+    EXCLUSIVE_DATA_PATH = Path("/mnt/c/Users/psytz/sc data/ERP Data")
+    
+    # Database configuration path
+    DATABASE_CONFIG_PATH = Path(__file__).parent.parent / 'database' / 'database_config.json'
     
     # Lock file to ensure exclusive access
     LOCK_FILE = EXCLUSIVE_DATA_PATH / ".data_source_lock"

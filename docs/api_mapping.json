@@ -1,0 +1,331 @@
+{
+  "consolidation_plan": {
+    "version": "1.0",
+    "date": "2025-08-29",
+    "description": "API consolidation mapping for Beverly Knits ERP to reduce 95+ endpoints to ~50"
+  },
+  "redirects": {
+    "/api/inventory-analysis": {
+      "new_endpoint": "/api/inventory-intelligence-enhanced",
+      "params": {},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Redundant with enhanced inventory intelligence"
+    },
+    "/api/inventory-overview": {
+      "new_endpoint": "/api/inventory-intelligence-enhanced",
+      "params": {"view": "summary"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Use enhanced endpoint with view parameter"
+    },
+    "/api/real-time-inventory": {
+      "new_endpoint": "/api/inventory-intelligence-enhanced",
+      "params": {"realtime": "true"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Real-time functionality integrated into enhanced endpoint"
+    },
+    "/api/real-time-inventory-dashboard": {
+      "new_endpoint": "/api/inventory-intelligence-enhanced",
+      "params": {"view": "dashboard", "realtime": "true"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Dashboard view with real-time data available via parameters"
+    },
+    "/api/ai/inventory-intelligence": {
+      "new_endpoint": "/api/inventory-intelligence-enhanced",
+      "params": {"ai": "true"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "AI functionality integrated into enhanced endpoint"
+    },
+    "/api/inventory-analysis/complete": {
+      "new_endpoint": "/api/inventory-intelligence-enhanced",
+      "params": {"view": "complete"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Complete analysis available via view parameter"
+    },
+    "/api/inventory-analysis/dashboard-data": {
+      "new_endpoint": "/api/inventory-intelligence-enhanced",
+      "params": {"view": "dashboard"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Dashboard data available via view parameter"
+    },
+    "/api/yarn": {
+      "new_endpoint": "/api/yarn-intelligence",
+      "params": {},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Basic yarn endpoint replaced with intelligent version"
+    },
+    "/api/yarn-data": {
+      "new_endpoint": "/api/yarn-intelligence",
+      "params": {"view": "data"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Yarn data available via intelligent endpoint with view parameter"
+    },
+    "/api/yarn-shortage-analysis": {
+      "new_endpoint": "/api/yarn-intelligence",
+      "params": {"analysis": "shortage"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Shortage analysis available via analysis parameter"
+    },
+    "/api/yarn-substitution-opportunities": {
+      "new_endpoint": "/api/yarn-substitution-intelligent",
+      "params": {"view": "opportunities"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Opportunities view available in intelligent substitution endpoint"
+    },
+    "/api/yarn-alternatives": {
+      "new_endpoint": "/api/yarn-substitution-intelligent",
+      "params": {"view": "alternatives"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Alternatives available in intelligent substitution endpoint"
+    },
+    "/api/yarn-forecast-shortages": {
+      "new_endpoint": "/api/yarn-intelligence",
+      "params": {"forecast": "true", "analysis": "shortage"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Forecast and shortage analysis combined via parameters"
+    },
+    "/api/ai/yarn-forecast": {
+      "new_endpoint": "/api/yarn-intelligence",
+      "params": {"forecast": "true", "ai": "true"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "AI forecast functionality integrated"
+    },
+    "/api/inventory-analysis/yarn-shortages": {
+      "new_endpoint": "/api/yarn-intelligence",
+      "params": {"analysis": "shortage"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Yarn shortage analysis moved to yarn intelligence endpoint"
+    },
+    "/api/inventory-analysis/yarn-requirements": {
+      "new_endpoint": "/api/yarn-requirements-calculation",
+      "params": {},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Yarn requirements available in dedicated calculation endpoint"
+    },
+    "/api/production-data": {
+      "new_endpoint": "/api/production-planning",
+      "params": {"view": "data"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Production data available via view parameter"
+    },
+    "/api/production-orders": {
+      "new_endpoint": "/api/production-planning",
+      "params": {"view": "orders"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Production orders available via view parameter"
+    },
+    "/api/production-plan-forecast": {
+      "new_endpoint": "/api/production-planning",
+      "params": {"forecast": "true"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Forecast functionality integrated via parameter"
+    },
+    "/api/emergency-shortage": {
+      "new_endpoint": "/api/emergency-shortage-dashboard",
+      "params": {},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Consolidated into dashboard endpoint"
+    },
+    "/api/emergency-procurement": {
+      "new_endpoint": "/api/emergency-shortage-dashboard",
+      "params": {"view": "procurement"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Procurement view available via parameter"
+    },
+    "/api/pipeline/yarn-shortages": {
+      "new_endpoint": "/api/emergency-shortage-dashboard",
+      "params": {"type": "yarn"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Yarn shortages available via type parameter"
+    },
+    "/api/ml-forecasting": {
+      "new_endpoint": "/api/ml-forecast-detailed",
+      "params": {"detail": "summary"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Summary view available via detail parameter"
+    },
+    "/api/ml-forecast-report": {
+      "new_endpoint": "/api/ml-forecast-detailed",
+      "params": {"format": "report"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Report format available via format parameter"
+    },
+    "/api/fabric-forecast": {
+      "new_endpoint": "/api/fabric-forecast-integrated",
+      "params": {},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Integrated into comprehensive fabric forecast endpoint"
+    },
+    "/api/pipeline/forecast": {
+      "new_endpoint": "/api/ml-forecast-detailed",
+      "params": {"source": "pipeline"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Pipeline forecast integrated into detailed endpoint"
+    },
+    "/api/inventory-analysis/forecast-vs-stock": {
+      "new_endpoint": "/api/ml-forecast-detailed",
+      "params": {"compare": "stock"},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Stock comparison available via compare parameter"
+    },
+    "/api/supply-chain-analysis-cached": {
+      "new_endpoint": "/api/supply-chain-analysis",
+      "params": {},
+      "deprecated_date": "2025-09-01",
+      "removal_date": "2025-10-01",
+      "reason": "Caching implemented internally"
+    }
+  },
+  "consolidated_endpoints": {
+    "/api/inventory-intelligence-enhanced": {
+      "description": "Consolidated inventory endpoint with multiple views and analysis types",
+      "parameters": {
+        "view": ["full", "summary", "dashboard", "complete"],
+        "analysis": ["standard", "shortage", "optimization"],
+        "realtime": ["true", "false"],
+        "ai": ["true", "false"]
+      },
+      "replaces": [
+        "/api/inventory-analysis",
+        "/api/inventory-overview",
+        "/api/real-time-inventory",
+        "/api/real-time-inventory-dashboard",
+        "/api/ai/inventory-intelligence",
+        "/api/inventory-analysis/complete",
+        "/api/inventory-analysis/dashboard-data"
+      ]
+    },
+    "/api/yarn-intelligence": {
+      "description": "Consolidated yarn endpoint with intelligence, forecasting, and analysis",
+      "parameters": {
+        "view": ["full", "data", "summary"],
+        "analysis": ["standard", "shortage", "requirements"],
+        "forecast": ["true", "false"],
+        "yarn_id": ["any_valid_yarn_id"],
+        "ai": ["true", "false"]
+      },
+      "replaces": [
+        "/api/yarn",
+        "/api/yarn-data",
+        "/api/yarn-shortage-analysis",
+        "/api/yarn-forecast-shortages",
+        "/api/ai/yarn-forecast",
+        "/api/inventory-analysis/yarn-shortages"
+      ]
+    },
+    "/api/yarn-substitution-intelligent": {
+      "description": "Consolidated yarn substitution endpoint with opportunities and alternatives",
+      "parameters": {
+        "view": ["full", "opportunities", "alternatives"],
+        "yarn_id": ["any_valid_yarn_id"],
+        "compatibility_threshold": ["0.0-1.0"]
+      },
+      "replaces": [
+        "/api/yarn-substitution-opportunities",
+        "/api/yarn-alternatives"
+      ]
+    },
+    "/api/production-planning": {
+      "description": "Consolidated production endpoint with planning, orders, and forecasting",
+      "parameters": {
+        "view": ["planning", "orders", "data", "metrics"],
+        "forecast": ["true", "false"],
+        "include_capacity": ["true", "false"]
+      },
+      "replaces": [
+        "/api/production-data",
+        "/api/production-orders",
+        "/api/production-plan-forecast"
+      ]
+    },
+    "/api/emergency-shortage-dashboard": {
+      "description": "Consolidated emergency and shortage management endpoint",
+      "parameters": {
+        "view": ["dashboard", "procurement", "analysis"],
+        "type": ["all", "yarn", "fabric", "materials"],
+        "urgency": ["critical", "high", "medium", "all"]
+      },
+      "replaces": [
+        "/api/emergency-shortage",
+        "/api/emergency-procurement",
+        "/api/pipeline/yarn-shortages",
+        "/api/inventory-analysis/yarn-shortages"
+      ]
+    },
+    "/api/ml-forecast-detailed": {
+      "description": "Consolidated ML forecasting endpoint with multiple formats and comparisons",
+      "parameters": {
+        "detail": ["full", "summary", "metrics"],
+        "format": ["json", "report", "chart"],
+        "compare": ["stock", "orders", "capacity"],
+        "horizon": ["30", "60", "90", "180"],
+        "source": ["ml", "pipeline", "hybrid"]
+      },
+      "replaces": [
+        "/api/ml-forecasting",
+        "/api/ml-forecast-report",
+        "/api/pipeline/forecast",
+        "/api/inventory-analysis/forecast-vs-stock"
+      ]
+    }
+  },
+  "migration_schedule": {
+    "phase_1": {
+      "date": "2025-08-29",
+      "tasks": ["Create backups", "Setup documentation", "Add feature flags"]
+    },
+    "phase_2": {
+      "date": "2025-08-30",
+      "tasks": ["Add redirect middleware", "Implement parameter support"]
+    },
+    "phase_3": {
+      "date": "2025-08-31",
+      "tasks": ["Consolidate inventory APIs", "Consolidate yarn APIs"]
+    },
+    "phase_4": {
+      "date": "2025-09-01",
+      "tasks": ["Consolidate production APIs", "Update dashboard"]
+    },
+    "phase_5": {
+      "date": "2025-09-02",
+      "tasks": ["Testing and validation", "Enable feature flags"]
+    },
+    "deprecation_period": {
+      "start": "2025-09-01",
+      "end": "2025-10-01",
+      "description": "30-day period for clients to migrate to new endpoints"
+    }
+  },
+  "monitoring": {
+    "deprecated_usage_tracking": true,
+    "redirect_performance_monitoring": true,
+    "error_rate_monitoring": true,
+    "response_time_tracking": true
+  }
+}

@@ -1,0 +1,438 @@
+<!-- Enhanced Analytics Tab Content -->
+<!-- This replaces the placeholder Analytics tab content starting at line 2603 -->
+
+        <!-- Enhanced Analytics Tab with Real Data -->
+        <div id="analytics-tab" class="tab-content">
+            <!-- Analytics Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-xl shadow-xl mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-2">Business Analytics Dashboard</h2>
+                        <p class="text-blue-100">Real-time insights and performance metrics</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-blue-100">Last Updated</div>
+                        <div class="text-lg font-semibold" id="analyticsLastUpdate">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Performance Indicators -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Inventory Turnover -->
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <i class="fas fa-sync-alt text-2xl text-blue-500"></i>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Monthly</span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-800" id="inventoryTurnover">4.2x</div>
+                    <div class="text-sm text-gray-600 mt-1">Inventory Turnover</div>
+                    <div class="text-xs text-green-600 mt-2">
+                        <i class="fas fa-arrow-up mr-1"></i>+0.3 vs last month
+                    </div>
+                </div>
+
+                <!-- Order Fill Rate -->
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <i class="fas fa-check-circle text-2xl text-green-500"></i>
+                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Weekly</span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-800" id="fillRate">94.5%</div>
+                    <div class="text-sm text-gray-600 mt-1">Order Fill Rate</div>
+                    <div class="text-xs text-green-600 mt-2">
+                        <i class="fas fa-arrow-up mr-1"></i>+2.1% improvement
+                    </div>
+                </div>
+
+                <!-- Production Efficiency -->
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <i class="fas fa-cogs text-2xl text-purple-500"></i>
+                        <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">Daily</span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-800" id="productionEfficiency">87.3%</div>
+                    <div class="text-sm text-gray-600 mt-1">Production Efficiency</div>
+                    <div class="text-xs text-orange-600 mt-2">
+                        <i class="fas fa-minus mr-1"></i>Stable performance
+                    </div>
+                </div>
+
+                <!-- Cost per Unit -->
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-2">
+                        <i class="fas fa-dollar-sign text-2xl text-orange-500"></i>
+                        <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">Quarterly</span>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-800" id="costPerUnit">$12.45</div>
+                    <div class="text-sm text-gray-600 mt-1">Avg Cost per Unit</div>
+                    <div class="text-xs text-green-600 mt-2">
+                        <i class="fas fa-arrow-down mr-1"></i>-$0.73 reduction
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Trend Analysis Chart -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-chart-area mr-2 text-blue-600"></i>
+                        Production vs Demand Trend (90 Days)
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="trendAnalysisChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-3 gap-2 text-sm">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">522K</div>
+                            <div class="text-gray-600">Total Production</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">485K</div>
+                            <div class="text-gray-600">Total Demand</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-purple-600">107%</div>
+                            <div class="text-gray-600">Coverage Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cost Analysis Chart -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-chart-pie mr-2 text-green-600"></i>
+                        Cost Breakdown Analysis
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="costBreakdownChart"></canvas>
+                    </div>
+                    <div class="mt-4 space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Materials</span>
+                            <span class="font-bold">45%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Labor</span>
+                            <span class="font-bold">28%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Overhead</span>
+                            <span class="font-bold">18%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Other</span>
+                            <span class="font-bold">9%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Analysis Table -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-table mr-2 text-purple-600"></i>
+                        Top Performing Products Analysis
+                    </h3>
+                    <button onclick="exportAnalytics()" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="search-filter-bar mb-4">
+                    <input 
+                        type="text" 
+                        id="analyticsSearch" 
+                        class="search-input" 
+                        placeholder="Search products..."
+                        onkeyup="searchTable('analyticsProducts', this.value)"
+                    >
+                    <button class="filter-button" onclick="filterByPerformance('top')">
+                        <i class="fas fa-star"></i>
+                        Top Performers
+                    </button>
+                    <button class="filter-button" onclick="filterByPerformance('all')">
+                        <i class="fas fa-list"></i>
+                        Show All
+                    </button>
+                </div>
+
+                <!-- Products Performance Table -->
+                <div class="table-container">
+                    <div class="table-scroll-wrapper">
+                        <table class="data-table" id="analyticsProductsTable">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" onclick="sortTable('analyticsProducts', 0)">Product ID</th>
+                                    <th class="sortable" onclick="sortTable('analyticsProducts', 1)">Product Name</th>
+                                    <th class="sortable" onclick="sortTable('analyticsProducts', 2)">Units Sold</th>
+                                    <th class="sortable" onclick="sortTable('analyticsProducts', 3)">Revenue</th>
+                                    <th class="sortable" onclick="sortTable('analyticsProducts', 4)">Margin %</th>
+                                    <th class="sortable" onclick="sortTable('analyticsProducts', 5)">Growth Rate</th>
+                                    <th class="sortable" onclick="sortTable('analyticsProducts', 6)">Stock Level</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsProductsTableBody">
+                                <tr>
+                                    <td>CEE4585A</td>
+                                    <td>Premium Cotton Blend</td>
+                                    <td>12,450</td>
+                                    <td>$154,980</td>
+                                    <td>32.5%</td>
+                                    <td class="text-green-600">+15.2%</td>
+                                    <td>High</td>
+                                    <td><i class="fas fa-arrow-up text-green-500"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>HTR4321B</td>
+                                    <td>Heavy Terry Fabric</td>
+                                    <td>8,920</td>
+                                    <td>$125,088</td>
+                                    <td>28.9%</td>
+                                    <td class="text-green-600">+8.7%</td>
+                                    <td>Medium</td>
+                                    <td><i class="fas fa-arrow-up text-green-500"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>BLK2000C</td>
+                                    <td>Black Polyester Mix</td>
+                                    <td>7,350</td>
+                                    <td>$88,200</td>
+                                    <td>25.1%</td>
+                                    <td class="text-orange-600">+2.3%</td>
+                                    <td>Medium</td>
+                                    <td><i class="fas fa-minus text-gray-500"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>WVN3847D</td>
+                                    <td>Woven Stretch</td>
+                                    <td>6,200</td>
+                                    <td>$93,000</td>
+                                    <td>35.2%</td>
+                                    <td class="text-red-600">-4.1%</td>
+                                    <td>Low</td>
+                                    <td><i class="fas fa-arrow-down text-red-500"></i></td>
+                                </tr>
+                                <tr>
+                                    <td>SLK1592E</td>
+                                    <td>Silk Blend Luxury</td>
+                                    <td>3,100</td>
+                                    <td>$77,500</td>
+                                    <td>42.8%</td>
+                                    <td class="text-green-600">+22.5%</td>
+                                    <td>Low</td>
+                                    <td><i class="fas fa-arrow-up text-green-500"></i></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <div id="analyticsProductsPagination"></div>
+            </div>
+
+            <!-- Business Intelligence Insights -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Inventory Health -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-heartbeat mr-2 text-red-600"></i>
+                        Inventory Health Score
+                    </h3>
+                    <div class="text-center mb-4">
+                        <div class="text-5xl font-bold text-green-600">85</div>
+                        <div class="text-sm text-gray-600">Out of 100</div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span>Stockout Risk</span>
+                            <span class="text-green-600">Low (8 items)</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Overstock Items</span>
+                            <span class="text-orange-600">Medium (23 items)</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Dead Stock</span>
+                            <span class="text-green-600">Minimal (2 items)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Forecast Accuracy -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-bullseye mr-2 text-blue-600"></i>
+                        Forecast Accuracy Metrics
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm">7-Day Accuracy</span>
+                                <span class="text-sm font-bold">95.2%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-600 h-2 rounded-full" style="width: 95.2%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm">30-Day Accuracy</span>
+                                <span class="text-sm font-bold">88.7%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 88.7%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm">90-Day Accuracy</span>
+                                <span class="text-sm font-bold">76.4%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-orange-600 h-2 rounded-full" style="width: 76.4%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Recommendations -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                        <i class="fas fa-lightbulb mr-2 text-yellow-600"></i>
+                        Smart Recommendations
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-red-50 border-l-4 border-red-500 rounded">
+                            <div class="text-sm font-semibold text-red-800">Critical</div>
+                            <div class="text-xs text-gray-700 mt-1">Order YRN-2045 immediately - stockout in 3 days</div>
+                        </div>
+                        <div class="p-3 bg-orange-50 border-l-4 border-orange-500 rounded">
+                            <div class="text-sm font-semibold text-orange-800">Important</div>
+                            <div class="text-xs text-gray-700 mt-1">Reduce BLK2000C production - demand declining</div>
+                        </div>
+                        <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                            <div class="text-sm font-semibold text-blue-800">Opportunity</div>
+                            <div class="text-xs text-gray-700 mt-1">Increase SLK1592E inventory - 22.5% growth</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-chart-bar mr-2 text-green-600"></i>
+                    Financial Performance Summary
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-white rounded-lg">
+                        <div class="text-2xl font-bold text-green-600">$2.4M</div>
+                        <div class="text-sm text-gray-600">Monthly Revenue</div>
+                        <div class="text-xs text-green-600 mt-1">+12% YoY</div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600">$785K</div>
+                        <div class="text-sm text-gray-600">Gross Profit</div>
+                        <div class="text-xs text-blue-600 mt-1">32.7% margin</div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600">$1.8M</div>
+                        <div class="text-sm text-gray-600">Inventory Value</div>
+                        <div class="text-xs text-purple-600 mt-1">Optimized</div>
+                    </div>
+                    <div class="text-center p-4 bg-white rounded-lg">
+                        <div class="text-2xl font-bold text-orange-600">$320K</div>
+                        <div class="text-sm text-gray-600">Cost Savings</div>
+                        <div class="text-xs text-orange-600 mt-1">This quarter</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JavaScript for Analytics Tab -->
+        <script>
+        // Initialize Analytics Charts
+        function initializeAnalyticsCharts() {
+            // Trend Analysis Chart
+            const trendCtx = document.getElementById('trendAnalysisChart');
+            if (trendCtx) {
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+                        datasets: [{
+                            label: 'Production',
+                            data: [82000, 85000, 87000, 91000, 89000, 88000],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4
+                        }, {
+                            label: 'Demand',
+                            data: [78000, 82000, 83000, 85000, 84000, 83000],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Cost Breakdown Chart
+            const costCtx = document.getElementById('costBreakdownChart');
+            if (costCtx) {
+                new Chart(costCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Materials', 'Labor', 'Overhead', 'Other'],
+                        datasets: [{
+                            data: [45, 28, 18, 9],
+                            backgroundColor: [
+                                '#3b82f6',
+                                '#10b981',
+                                '#a855f7',
+                                '#f59e0b'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Load Analytics Data
+        function loadAnalyticsTab() {
+            console.log('Loading Analytics tab...');
+            initializeAnalyticsCharts();
+            updateAnalyticsMetrics();
+        }
+
+        // Update Analytics Metrics
+        function updateAnalyticsMetrics() {
+            const now = new Date();
+            document.getElementById('analyticsLastUpdate').textContent = now.toLocaleTimeString();
+        }
+        </script>

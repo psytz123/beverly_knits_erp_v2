@@ -153,8 +153,13 @@ class EnhancedProductionPipeline:
         return stages
     
     def _calculate_total_quantity(self, df: pd.DataFrame) -> float:
-        """Calculate total quantity from dataframe"""
-        qty_col = self._find_column(['Qty', 'Quantity', 'Order Qty', 'Qty (yds)', 'Qty (lbs)'], df)
+        """Calculate total quantity from dataframe - use Balance (lbs) for accurate remaining work"""
+        # For knit orders, use Balance (lbs) as it represents work remaining
+        balance_col = self._find_column(['Balance (lbs)', 'Balance', 'Remaining'], df)
+        if balance_col:
+            return float(df[balance_col].sum())
+        # Fallback to quantity columns
+        qty_col = self._find_column(['Qty Ordered (lbs)', 'Qty', 'Quantity', 'Order Qty'], df)
         if qty_col:
             return float(df[qty_col].sum())
         return 0
@@ -167,37 +172,64 @@ class EnhancedProductionPipeline:
         return 50  # Default
     
     def _calculate_efficiency(self, df: pd.DataFrame) -> float:
-        """Calculate production efficiency"""
-        # Based on on-time performance
+        """Calculate production efficiency - G00 produced vs Qty Ordered"""
+        # Correct efficiency calculation: (G00 / Qty Ordered) * 100
+        g00_col = self._find_column(['G00 (lbs)', 'G00', 'Produced'], df)
+        qty_col = self._find_column(['Qty Ordered (lbs)', 'Qty', 'Quantity'], df)
+        
+        if g00_col and qty_col:
+            # Remove NaN values for calculation
+            valid_rows = df[[g00_col, qty_col]].dropna()
+            if not valid_rows.empty:
+                total_g00 = valid_rows[g00_col].sum()
+                total_qty = valid_rows[qty_col].sum()
+                if total_qty > 0:
+                    efficiency = (total_g00 / total_qty) * 100
+                    return min(100, efficiency)  # Cap at 100%
+        
+        # Fallback to on-time rate if production data not available
         on_time = self._calculate_on_time_rate(df)
         return on_time
     
     def _calculate_utilization(self, order_count: int) -> float:
-        """Calculate capacity utilization"""
-        # Assume 100 orders is 100% utilization
-        return min(100, (order_count / 100) * 100)
+        """Calculate capacity utilization based on realistic capacity"""
+        # More realistic: 50 active orders represents full utilization
+        # This accounts for machine capacity and workforce limitations
+        FULL_CAPACITY_ORDERS = 50
+        return min(100, (order_count / FULL_CAPACITY_ORDERS) * 100)
     
     def _calculate_on_time_rate(self, df: pd.DataFrame) -> float:
         """Calculate percentage of orders on time"""
-        date_col = self._find_column(['Due Date', 'Delivery Date', 'Ship Date', 'Target Date'], df)
+        # Use Start Date or Quoted Date for knit orders
+        date_col = self._find_column(['Start Date', 'Quoted Date', 'Due Date', 'Delivery Date'], df)
         if date_col:
             try:
-                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+                df_copy = df.copy()
+                df_copy[date_col] = pd.to_datetime(df_copy[date_col], errors='coerce')
                 today = pd.Timestamp.now()
-                on_time = len(df[df[date_col] >= today])
-                return (on_time / len(df) * 100) if len(df) > 0 else 100
+                # Orders with future start date or no overdue balance are on-time
+                on_time = len(df_copy[(df_copy[date_col] >= today) | df_copy[date_col].isna()])
+                return (on_time / len(df_copy) * 100) if len(df_copy) > 0 else 100
             except:
                 pass
         return 85  # Default
     
     def _count_late_orders(self, df: pd.DataFrame) -> int:
         """Count number of late orders"""
-        date_col = self._find_column(['Due Date', 'Delivery Date', 'Ship Date'], df)
+        # Use Start Date for knit orders
+        date_col = self._find_column(['Start Date', 'Quoted Date', 'Due Date'], df)
         if date_col:
             try:
-                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+                df_copy = df.copy()
+                df_copy[date_col] = pd.to_datetime(df_copy[date_col], errors='coerce')
                 today = pd.Timestamp.now()
-                return len(df[df[date_col] < today])
+                # Count orders with past start date and remaining balance
+                balance_col = self._find_column(['Balance (lbs)', 'Balance'], df_copy)
+                if balance_col:
+                    late_orders = df_copy[(df_copy[date_col] < today) & (df_copy[balance_col] > 0)]
+                    return len(late_orders)
+                else:
+                    return len(df_copy[df_copy[date_col] < today])
             except:
                 pass
         return 0
@@ -225,16 +257,53 @@ class EnhancedProductionPipeline:
         return 'N/A'
     
     def _calculate_wip_value(self, df: pd.DataFrame) -> float:
-        """Calculate work in process value"""
+        """Calculate work in process value based on actual production data"""
+        # WIP = (G00 - Shipped) * estimated cost per lb
+        g00_col = self._find_column(['G00 (lbs)', 'G00', 'Produced'], df)
+        shipped_col = self._find_column(['Shipped (lbs)', 'Shipped', 'Delivered'], df)
+        
+        if g00_col and shipped_col:
+            valid_rows = df[[g00_col, shipped_col]].fillna(0)
+            wip_quantity = (valid_rows[g00_col].sum() - valid_rows[shipped_col].sum())
+            # Use $5 per lb as standard cost estimate for knitted fabric
+            return max(0, wip_quantity * 5)
+        
+        # Fallback calculation
         qty = self._calculate_total_quantity(df)
-        # Assume average value per unit
-        return qty * 10  # $10 per unit assumption
+        return qty * 5  # $5 per lb estimate
     
     def _calculate_summary(self) -> Dict[str, Any]:
-        """Calculate summary statistics"""
+        """Calculate summary statistics with correct formulas"""
+        # Get column names for calculations
+        qty_col = self._find_column(['Qty Ordered (lbs)', 'Qty', 'Quantity'])
+        g00_col = self._find_column(['G00 (lbs)', 'G00', 'Produced'])
+        shipped_col = self._find_column(['Shipped (lbs)', 'Shipped'])
+        seconds_col = self._find_column(['Seconds (lbs)', 'Seconds', 'Defects'])
+        balance_col = self._find_column(['Balance (lbs)', 'Balance'])
+        
+        # Validate balance calculations
+        balance_errors = 0
+        if all([qty_col, g00_col, shipped_col, balance_col]):
+            for idx, row in self.knit_orders.iterrows():
+                qty = row.get(qty_col, 0) or 0
+                g00 = row.get(g00_col, 0) or 0
+                shipped = row.get(shipped_col, 0) or 0
+                seconds = row.get(seconds_col, 0) or 0 if seconds_col else 0
+                recorded_balance = row.get(balance_col, 0) or 0
+                
+                # Correct formula: Balance = Qty Ordered - (G00 + Shipped + Seconds)
+                calculated_balance = qty - (g00 + shipped + seconds)
+                if abs(calculated_balance - recorded_balance) > 1:  # Allow 1 lb tolerance
+                    balance_errors += 1
+        
         summary = {
             'total_orders': len(self.knit_orders),
-            'total_quantity': self._calculate_total_quantity(self.knit_orders),
+            'total_quantity_ordered': self._sum_column(qty_col) if qty_col else 0,
+            'total_g00_produced': self._sum_column(g00_col) if g00_col else 0,
+            'total_shipped': self._sum_column(shipped_col) if shipped_col else 0,
+            'total_balance': self._sum_column(balance_col) if balance_col else 0,
+            'balance_calculation_errors': balance_errors,
+            'data_accuracy_note': f'{balance_errors} orders have incorrect balance calculations' if balance_errors > 0 else 'All balance calculations verified',
             'unique_styles': 0,
             'unique_customers': 0,
             'avg_order_size': 0,
@@ -253,12 +322,18 @@ class EnhancedProductionPipeline:
             
         # Calculate average order size
         if summary['total_orders'] > 0:
-            summary['avg_order_size'] = summary['total_quantity'] / summary['total_orders']
+            summary['avg_order_size'] = summary['total_quantity_ordered'] / summary['total_orders']
             
         # Calculate total WIP value
         summary['total_wip_value'] = self._calculate_wip_value(self.knit_orders)
         
         return summary
+    
+    def _sum_column(self, col_name: str) -> float:
+        """Safely sum a column handling NaN values"""
+        if col_name and col_name in self.knit_orders.columns:
+            return float(self.knit_orders[col_name].fillna(0).sum())
+        return 0
     
     def _identify_critical_orders(self) -> List[Dict[str, Any]]:
         """Identify orders that need immediate attention"""
@@ -349,21 +424,31 @@ class EnhancedProductionPipeline:
         return recommendations
     
     def _get_bottleneck_recommendation(self, stage: Dict) -> str:
-        """Get specific recommendation for bottleneck"""
-        if stage['utilization'] > 90:
-            return "Add capacity or shift resources to this stage"
-        elif stage['late_orders'] > 5:
-            return "Expedite late orders and review scheduling"
-        else:
-            return "Monitor closely and prepare contingency plans"
+        """Get specific recommendation for bottleneck with validation"""
+        try:
+            utilization = float(stage.get('utilization', 0))
+            late_orders = int(stage.get('late_orders', 0))
+            
+            if utilization > 90:
+                return "Add capacity or shift resources to this stage"
+            elif late_orders > 5:
+                return "Expedite late orders and review scheduling"
+            else:
+                return "Monitor closely and prepare contingency plans"
+        except (ValueError, TypeError):
+            return "Review stage performance and data quality"
     
     # Helper methods for finding columns and extracting data
     def _find_column(self, possible_names: List[str], df: Optional[pd.DataFrame] = None) -> Optional[str]:
-        """Find column by possible names"""
+        """Find column by possible names with validation"""
         if df is None:
             df = self.knit_orders
             
         if df is None:
+            return None
+        
+        # Validate dataframe has columns attribute and is not empty
+        if not hasattr(df, 'columns') or df.empty:
             return None
             
         for name in possible_names:

@@ -1,0 +1,13 @@
+{
+    "host": "localhost",
+    "port": 5432,
+    "database": "beverly_knits_erp",
+    "user": "erp_user",
+    "password": "erp_password",
+    "data_path": "/mnt/c/Users/psytz/sc data/ERP Data",
+    "api_port": 5007,
+    "cache_enabled": true,
+    "cache_ttl": 300,
+    "batch_size": 1000,
+    "connection_pool_size": 10
+}

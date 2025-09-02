@@ -309,8 +309,8 @@ class MLValidationSystem:
         self.results = {}
         self.ensemble_results = {}
         
-        # Initialize database
-        self.db_path = "/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/BKI_comp/ml_validation_results.db"
+        # Initialize database in local directory
+        self.db_path = "/mnt/c/finalee/beverly_knits_erp_v2/ml_validation_results.db"
         self._init_database()
         
         # Initialize available models
@@ -380,7 +380,7 @@ class MLValidationSystem:
             # Linear models
             if self.config["models"]["linear_regression"]:
                 self.models.extend([
-                    SklearnModel("Linear Regression", LinearRegression),
+                    SklearnModel("Linear Regression", LinearRegression, {}),
                     SklearnModel("Ridge Regression", Ridge, {"alpha": 1.0}),
                     SklearnModel("Lasso Regression", Lasso, {"alpha": 1.0}),
                     SklearnModel("Elastic Net", ElasticNet, {"alpha": 1.0, "l1_ratio": 0.5})
@@ -531,8 +531,16 @@ class MLValidationSystem:
                         X_cv_train, X_cv_val = X.iloc[train_idx], X.iloc[val_idx]
                         y_cv_train, y_cv_val = y.iloc[train_idx], y.iloc[val_idx]
                         
-                        # Create fresh model instance
-                        cv_model = model.__class__(model.name, **getattr(model, 'model_params', {}))
+                        # Create fresh model instance with proper parameters
+                        if isinstance(model, SklearnModel):
+                            cv_model = SklearnModel(model.name, model.model_class, model.model_params, model.use_scaler)
+                        elif isinstance(model, XGBoostModel):
+                            cv_model = XGBoostModel(model.name, model.model_params)
+                        elif isinstance(model, ProphetModel):
+                            cv_model = ProphetModel(model.name, model.model_params)
+                        else:
+                            cv_model = model.__class__(model.name)
+                        
                         cv_model.fit(X_cv_train, y_cv_train)
                         cv_pred = cv_model.predict(X_cv_val)
                         cv_score = mean_absolute_error(y_cv_val, cv_pred)
@@ -841,9 +849,9 @@ def main():
     
     # Load from various sources
     data_paths = [
-        Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/BKI_comp/data"),
-        Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/4"),
-        Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/5")
+        Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data"),
+        Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5"),
+        Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data")
     ]
     
     for data_path in data_paths:

@@ -23,6 +23,34 @@ warnings.filterwarnings('ignore')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Import column standardizer for flexible column detection
+try:
+    from src.utils.column_standardization import ColumnStandardizer
+except ImportError:
+    try:
+        from utils.column_standardization import ColumnStandardizer
+    except ImportError:
+        ColumnStandardizer = None
+        logger.warning("ColumnStandardizer not available, using fallback column detection")
+
+# Helper function for flexible column detection
+def find_column(df, variations):
+    """Find first matching column from list of variations"""
+    if ColumnStandardizer:
+        return ColumnStandardizer.find_column(df, variations)
+    else:
+        if hasattr(df, 'columns'):
+            for col in variations:
+                if col in df.columns:
+                    return col
+    return None
+
+# Common column variations
+YARN_ID_VARIATIONS = ['Desc#', 'desc#', 'Yarn', 'yarn', 'Yarn_ID', 'YarnID', 'yarn_id']
+STYLE_VARIATIONS = ['Style#', 'Style #', 'Style', 'style', 'style_id']
+PLANNING_BALANCE_VARIATIONS = ['Planning Balance', 'Planning_Balance', 'Planning_Ballance', 'planning_balance']
+BOM_PERCENT_VARIATIONS = ['BOM_Percent', 'BOM_Percentage', 'Percentage', 'BOM%']
+
 # ML imports
 try:
     from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor

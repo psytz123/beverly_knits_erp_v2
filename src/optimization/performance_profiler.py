@@ -53,7 +53,7 @@ class PerformanceProfiler:
     GOOD_THRESHOLD_MS = 200
     ACCEPTABLE_THRESHOLD_MS = 500
     
-    def __init__(self, base_url: str = "http://localhost:5005"):
+    def __init__(self, base_url: str = "http://localhost:5006"):
         """
         Initialize performance profiler
         

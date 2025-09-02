@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Net Requirements</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8">
+    <h1 class="text-2xl font-bold mb-4">Net Requirements Test</h1>
+    
+    <div id="results" class="space-y-4"></div>
+    
+    <script>
+    async function testNetRequirements() {
+        const baseUrl = 'http://localhost:5006';
+        const results = document.getElementById('results');
+        
+        try {
+            // Fetch production planning data
+            const planningResponse = await fetch(baseUrl + '/api/production-planning');
+            const planningData = await planningResponse.json();
+            
+            results.innerHTML += `
+                <div class="bg-green-100 p-4 rounded">
+                    <h2 class="font-bold">Production Planning API</h2>
+                    <p>Schedule items: ${planningData.production_schedule.length}</p>
+                    <p>First item quantity: ${planningData.production_schedule[0]?.quantity_lbs || 0} lbs</p>
+                </div>
+            `;
+            
+            // Show first 3 items with net requirements calculation
+            results.innerHTML += '<h2 class="font-bold mt-4">Net Requirements Calculation:</h2>';
+            
+            planningData.production_schedule.slice(0, 3).forEach((order, index) => {
+                // Mock inventory values for demonstration
+                const currentInventory = Math.round(Math.random() * 500 + 100);
+                const pipelineInventory = Math.round(Math.random() * 300 + 50);
+                const forecastedDemand = order.quantity_lbs || order.planned_quantity || 0;
+                const netRequirement = Math.max(0, forecastedDemand - currentInventory - pipelineInventory);
+                
+                results.innerHTML += `
+                    <div class="bg-white border rounded p-4">
+                        <h3 class="font-semibold">${order.style}</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>Forecasted Demand:</div><div>${forecastedDemand} lbs</div>
+                            <div>Current Inventory:</div><div>${currentInventory} lbs</div>
+                            <div>Pipeline Inventory:</div><div>${pipelineInventory} lbs</div>
+                            <div class="font-bold">Net Requirement:</div>
+                            <div class="font-bold ${netRequirement > 0 ? 'text-red-600' : 'text-green-600'}">
+                                ${netRequirement} lbs
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">
+                            Formula: max(0, ${forecastedDemand} - ${currentInventory} - ${pipelineInventory}) = ${netRequirement}
+                        </div>
+                    </div>
+                `;
+            });
+            
+        } catch (error) {
+            results.innerHTML = `<div class="bg-red-100 p-4 rounded">Error: ${error.message}</div>`;
+        }
+    }
+    
+    // Run test on page load
+    testNetRequirements();
+    </script>
+</body>
+</html>

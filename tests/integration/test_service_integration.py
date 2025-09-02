@@ -96,9 +96,9 @@ class TestServiceIntegration:
         assert service_manager.get_sales_forecaster() is not None
         assert service_manager.get_capacity_planner() is not None
         
-        # Check service count
+        # Check service count (now includes InventoryManagementPipelineService)
         status = service_manager.get_system_status()
-        assert status['total_services'] == 3
+        assert status['total_services'] == 4
     
     def test_inventory_analyzer_service(self, service_manager, sample_inventory_data):
         """Test inventory analyzer service functionality"""
@@ -258,8 +258,8 @@ class TestServiceIntegration:
     
     def test_service_manager_shutdown(self, service_manager):
         """Test graceful shutdown of service manager"""
-        # Verify services are available
-        assert len(service_manager.services) == 3
+        # Verify services are available (now includes InventoryManagementPipelineService)
+        assert len(service_manager.services) == 4
         assert service_manager.initialized
         
         # Shutdown

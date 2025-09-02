@@ -302,7 +302,7 @@ def main():
     # Load data from API
     print("Loading yarn data from API...")
     try:
-        response = requests.get('http://localhost:5005/api/yarn-intelligence')
+        response = requests.get('http://localhost:5006/api/yarn-intelligence')
         data = response.json()
     except:
         print("Error: Could not connect to API. Please ensure server is running on port 5005")

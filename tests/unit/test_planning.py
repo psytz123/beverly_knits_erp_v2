@@ -196,7 +196,8 @@ class TestProductionScheduler:
         
         assert scheduler is not None
         assert hasattr(scheduler, 'schedule')
-        assert hasattr(scheduler, 'capacity')
+        assert hasattr(scheduler, 'setup_matrix')
+        assert hasattr(scheduler, 'priority_rules')
     
     def test_calculate_production_capacity(self):
         """Test production capacity calculation"""
@@ -247,8 +248,9 @@ class TestCapacityPlanning:
         planner = erp.CapacityPlanningEngine()
         
         assert planner is not None
-        assert hasattr(planner, 'resources')
-        assert hasattr(planner, 'constraints')
+        assert hasattr(planner, 'production_lines')
+        assert hasattr(planner, 'capacity_constraints')
+        assert hasattr(planner, 'shift_patterns')
     
     def test_resource_allocation(self):
         """Test resource allocation logic"""
@@ -313,8 +315,10 @@ class TestMRPSystem:
         mrp = erp.TimePhasedMRP()
         
         assert mrp is not None
-        assert hasattr(mrp, 'bom')
+        assert hasattr(mrp, 'time_buckets')
         assert hasattr(mrp, 'lead_times')
+        assert hasattr(mrp, 'lot_sizing_rules')
+        assert hasattr(mrp, 'safety_stock_levels')
     
     def test_bom_explosion(self):
         """Test Bill of Materials explosion"""

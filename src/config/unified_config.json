@@ -1,0 +1,44 @@
+{
+  "data_source": {
+    "primary": "files",
+    "fallback": "database",
+    "enable_dual_source": true,
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "beverly_knits_erp",
+      "user": "erp_user",
+      "password": "erp_password",
+      "connection_pool_size": 10,
+      "api_port": 5007,
+      "cache_enabled": true,
+      "cache_ttl": 300
+    },
+    "files": {
+      "primary_path": "/mnt/c/Users/psytz/sc data/ERP Data",
+      "legacy_paths": [],
+      "batch_size": 1000
+    }
+  },
+  "api": {
+    "port": 5000,
+    "debug": true,
+    "cors_enabled": true,
+    "api_versions": {
+      "v1": "file_based",
+      "v2": "database_based"
+    }
+  },
+  "etl": {
+    "enabled": true,
+    "schedule": "0 6 * * *",
+    "source_directory": "/mnt/c/Users/psytz/sc data/ERP Data",
+    "log_level": "INFO"
+  },
+  "integration": {
+    "enable_postgresql": true,
+    "enable_file_loading": true,
+    "sync_interval_minutes": 15,
+    "data_validation": true
+  }
+}
