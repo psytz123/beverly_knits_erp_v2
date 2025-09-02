@@ -8868,12 +8868,12 @@ def real_time_inventory_dashboard():
 def six_phase_planning_api():
     """Six-phase planning API endpoint"""
     try:
-        # Check if six-phase planning is available
-        if PLANNING_ENGINE_AVAILABLE and planning_engine:
-            result = planning_engine.execute_planning_cycle()
+        # Check if six-phase planning is available and properly initialized
+        if PLANNING_ENGINE_AVAILABLE and 'analyzer' in globals() and hasattr(analyzer, 'planning_engine') and analyzer.planning_engine:
+            results = analyzer.planning_engine.execute_full_planning_cycle()
             return jsonify({
                 "status": "success",
-                "planning_result": result,
+                "planning_result": results,
                 "timestamp": datetime.now().isoformat()
             })
         else:
