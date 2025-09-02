@@ -3908,6 +3908,128 @@ const dataSafetyMonitor = {
         let refreshInterval = null;
         let lastUpdateTime = Date.now();
         
+        // === DATA DEDUPLICATION UTILITIES ===
+        // Ensure unique data across all tables to prevent duplicates
+        
+        /**
+         * Remove duplicate items from an array based on a unique key
+         * @param {Array} array - The array to deduplicate
+         * @param {String} keyField - The field to use as unique identifier
+         * @returns {Array} - Deduplicated array
+         */
+        function deduplicateByKey(array, keyField) {
+            if (!Array.isArray(array) || !keyField) return array || [];
+            
+            const seen = new Set();
+            const deduped = [];
+            let duplicateCount = 0;
+            
+            for (const item of array) {
+                const key = item[keyField];
+                if (key !== undefined && key !== null && key !== '') {
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        deduped.push(item);
+                    } else {
+                        duplicateCount++;
+                    }
+                }
+            }
+            
+            if (duplicateCount > 0) {
+                console.warn(`Removed ${duplicateCount} duplicate items based on key: ${keyField}`);
+            }
+            
+            return deduped;
+        }
+        
+        /**
+         * Remove duplicate items from an array using composite keys
+         * @param {Array} array - The array to deduplicate
+         * @param {Array} keyFields - Array of fields to create composite key
+         * @returns {Array} - Deduplicated array
+         */
+        function deduplicateByCompositeKey(array, keyFields) {
+            if (!Array.isArray(array) || !Array.isArray(keyFields)) return array || [];
+            
+            const seen = new Set();
+            const deduped = [];
+            let duplicateCount = 0;
+            
+            for (const item of array) {
+                const compositeKey = keyFields.map(field => item[field]).join('|');
+                if (!seen.has(compositeKey)) {
+                    seen.add(compositeKey);
+                    deduped.push(item);
+                } else {
+                    duplicateCount++;
+                }
+            }
+            
+            if (duplicateCount > 0) {
+                console.warn(`Removed ${duplicateCount} duplicate items using composite key: ${keyFields.join(', ')}`);
+            }
+            
+            return deduped;
+        }
+        
+        /**
+         * Validate and clean table data before display
+         * @param {Array} data - The data array to validate
+         * @param {String} tableName - Name of the table for logging
+         * @returns {Array} - Cleaned and validated data
+         */
+        function validateTableData(data, tableName) {
+            if (!Array.isArray(data)) {
+                console.warn(`Invalid data for table ${tableName}: expected array, got ${typeof data}`);
+                return [];
+            }
+            
+            // Log original data count
+            console.log(`Table ${tableName}: Processing ${data.length} items`);
+            
+            // Remove any null/undefined entries
+            const cleaned = data.filter(item => item !== null && item !== undefined);
+            
+            if (cleaned.length !== data.length) {
+                console.warn(`Table ${tableName}: Removed ${data.length - cleaned.length} invalid entries`);
+            }
+            
+            return cleaned;
+        }
+        
+        /**
+         * Check for duplicate columns in table data
+         * @param {Array} data - The data array to check
+         * @param {String} tableName - Name of the table for logging
+         */
+        function checkDuplicateColumns(data, tableName) {
+            if (!Array.isArray(data) || data.length === 0) return;
+            
+            const firstItem = data[0];
+            const keys = Object.keys(firstItem);
+            const uniqueKeys = new Set(keys);
+            
+            if (keys.length !== uniqueKeys.size) {
+                console.error(`Table ${tableName}: Duplicate column names detected!`);
+                
+                // Find duplicates
+                const keyCount = {};
+                keys.forEach(key => {
+                    keyCount[key] = (keyCount[key] || 0) + 1;
+                });
+                
+                const duplicates = Object.entries(keyCount)
+                    .filter(([key, count]) => count > 1)
+                    .map(([key]) => key);
+                    
+                console.error(`Duplicate columns: ${duplicates.join(', ')}`);
+            }
+        }
+        
+        // Track table data for duplicate detection
+        const tableDataCache = {};
+        
         // Check if Chart.js is loaded
         function isChartJSAvailable() {
             return typeof Chart !== 'undefined' && Chart !== null;
@@ -13749,8 +13871,5 @@ Customer: ${order.customer || 'Unknown'}
             }, 30000);
         });
     </script>
-    
-    <!-- Load Real Data Schedule Board -->
-    <script src="schedule_board_realdata.js"></script>
 </body>
 </html>

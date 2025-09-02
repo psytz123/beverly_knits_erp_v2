@@ -15,7 +15,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
 
 # Suppress warnings
 warnings.filterwarnings('ignore')

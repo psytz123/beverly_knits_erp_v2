@@ -10715,18 +10715,209 @@ def get_fabric_production():
         "message": "Fabric production API not yet implemented"
     })
 
+def determine_fabric_type(style):
+    """Determine fabric type from style pattern"""
+    style = str(style).upper()
+    
+    # Check for specific fabric indicators in style code
+    if 'CF' in style or 'FLEECE' in style:
+        return 'Cotton Fleece'
+    elif 'CT' in style or 'TERRY' in style:
+        return 'Cotton Terry'
+    elif 'CEE' in style or 'JERSEY' in style:
+        return 'Cotton Jersey'
+    elif 'CL' in style or 'LYCRA' in style:
+        return 'Cotton Lycra'
+    elif 'POLY' in style:
+        return 'Polyester Blend'
+    elif 'BAMBOO' in style:
+        return 'Bamboo Blend'
+    elif 'MODAL' in style:
+        return 'Modal Blend'
+    elif 'VISCOSE' in style:
+        return 'Viscose Blend'
+    else:
+        # Default based on common patterns
+        return 'Cotton Jersey'
+
 @app.route("/api/fabric-forecast")
 def get_fabric_forecast():
-    """Get 90-day fabric forecast similar to yarn forecast"""
+    """Get 90-day fabric forecast using live production data"""
     try:
-        # Get sales data and knit orders to generate fabric forecast
+        # Get real fabric data from eFab inventory files
         fabric_requirements = {}
         fabric_types = set()
         style_count = 0
         
-        # Use sales data and BOM to forecast fabric requirements
-        if analyzer.sales_data is not None and not analyzer.sales_data.empty:
-            # Group by style to get fabric requirements
+        # Load live eFab inventory data for different production stages
+        # Use the latest data folder (9-2-2025 or most recent)
+        base_path = "/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/"
+        
+        # Try to find the latest data folder
+        efab_data_path = base_path + "9-2-2025/"
+        if not os.path.exists(efab_data_path):
+            # Fallback to 8-28-2025 if 9-2-2025 doesn't exist
+            efab_data_path = base_path + "8-28-2025/"
+        
+        print(f"[FABRIC-FORECAST] Using data from: {efab_data_path}")
+        
+        # G00 = Greige (raw fabric)
+        # G02 = Greige Stage 2 
+        # I01 = QC/Inspection
+        # F01 = Finished Goods
+        
+        # Check for both .xlsx and .csv files
+        inventory_by_stage = {}
+        for stage, name in [('G00', 'Greige'), ('G02', 'Processing'), ('I01', 'QC'), ('F01', 'Finished')]:
+            xlsx_path = efab_data_path + f'eFab_Inventory_{stage}.xlsx'
+            csv_path = efab_data_path + f'eFab_Inventory_{stage}.csv'
+            
+            if os.path.exists(xlsx_path):
+                inventory_by_stage[stage] = {'path': xlsx_path, 'name': name, 'data': None, 'format': 'xlsx'}
+            elif os.path.exists(csv_path):
+                inventory_by_stage[stage] = {'path': csv_path, 'name': name, 'data': None, 'format': 'csv'}
+            else:
+                inventory_by_stage[stage] = {'path': None, 'name': name, 'data': None, 'format': None}
+        
+        # Load each inventory stage
+        total_inventory = {}
+        for stage, info in inventory_by_stage.items():
+            try:
+                if info['path'] and os.path.exists(info['path']):
+                    # Load based on format
+                    if info['format'] == 'xlsx':
+                        df = pd.read_excel(info['path'], engine='openpyxl')
+                    else:
+                        df = pd.read_csv(info['path'], encoding='utf-8-sig')
+                    
+                    info['data'] = df
+                    
+                    # Aggregate by style
+                    if 'Style #' in df.columns and 'Qty (lbs)' in df.columns:
+                        style_inventory = df.groupby('Style #')['Qty (lbs)'].sum().to_dict()
+                        for style, qty in style_inventory.items():
+                            if style not in total_inventory:
+                                total_inventory[style] = {'stages': {}, 'total': 0}
+                            total_inventory[style]['stages'][stage] = qty
+                            total_inventory[style]['total'] += qty
+            except Exception as e:
+                print(f"Error loading {stage} inventory: {e}")
+        
+        # Load knit orders for production planning
+        knit_orders = None
+        knit_orders_xlsx = efab_data_path + 'eFab_Knit_Orders.xlsx'
+        knit_orders_csv = efab_data_path + 'eFab_Knit_Orders.csv'
+        
+        if os.path.exists(knit_orders_xlsx):
+            try:
+                knit_orders = pd.read_excel(knit_orders_xlsx, engine='openpyxl')
+            except Exception as e:
+                print(f"Error loading knit orders: {e}")
+        elif os.path.exists(knit_orders_csv):
+            try:
+                knit_orders = pd.read_csv(knit_orders_csv, encoding='utf-8-sig')
+            except Exception as e:
+                print(f"Error loading knit orders: {e}")
+        
+        # Load sales orders for demand
+        sales_orders = None
+        so_list_xlsx = efab_data_path + 'eFab_SO_List.xlsx'
+        so_list_csv = efab_data_path + 'eFab_SO_List.csv'
+        
+        if os.path.exists(so_list_xlsx):
+            try:
+                sales_orders = pd.read_excel(so_list_xlsx, engine='openpyxl')
+            except Exception as e:
+                print(f"Error loading sales orders: {e}")
+        elif os.path.exists(so_list_csv):
+            try:
+                sales_orders = pd.read_csv(so_list_csv, encoding='utf-8-sig')
+            except Exception as e:
+                print(f"Error loading sales orders: {e}")
+        
+        # Process knit orders to determine fabric requirements
+        if knit_orders is not None and not knit_orders.empty:
+            # Group knit orders by style - use actual column names
+            if 'Style #' in knit_orders.columns and 'Qty Ordered (lbs)' in knit_orders.columns:
+                # Convert qty ordered to numeric
+                knit_orders['Qty Ordered (lbs)'] = pd.to_numeric(knit_orders['Qty Ordered (lbs)'], errors='coerce').fillna(0)
+                style_orders = knit_orders.groupby('Style #')['Qty Ordered (lbs)'].sum().to_dict()
+                
+                for style, target_qty in style_orders.items():
+                    if pd.notna(style) and style != 'nan' and target_qty > 0:
+                        style_count += 1
+                        
+                        # Determine fabric type from style pattern
+                        fabric_type = determine_fabric_type(str(style))
+                        fabric_types.add(fabric_type)
+                        
+                        if fabric_type not in fabric_requirements:
+                            fabric_requirements[fabric_type] = {
+                                'styles': [],
+                                'total_required': 0,
+                                'current_inventory': 0,
+                                'on_order': 0,
+                                'orders': []
+                            }
+                        
+                        # Get current inventory for this style
+                        current_inv = float(total_inventory.get(style, {}).get('total', 0))
+                        target_qty = float(target_qty)
+                        
+                        # Calculate net requirement
+                        net_required = max(0, target_qty - current_inv)
+                        
+                        fabric_requirements[fabric_type]['styles'].append(style)
+                        fabric_requirements[fabric_type]['total_required'] += target_qty
+                        fabric_requirements[fabric_type]['current_inventory'] += current_inv
+                        fabric_requirements[fabric_type]['on_order'] += target_qty  # Knit orders are "on order"
+                        
+                        # Get lead time from knit order dates if available
+                        lead_time = 14  # Default
+                        if 'Quoted Date' in knit_orders.columns:
+                            style_row = knit_orders[knit_orders['Style #'] == style].iloc[0] if len(knit_orders[knit_orders['Style #'] == style]) > 0 else None
+                            if style_row is not None and pd.notna(style_row['Quoted Date']):
+                                try:
+                                    ship_date = pd.to_datetime(style_row['Quoted Date'])
+                                    lead_time = max(0, (ship_date - datetime.now()).days)
+                                except:
+                                    pass
+                        
+                        fabric_requirements[fabric_type]['orders'].append({
+                            'style': style,
+                            'quantity': target_qty,
+                            'current_inventory': current_inv,
+                            'net_required': net_required,
+                            'lead_time': lead_time,
+                            'risk_level': 'HIGH' if net_required > current_inv else 'MEDIUM' if net_required > 0 else 'LOW',
+                            'target_date': (datetime.now() + timedelta(days=lead_time)).strftime('%Y-%m-%d')
+                        })
+        
+        # Process sales orders for additional demand visibility
+        if sales_orders is not None and not sales_orders.empty:
+            if 'Style' in sales_orders.columns and 'Lbs' in sales_orders.columns:
+                so_demand = sales_orders.groupby('Style')['Lbs'].sum().to_dict()
+                
+                for style, demand_lbs in so_demand.items():
+                    if pd.notna(style) and style != 'nan' and style not in [o['style'] for fr in fabric_requirements.values() for o in fr['orders']]:
+                        # This is additional demand not in knit orders yet
+                        fabric_type = determine_fabric_type(str(style))
+                        
+                        if fabric_type not in fabric_requirements:
+                            fabric_requirements[fabric_type] = {
+                                'styles': [],
+                                'total_required': 0,
+                                'current_inventory': 0,
+                                'on_order': 0,
+                                'orders': []
+                            }
+                        
+                        current_inv = total_inventory.get(style, {}).get('total', 0)
+                        fabric_requirements[fabric_type]['total_required'] += demand_lbs
+                        fabric_requirements[fabric_type]['current_inventory'] += current_inv
+        
+        # Fallback to sales data if no knit orders
+        if not fabric_requirements and analyzer.sales_data is not None and not analyzer.sales_data.empty:
             sales_df = analyzer.sales_data.copy()
             
             # Get recent sales (last 90 days if date column exists)
@@ -10847,10 +11038,10 @@ def get_fabric_forecast():
         shortage_count = 0
         
         for fabric_type, data in fabric_requirements.items():
-            # Simulate inventory levels (would connect to real data in production)
-            current_inventory = 5000 + (hash(fabric_type) % 10000)
-            on_order = 2000 + (hash(fabric_type + 'order') % 5000)
-            net_position = current_inventory + on_order - data['total_required']
+            # Use real inventory levels from loaded data
+            current_inventory = data.get('current_inventory', 0)
+            on_order = data.get('on_order', 0)
+            net_position = current_inventory - data['total_required']
             
             # Determine status
             status = 'ADEQUATE'
@@ -10868,21 +11059,25 @@ def get_fabric_forecast():
             
             total_required += data['total_required']
             
-            # Get earliest order for lead time
-            earliest_order = min(data['orders'], key=lambda x: x['days_until_start']) if data['orders'] else None
-            lead_time = abs(earliest_order['days_until_start']) if earliest_order and earliest_order['days_until_start'] < 0 else 14
-            
+            # Process orders
             for order in data['orders']:
+                lead_time = order.get('lead_time', 14)
+                
+                # Calculate per-order values
+                order_qty = order.get('quantity', 0)
+                order_current_inv = order.get('current_inventory', 0)
+                order_net_req = order.get('net_required', 0)
+                
                 fabric_forecast_items.append({
                     'style': order['style'],
                     'fabric_type': fabric_type,
                     'description': f"{fabric_type} - Production Grade",
-                    'forecasted_qty': round(order['quantity'], 2),
-                    'current_inventory': round(current_inventory / len(data['orders']), 2),
-                    'on_order': round(on_order / len(data['orders']), 2),
-                    'net_position': round(net_position / len(data['orders']), 2),
+                    'forecasted_qty': round(order_qty, 2),
+                    'current_inventory': round(order_current_inv, 2),
+                    'on_order': round(order_qty, 2),
+                    'net_position': round(order_current_inv - order_net_req, 2),
                     'lead_time': lead_time,
-                    'target_date': order['quoted_date'] or (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
+                    'target_date': order.get('target_date', (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')),
                     'status': status,
                     'status_color': status_color,
                     'risk_level': order['risk_level']

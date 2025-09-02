@@ -1,0 +1,32 @@
+{
+  "training_date": "2025-09-02T06:46:37.032102",
+  "models_trained": {
+    "sales_forecasting": {
+      "models_trained": [
+        "ARIMA",
+        "Prophet",
+        "XGBoost",
+        "LSTM"
+      ],
+      "training_samples": 365,
+      "timestamp": "2025-09-02T06:46:36.620503"
+    },
+    "yarn_demand": {
+      "error": "'Style'"
+    },
+    "production_optimization": {
+      "error": "Input y contains NaN."
+    },
+    "validation": {
+      "prophet": {
+        "status": "validated",
+        "forecast_days": 30,
+        "metrics": {
+          "mape": 376.83464846526476,
+          "confidence": 0.95
+        }
+      },
+      "xgboost": {
+        "status": "validated",
+        "feature_importance": [
+          
