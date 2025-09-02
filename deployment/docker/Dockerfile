@@ -89,11 +89,11 @@ ENV PYTHONPATH=/app \
     TZ=America/New_York
 
 # Expose the application port
-EXPOSE 5005
+EXPOSE 5006
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5005/health || exit 1
+    CMD curl -f http://localhost:5006/health || exit 1
 
 # Switch to non-root user
 USER bki

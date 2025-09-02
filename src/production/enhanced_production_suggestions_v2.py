@@ -93,8 +93,15 @@ class EnhancedProductionSuggestionsV2:
         
         # Analyze historical sales data for forecast confidence
         if hasattr(self.analyzer, 'sales_data') and self.analyzer.sales_data is not None:
+            # Handle both Style# and fStyle# columns
+            style_col = None
             if 'Style#' in self.analyzer.sales_data.columns:
-                style_sales = self.analyzer.sales_data[self.analyzer.sales_data['Style#'] == style]
+                style_col = 'Style#'
+            elif 'fStyle#' in self.analyzer.sales_data.columns:
+                style_col = 'fStyle#'
+            
+            if style_col:
+                style_sales = self.analyzer.sales_data[self.analyzer.sales_data[style_col] == style]
                 
                 if not style_sales.empty:
                     result['data_points'] = int(len(style_sales))
@@ -366,11 +373,25 @@ class EnhancedProductionSuggestionsV2:
         if not isinstance(bom_df, pd.DataFrame) or bom_df.empty:
             return True, [], 1.0
         
-        # Get BOM for this style
-        style_bom = bom_df[bom_df['Style#'] == style] if 'Style#' in bom_df.columns else pd.DataFrame()
+        # Try to map sales style to BOM style using style mapper
+        bom_styles_to_check = [style]  # Default to original style
+        
+        if hasattr(self.analyzer, 'style_mapper') and self.analyzer.style_mapper:
+            mapped_styles = self.analyzer.style_mapper.map_sales_to_bom(style)
+            if mapped_styles:
+                bom_styles_to_check = mapped_styles
+        
+        # Get BOM for this style (check all mapped styles)
+        style_bom = pd.DataFrame()
+        for bom_style in bom_styles_to_check:
+            if 'Style#' in bom_df.columns:
+                bom_match = bom_df[bom_df['Style#'] == bom_style]
+                if not bom_match.empty:
+                    style_bom = bom_match
+                    break
         
         if style_bom.empty:
-            issues.append(f"No BOM found for style {style}")
+            issues.append(f"No BOM found for style {style} or mapped styles")
             return False, issues, 0.0
         
         # Get yarn availability
@@ -417,9 +438,15 @@ class EnhancedProductionSuggestionsV2:
         if sales_df is None or sales_df.empty:
             return score
         
-        # Get sales data for this style
+        # Get sales data for this style - handle both Style# and fStyle#
+        style_col = None
         if 'Style#' in sales_df.columns:
-            style_sales = sales_df[sales_df['Style#'] == style]
+            style_col = 'Style#'
+        elif 'fStyle#' in sales_df.columns:
+            style_col = 'fStyle#'
+        
+        if style_col:
+            style_sales = sales_df[sales_df[style_col] == style]
             
             if not style_sales.empty:
                 # Calculate average price if available
@@ -516,8 +543,23 @@ class EnhancedProductionSuggestionsV2:
             # Priority 2: Styles with historical sales
             historical_styles = set()
             if hasattr(self.analyzer, 'sales_data') and self.analyzer.sales_data is not None:
+                # Handle both Style# and fStyle# columns
                 if 'Style#' in self.analyzer.sales_data.columns:
-                    historical_styles.update(self.analyzer.sales_data['Style#'].unique())
+                    sales_styles = self.analyzer.sales_data['Style#'].dropna().unique()
+                    historical_styles.update(sales_styles)
+                    
+                    # If we have a style mapper, also check for mapped BOM styles
+                    if hasattr(self.analyzer, 'style_mapper') and self.analyzer.style_mapper:
+                        for style in sales_styles[:50]:  # Limit for performance
+                            mapped = self.analyzer.style_mapper.map_sales_to_bom(str(style))
+                            if mapped:
+                                # Add the first mapped BOM style as a candidate
+                                historical_styles.add(mapped[0])
+                                
+                elif 'fStyle#' in self.analyzer.sales_data.columns:
+                    # Add all fStyle# values
+                    fstyles = self.analyzer.sales_data['fStyle#'].unique()
+                    historical_styles.update(fstyles)
             
             # Priority 3: Styles in BOM (could be new products)
             bom_styles = set()
@@ -545,8 +587,10 @@ class EnhancedProductionSuggestionsV2:
                 inventory_urgency = self.calculate_inventory_urgency(style)
                 
                 # Skip if well-stocked and no urgent demand
+                # But always include if we have sales orders
                 if (inventory_urgency['days_of_supply'] > self.forecast_horizon_days and 
-                    not demand_confidence['has_sales_order']):
+                    not demand_confidence['has_sales_order'] and
+                    demand_confidence['confidence_score'] < 0.3):
                     continue
                 
                 # Calculate suggested quantity
@@ -718,4 +762,42 @@ class EnhancedProductionSuggestionsV2:
 def create_enhanced_suggestions_v2(analyzer):
     """Factory function to create suggestions with analyzer instance"""
     engine = EnhancedProductionSuggestionsV2(analyzer)
-    return engine.generate_suggestions()
+    suggestions_result = engine.generate_suggestions()
+    
+    # Apply business logic if available
+    try:
+        from production.production_business_logic import apply_business_logic
+        if suggestions_result.get('status') == 'success' and suggestions_result.get('suggestions'):
+            # Enhance suggestions with business logic
+            enhanced = apply_business_logic(suggestions_result['suggestions'], analyzer)
+            suggestions_result['suggestions'] = enhanced
+            suggestions_result['summary']['total_suggestions'] = len(enhanced)
+            
+            # Update summary with business logic metrics
+            if enhanced:
+                suggestions_result['summary']['critical_priority'] = len([s for s in enhanced if s.get('priority_rank') == 'CRITICAL'])
+                suggestions_result['summary']['high_priority'] = len([s for s in enhanced if s.get('priority_rank') == 'HIGH'])
+                suggestions_result['summary']['total_suggested_qty'] = sum(s.get('suggested_quantity_lbs', 0) for s in enhanced)
+                
+                # Add business logic recommendations
+                business_recommendations = []
+                
+                critical_count = suggestions_result['summary'].get('critical_priority', 0)
+                if critical_count > 0:
+                    business_recommendations.append(f"URGENT: {critical_count} critical priority items need immediate production")
+                
+                material_shortage = len([s for s in enhanced if not s.get('yarn_available', True)])
+                if material_shortage > 0:
+                    business_recommendations.append(f"Material shortage affecting {material_shortage} styles - prioritize procurement")
+                
+                seasonal = len([s for s in enhanced if s.get('style_category') == 'SEASONAL'])
+                if seasonal > 0:
+                    business_recommendations.append(f"{seasonal} seasonal items detected - adjust lead times accordingly")
+                
+                if business_recommendations:
+                    suggestions_result['recommendations'].extend(business_recommendations)
+                    
+    except ImportError as e:
+        print(f"Business logic not available: {e}")
+    
+    return suggestions_result

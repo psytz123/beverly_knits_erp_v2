@@ -18,7 +18,7 @@ cp config/.env.example config/.env
 # Run the application
 make run
 
-# Access at http://localhost:5005
+# Access at http://localhost:5006
 ```
 
 ## 📋 Features

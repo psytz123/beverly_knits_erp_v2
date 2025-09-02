@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Flow Tracker - Beverly Knits ERP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        /* Production Flow Pipeline */
+        .production-flow-tracker {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .production-flow-tracker h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .stage-cards {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stage-card {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .stage-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stage-card.wip {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+        
+        .stage-card.finished {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .stage-card.bottleneck {
+            background: #ffebee;
+            border-color: #f44336;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        .stage-card h4 {
+            color: #34495e;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        .stage-card .quantity {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+        
+        .stage-card .stage-type {
+            font-size: 0.8em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .capacity-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: #27ae60;
+            transition: width 0.3s, background 0.3s;
+            border-radius: 0 0 6px 6px;
+        }
+        
+        .capacity-bar.warning {
+            background: #f39c12;
+        }
+        
+        .capacity-bar.critical {
+            background: #e74c3c;
+        }
+        
+        /* Flow arrows */
+        .stage-card:not(:last-child)::after {
+            content: '→';
+            position: absolute;
+            right: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            color: #95a5a6;
+            z-index: 1;
+        }
+        
+        /* Batch Tracking Table */
+        .batch-tracking {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .batch-tracking h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+        
+        /* Metrics Cards */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .metric-card h3 {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .metric-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .metric-card .change {
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .change.positive {
+            color: #27ae60;
+        }
+        
+        .change.negative {
+            color: #e74c3c;
+        }
+        
+        /* Control Panel */
+        .control-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .control-panel h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .controls .btn {
+            padding: 10px 20px;
+        }
+        
+        /* Loading indicator */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Production Flow Tracker</h1>
+        
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Active Batches</h3>
+                <div class="value" id="activeBatches">0</div>
+                <div class="change positive">Loading...</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total WIP</h3>
+                <div class="value" id="totalWIP">0 lbs</div>
+                <div class="change">Across all stages</div>
+            </div>
+            <div class="metric-card">
+                <h3>Average Yield</h3>
+                <div class="value" id="avgYield">0%</div>
+                <div class="change">Quality performance</div>
+            </div>
+            <div class="metric-card">
+                <h3>Bottlenecks</h3>
+                <div class="value" id="bottleneckCount">0</div>
+                <div class="change negative">Stages >80% capacity</div>
+            </div>
+        </div>
+        
+        <!-- Production Pipeline Visualization -->
+        <div class="production-flow-tracker">
+            <h2>Production Pipeline Status</h2>
+            <div class="stage-cards" id="stageCards">
+                <div class="stage-card" data-stage="YARN">
+                    <h4>YARN</h4>
+                    <div class="quantity">0 lbs</div>
+                    <div class="stage-type">Raw Material</div>
+                </div>
+                <div class="stage-card wip" data-stage="G00">
+                    <h4>G00 - Knitting</h4>
+                    <div class="quantity">0 lbs</div>
+                    <div class="stage-type">WIP</div>
+                    <div class="capacity-bar"></div>
+                </div>
+                <div class="stage-card wip" data-stage="G02">
+                    <h4>G02 - Finishing</h4>
+                    <div class="quantity">0 lbs</div>
+                    <div class="stage-type">WIP</div>
+                    <div class="capacity-bar"></div>
+                </div>
+                <div class="stage-card wip" data-stage="I01">
+                    <h4>I01 - Inspection</h4>
+                    <div class="quantity">0 lbs</div>
+                    <div class="stage-type">WIP</div>
+                    <div class="capacity-bar"></div>
+                </div>
+                <div class="stage-card finished" data-stage="F01">
+                    <h4>F01 - Finished Goods</h4>
+                    <div class="quantity">0 lbs</div>
+                    <div class="stage-type">Available</div>
+                </div>
+                <div class="stage-card finished" data-stage="P01">
+                    <h4>P01 - Allocated</h4>
+                    <div class="quantity">0 lbs</div>
+                    <div class="stage-type">Committed</div>
+                </div>
+            </div>
+            <div class="loading" id="pipelineLoading">
+                <div class="spinner"></div>
+                <p>Loading pipeline status...</p>
+            </div>
+        </div>
+        
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h2>Actions</h2>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="loadProductionFlowStatus()">Refresh Status</button>
+                <button class="btn btn-success" onclick="createTestData()">Create Test Data</button>
+                <button class="btn btn-primary" onclick="loadBatchTracking()">Load Batches</button>
+                <button class="btn btn-warning" onclick="calculateReplenishment()">Calculate F01 Needs</button>
+            </div>
+        </div>
+        
+        <!-- Batch Tracking Table -->
+        <div class="batch-tracking">
+            <h2>Active Production Batches</h2>
+            <table id="batchTable">
+                <thead>
+                    <tr>
+                        <th>Batch ID</th>
+                        <th>Style</th>
+                        <th>Current Stage</th>
+                        <th>Quantity</th>
+                        <th>Yield Rate</th>
+                        <th>Days in Production</th>
+                        <th>Target Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #7f8c8d;">No active batches</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // API base URL
+        const API_BASE = 'http://localhost:5006';
+        
+        // Load production flow status
+        async function loadProductionFlowStatus() {
+            const loading = document.getElementById('pipelineLoading');
+            loading.classList.add('active');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/production-flow/status`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updatePipelineVisualization(data);
+                    updateMetrics(data);
+                } else {
+                    console.error('Error loading status:', data.error);
+                    alert('Error loading production status: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                alert('Network error: Could not connect to server');
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+        
+        // Update pipeline visualization
+        function updatePipelineVisualization(data) {
+            // Update stage cards
+            Object.entries(data.stages).forEach(([stage, info]) => {
+                const card = document.querySelector(`[data-stage="${stage}"]`);
+                if (card) {
+                    const quantityEl = card.querySelector('.quantity');
+                    quantityEl.textContent = `${info.total_quantity.toFixed(0)} lbs`;
+                    
+                    // Update capacity bar for WIP stages
+                    if (info.is_wip && data.capacity_utilization[stage] !== undefined) {
+                        const utilization = data.capacity_utilization[stage];
+                        const bar = card.querySelector('.capacity-bar');
+                        if (bar) {
+                            bar.style.width = `${Math.min(utilization, 100)}%`;
+                            
+                            // Update bar color based on utilization
+                            bar.className = 'capacity-bar';
+                            if (utilization > 80) {
+                                bar.classList.add('critical');
+                                card.classList.add('bottleneck');
+                            } else if (utilization > 60) {
+                                bar.classList.add('warning');
+                                card.classList.remove('bottleneck');
+                            } else {
+                                card.classList.remove('bottleneck');
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Update bottleneck count
+            document.getElementById('bottleneckCount').textContent = data.bottlenecks.length;
+        }
+        
+        // Update metrics
+        function updateMetrics(data) {
+            // Calculate total WIP
+            let totalWIP = 0;
+            Object.entries(data.wip_summary).forEach(([stage, quantity]) => {
+                totalWIP += quantity;
+            });
+            document.getElementById('totalWIP').textContent = `${totalWIP.toFixed(0)} lbs`;
+        }
+        
+        // Load batch tracking
+        async function loadBatchTracking() {
+            try {
+                const response = await fetch(`${API_BASE}/api/production-flow/batches`);
+                const batches = await response.json();
+                
+                if (response.ok) {
+                    updateBatchTable(batches);
+                    document.getElementById('activeBatches').textContent = batches.length;
+                } else {
+                    console.error('Error loading batches:', batches.error);
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+            }
+        }
+        
+        // Update batch table
+        function updateBatchTable(batches) {
+            const tbody = document.querySelector('#batchTable tbody');
+            
+            if (batches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #7f8c8d;">No active batches</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = batches.map(batch => {
+                const targetDate = new Date(batch.target_date).toLocaleDateString();
+                const yieldRate = (batch.yield_rate * 100).toFixed(1);
+                
+                // Determine next stage
+                const nextStage = getNextStage(batch.current_stage);
+                
+                return `
+                    <tr>
+                        <td>${batch.batch_id}</td>
+                        <td>${batch.style_id}</td>
+                        <td>${batch.current_stage}</td>
+                        <td>${batch.current_quantity.toFixed(0)} lbs</td>
+                        <td>${yieldRate}%</td>
+                        <td>${batch.days_in_production}</td>
+                        <td>${targetDate}</td>
+                        <td>
+                            ${nextStage ? `<button class="btn btn-primary btn-sm" onclick="moveBatch('${batch.batch_id}', '${nextStage}')">Move to ${nextStage}</button>` : '<span style="color: #7f8c8d;">Complete</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Get next stage in flow
+        function getNextStage(currentStage) {
+            const stageFlow = {
+                'YARN': 'G00',
+                'G00': 'G02',
+                'G02': 'I01',
+                'I01': 'F01',
+                'F01': 'P01',
+                'P01': null
+            };
+            return stageFlow[currentStage];
+        }
+        
+        // Move batch to next stage
+        async function moveBatch(batchId, targetStage) {
+            try {
+                const response = await fetch(`${API_BASE}/api/production-flow/move-batch`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        batch_id: batchId,
+                        target_stage: targetStage,
+                        quality_pass_rate: targetStage === 'F01' ? 0.95 : 1.0
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`Batch moved to ${targetStage}`);
+                    loadProductionFlowStatus();
+                    loadBatchTracking();
+                } else {
+                    alert('Error moving batch: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                alert('Network error: Could not move batch');
+            }
+        }
+        
+        // Create test data
+        async function createTestData() {
+            try {
+                const response = await fetch(`${API_BASE}/api/production-flow/test-data`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`Created ${result.created_batches.length} test batches`);
+                    loadProductionFlowStatus();
+                    loadBatchTracking();
+                } else {
+                    alert('Error creating test data: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                alert('Network error: Could not create test data');
+            }
+        }
+        
+        // Calculate F01 replenishment needs
+        async function calculateReplenishment() {
+            try {
+                const response = await fetch(`${API_BASE}/api/production-flow/f01-replenishment?safety_stock_days=20`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const needs = data.replenishment_needs;
+                    const needsCount = Object.keys(needs).length;
+                    
+                    if (needsCount === 0) {
+                        alert('No replenishment needed - all styles have adequate F01 stock');
+                    } else {
+                        const needsList = Object.entries(needs).map(([style, qty]) => 
+                            `${style}: ${qty.toFixed(0)} units`
+                        ).join('\n');
+                        alert(`F01 Replenishment Needs (${data.safety_stock_days} day safety stock):\n\n${needsList}`);
+                    }
+                } else {
+                    alert('Error calculating replenishment: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                alert('Network error: Could not calculate replenishment');
+            }
+        }
+        
+        // Load production metrics
+        async function loadProductionMetrics() {
+            try {
+                const response = await fetch(`${API_BASE}/api/production-flow/metrics`);
+                const metrics = await response.json();
+                
+                if (response.ok && metrics.quality_metrics) {
+                    const avgYield = (metrics.quality_metrics.average_yield * 100).toFixed(1);
+                    document.getElementById('avgYield').textContent = `${avgYield}%`;
+                }
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            loadProductionFlowStatus();
+            loadBatchTracking();
+            loadProductionMetrics();
+        }, 30000);
+        
+        // Initial load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProductionFlowStatus();
+            loadBatchTracking();
+            loadProductionMetrics();
+        });
+    </script>
+</body>
+</html>

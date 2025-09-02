@@ -67,7 +67,7 @@ class TestHealthEndpoints:
     
     def test_reload_data_endpoint(self, client, mock_analyzer):
         """Test /api/reload-data endpoint"""
-        with patch('beverly_comprehensive_erp.analyzer', mock_analyzer):
+        with patch('core.beverly_comprehensive_erp.inventory_analyzer', mock_analyzer):
             response = client.get('/api/reload-data')
             assert response.status_code == 200
             

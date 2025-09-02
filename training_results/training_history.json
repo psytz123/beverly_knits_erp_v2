@@ -1,0 +1,7 @@
+[
+  {
+    "model_type": "xgboost",
+    "status": "failed",
+    "error": "could not convert string to float: ' $7.45 '"
+  }
+]

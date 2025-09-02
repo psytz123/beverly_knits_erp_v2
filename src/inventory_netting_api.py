@@ -40,21 +40,65 @@ def create_inventory_netting_endpoint(analyzer):
                 total_inventory = analyzer.raw_materials_data['Stock (LBS)'].sum()
                 result['netting_summary']['total_inventory'] = float(total_inventory) if not pd.isna(total_inventory) else 0
             
-            # Create yarn netting data
-            yarn_cols = ['Yarn ID', 'Description', 'Stock (LBS)']
-            available_cols = [col for col in yarn_cols if col in analyzer.raw_materials_data.columns]
+            # Create yarn netting data with proper allocation
+            # Check for correct column names
+            stock_col = None
+            id_col = None
+            desc_col = None
             
-            if available_cols:
-                yarn_data = analyzer.raw_materials_data[available_cols].head(20)
+            # Find the right columns
+            if 'Planning Balance' in analyzer.raw_materials_data.columns:
+                stock_col = 'Planning Balance'
+            elif 'planning_balance' in analyzer.raw_materials_data.columns:
+                stock_col = 'planning_balance'
+            elif 'Stock (LBS)' in analyzer.raw_materials_data.columns:
+                stock_col = 'Stock (LBS)'
+            
+            if 'Desc#' in analyzer.raw_materials_data.columns:
+                id_col = 'Desc#'
+            elif 'Yarn ID' in analyzer.raw_materials_data.columns:
+                id_col = 'Yarn ID'
+            elif 'yarn_id' in analyzer.raw_materials_data.columns:
+                id_col = 'yarn_id'
+            
+            if 'Description' in analyzer.raw_materials_data.columns:
+                desc_col = 'Description'
+            elif 'description' in analyzer.raw_materials_data.columns:
+                desc_col = 'description'
+            
+            if stock_col and id_col:
+                # Get yarns sorted by stock level (prioritize low stock items)
+                yarn_data = analyzer.raw_materials_data.sort_values(by=stock_col).head(50)
+                
+                # Calculate demand per yarn from BOM if available
+                yarn_demand = {}
+                if hasattr(analyzer, 'bom_data') and analyzer.bom_data is not None:
+                    if 'Component' in analyzer.bom_data.columns and 'Quantity' in analyzer.bom_data.columns:
+                        yarn_demand = analyzer.bom_data.groupby('Component')['Quantity'].sum().to_dict()
+                
                 for _, row in yarn_data.iterrows():
+                    yarn_id = str(row.get(id_col, 'Unknown'))
+                    available = float(row.get(stock_col, 0)) if not pd.isna(row.get(stock_col, 0)) else 0
+                    demand = yarn_demand.get(yarn_id, 0)
+                    
+                    # Calculate allocation (cannot exceed available stock)
+                    allocated = min(available, demand) if available > 0 else 0
+                    remaining = available - allocated
+                    
                     yarn_item = {
-                        "yarn_id": str(row.get('Yarn ID', 'Unknown')),
-                        "description": str(row.get('Description', 'N/A')),
-                        "available_stock": float(row.get('Stock (LBS)', 0)) if not pd.isna(row.get('Stock (LBS)', 0)) else 0,
-                        "allocated": 0,
-                        "remaining": float(row.get('Stock (LBS)', 0)) if not pd.isna(row.get('Stock (LBS)', 0)) else 0
+                        "yarn_id": yarn_id,
+                        "description": str(row.get(desc_col, 'N/A')) if desc_col else 'N/A',
+                        "available_stock": available,
+                        "demand": demand,
+                        "allocated": allocated,
+                        "remaining": remaining,
+                        "status": "SHORTAGE" if demand > available else "ADEQUATE"
                     }
                     result['yarn_netting'].append(yarn_item)
+                
+                # Update summary with actual allocated amount
+                total_allocated = sum(item['allocated'] for item in result['yarn_netting'])
+                result['netting_summary']['total_allocated'] = total_allocated
         
         # Calculate fulfillment rate
         if result['netting_summary']['total_demand'] > 0:

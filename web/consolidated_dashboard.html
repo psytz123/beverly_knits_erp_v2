@@ -1487,7 +1487,7 @@ const dataSafetyMonitor = {
 
                 <!-- Forecasted Fabric Requirements Table -->
                 <div class="overflow-x-auto">
-                    <table class="data-table" id="fabricForecastTable">
+                    <table class="data-table" id="mlFabricForecastTable">
                         <thead>
                             <tr>
                                 <th>Style#</th>
@@ -3403,9 +3403,19 @@ const dataSafetyMonitor = {
                             'Balance (lbs)': order.balance_lbs,
                             'G00 (lbs)': order.g00_lbs || 0,
                             'Quoted Date': order.due_date || order.start_date,
-                            'Status': order.status
+                            'Status': order.status,
+                            // Add additional fields for compatibility with displayPipelinePage
+                            order_num: order.ko_id,
+                            style: actualStyle,
+                            machine: order.machine || 'TBD',
+                            quantity: order.qty_ordered_lbs || 0,
+                            stage: order.ko_status || 'Planning',
+                            progress: Math.round(((order.g00_lbs || 0) / (order.qty_ordered_lbs || 1)) * 100),
+                            due_date: order.due_date || order.start_date,
+                            status: order.status || 'Pending'
                         };
                     });
+                    console.log('Updating production table with', transformedOrders.length, 'orders');
                     updateProductionTable({knit_orders: transformedOrders});
                 } else if (planningData && planningData.production_schedule) {
                     updateProductionTable({knit_orders: planningData.production_schedule});
@@ -11189,11 +11199,21 @@ const dataSafetyMonitor = {
                     }
                 }
                 
-                // Update table
-                const tbody = document.querySelector('#fabricForecastTable tbody');
-                if (!tbody) return;
+                // Update table - try ML Forecasting tab first, then fallback to production tab
+                let tbody = document.querySelector('#mlFabricForecastTable tbody');
+                if (!tbody) {
+                    tbody = document.querySelector('#fabricForecastTable tbody');
+                }
+                console.log('Found tbody:', tbody);
+                if (!tbody) {
+                    console.error('Could not find fabric forecast table tbody');
+                    return;
+                }
+                
+                console.log('Fabric forecast data length:', data.fabric_forecast ? data.fabric_forecast.length : 0);
                 
                 if (data && data.fabric_forecast && data.fabric_forecast.length > 0) {
+                    console.log('Populating table with', data.fabric_forecast.length, 'items');
                     tbody.innerHTML = data.fabric_forecast.map(item => {
                         const statusColor = item.status === 'CRITICAL' ? 'text-red-600' : 
                                           item.status === 'WARNING' ? 'text-yellow-600' : 'text-green-600';
@@ -11225,7 +11245,10 @@ const dataSafetyMonitor = {
                 
             } catch (error) {
                 console.error('Error loading fabric forecast:', error);
-                const tbody = document.querySelector('#fabricForecastTable tbody');
+                let tbody = document.querySelector('#mlFabricForecastTable tbody');
+                if (!tbody) {
+                    tbody = document.querySelector('#fabricForecastTable tbody');
+                }
                 if (tbody) {
                     tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500 py-4">Error loading fabric forecast data</td></tr>';
                 }

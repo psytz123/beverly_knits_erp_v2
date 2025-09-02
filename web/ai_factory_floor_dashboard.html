@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Factory Floor Dashboard - Beverly Knits ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .work-center-card {
+            transition: all 0.3s ease;
+        }
+        .work-center-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.3);
+        }
+        .machine-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin: 2px;
+            transition: all 0.3s ease;
+        }
+        .bottleneck-critical {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .bottleneck-high {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .ai-insight-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .optimization-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .forecast-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">AI Factory Floor Dashboard</h1>
+                    <p class="text-sm text-gray-600">Real-time production intelligence with AI-powered insights</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-500">
+                        <span id="lastUpdated">Loading...</span>
+                    </div>
+                    <button onclick="refreshData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <span id="refreshBtn">🔄 Refresh</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Insights Banner -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- AI Analysis Card -->
+            <div class="ai-insight-card text-white p-6 rounded-xl shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold">AI Analysis</h3>
+                        <p class="text-blue-100" id="aiAnalysisStatus">Analyzing...</p>
+                    </div>
+                    <div class="text-3xl">🤖</div>
+                </div>
+                <div class="mt-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span>Bottlenecks:</span>
+                        <span id="bottleneckCount">-</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Critical Issues:</span>
+                        <span id="criticalCount">-</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Model Confidence:</span>
+                        <span id="modelConfidence">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimization Card -->
+            <div class="optimization-card text-white p-6 rounded-xl shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold">Optimization</h3>
+                        <p class="text-pink-100" id="optimizationStatus">Computing...</p>
+                    </div>
+                    <div class="text-3xl">⚡</div>
+                </div>
+                <div class="mt-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span>Opportunities:</span>
+                        <span id="optimizationOpportunities">-</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Avg Improvement:</span>
+                        <span id="avgImprovement">-</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Capacity Health:</span>
+                        <span id="capacityHealth">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forecast Card -->
+            <div class="forecast-card text-white p-6 rounded-xl shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold">AI Forecast</h3>
+                        <p class="text-cyan-100" id="forecastStatus">Predicting...</p>
+                    </div>
+                    <div class="text-3xl">📊</div>
+                </div>
+                <div class="mt-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span>30-Day Util:</span>
+                        <span id="predictedUtilization">-</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Forecast Accuracy:</span>
+                        <span id="forecastAccuracy">-</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Bottleneck Risk:</span>
+                        <span id="bottleneckRisk">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factory Overview -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Factory Overview</h2>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600" id="totalMachines">-</div>
+                    <div class="text-sm text-gray-600">Total Machines</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600" id="runningMachines">-</div>
+                    <div class="text-sm text-gray-600">Running</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-gray-600" id="idleMachines">-</div>
+                    <div class="text-sm text-gray-600">Idle</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-600" id="totalWorkCenters">-</div>
+                    <div class="text-sm text-gray-600">Work Centers</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-600" id="avgUtilization">-</div>
+                    <div class="text-sm text-gray-600">Avg Utilization</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Insights Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8" id="aiInsightsSection" style="display: none;">
+            <h2 class="text-xl font-semibold mb-4">🎯 AI Actionable Insights</h2>
+            <div id="actionableInsights" class="space-y-4">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Work Centers Grid -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold">Work Centers (Factory Floor)</h2>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 text-sm">
+                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span>Normal</span>
+                        <div class="w-3 h-3 bg-yellow-500 rounded-full ml-4"></div>
+                        <span>Warning</span>
+                        <div class="w-3 h-3 bg-red-500 rounded-full ml-4"></div>
+                        <span>Critical</span>
+                    </div>
+                    <select id="viewMode" onchange="changeViewMode()" class="border rounded px-3 py-1 text-sm">
+                        <option value="grid">Grid View</option>
+                        <option value="list">List View</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Work Centers Container -->
+            <div id="workCentersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Dynamic work center cards will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Center Detail Modal -->
+    <div id="workCenterModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-semibold" id="modalTitle">Work Center Details</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                    </div>
+                    <div id="modalContent">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dashboardData = null;
+        let refreshInterval = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            // Auto-refresh every 30 seconds
+            refreshInterval = setInterval(loadDashboardData, 30000);
+        });
+
+        async function loadDashboardData() {
+            try {
+                document.getElementById('refreshBtn').innerHTML = '🔄 Loading...';
+                
+                const response = await fetch('/api/factory-floor-ai-dashboard');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    dashboardData = data;
+                    updateDashboard(data);
+                    updateLastUpdated(data.last_updated);
+                } else {
+                    console.error('Failed to load dashboard data:', data.error);
+                    showError('Failed to load dashboard data');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showError('Network error loading dashboard data');
+            } finally {
+                document.getElementById('refreshBtn').innerHTML = '🔄 Refresh';
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update AI insights
+            updateAIInsights(data.ai_analysis);
+            
+            // Update factory overview
+            updateFactoryOverview(data.factory_overview);
+            
+            // Update work centers
+            updateWorkCenters(data.work_center_groups);
+            
+            // Update actionable insights
+            updateActionableInsights(data.ai_analysis.actionable_insights);
+        }
+
+        function updateAIInsights(aiAnalysis) {
+            // AI Analysis Card
+            document.getElementById('aiAnalysisStatus').textContent = 
+                `${aiAnalysis.bottlenecks.length} issues detected`;
+            document.getElementById('bottleneckCount').textContent = 
+                aiAnalysis.ai_kpis.bottleneck_summary.total;
+            document.getElementById('criticalCount').textContent = 
+                aiAnalysis.ai_kpis.bottleneck_summary.critical;
+            document.getElementById('modelConfidence').textContent = 
+                `${dashboardData.model_confidence * 100}%`;
+
+            // Optimization Card
+            document.getElementById('optimizationStatus').textContent = 
+                `${aiAnalysis.optimizations.length} opportunities found`;
+            document.getElementById('optimizationOpportunities').textContent = 
+                aiAnalysis.ai_kpis.optimization_potential.opportunities;
+            document.getElementById('avgImprovement').textContent = 
+                `${aiAnalysis.ai_kpis.optimization_potential.avg_improvement_percent}%`;
+            document.getElementById('capacityHealth').textContent = 
+                aiAnalysis.ai_kpis.capacity_health;
+
+            // Forecast Card
+            document.getElementById('forecastStatus').textContent = 
+                `Next 30 days predicted`;
+            document.getElementById('predictedUtilization').textContent = 
+                `${aiAnalysis.ai_kpis.predicted_utilization}%`;
+            document.getElementById('forecastAccuracy').textContent = 
+                `${aiAnalysis.ai_kpis.forecast_accuracy}%`;
+            document.getElementById('bottleneckRisk').textContent = 
+                aiAnalysis.forecast_30_days.projected_bottlenecks.length > 0 ? 'HIGH' : 'LOW';
+        }
+
+        function updateFactoryOverview(factoryOverview) {
+            document.getElementById('totalMachines').textContent = factoryOverview.total_machines;
+            document.getElementById('runningMachines').textContent = factoryOverview.running_machines;
+            document.getElementById('idleMachines').textContent = factoryOverview.idle_machines;
+            document.getElementById('totalWorkCenters').textContent = factoryOverview.total_work_centers;
+            document.getElementById('avgUtilization').textContent = 
+                `${factoryOverview.avg_utilization_percent.toFixed(1)}%`;
+        }
+
+        function updateWorkCenters(workCenterGroups) {
+            const container = document.getElementById('workCentersContainer');
+            container.innerHTML = '';
+
+            // Sort work centers by urgency (critical bottlenecks first)
+            workCenterGroups.sort((a, b) => {
+                const urgencyA = a.ai_insights?.urgency_score || 0;
+                const urgencyB = b.ai_insights?.urgency_score || 0;
+                return urgencyB - urgencyA;
+            });
+
+            workCenterGroups.forEach(workCenter => {
+                const card = createWorkCenterCard(workCenter);
+                container.appendChild(card);
+            });
+        }
+
+        function createWorkCenterCard(workCenter) {
+            const card = document.createElement('div');
+            const aiInsights = workCenter.ai_insights;
+            const severity = aiInsights.bottleneck_severity;
+            
+            // Determine card styling based on severity
+            let cardClass = 'work-center-card bg-white border-2 rounded-lg p-4 cursor-pointer ';
+            let statusClass = '';
+            
+            switch (severity) {
+                case 'CRITICAL':
+                    cardClass += 'border-red-500 bottleneck-critical';
+                    statusClass = 'bg-red-100 text-red-800';
+                    break;
+                case 'HIGH':
+                    cardClass += 'border-orange-500 bottleneck-high';
+                    statusClass = 'bg-orange-100 text-orange-800';
+                    break;
+                case 'MEDIUM':
+                    cardClass += 'border-yellow-500';
+                    statusClass = 'bg-yellow-100 text-yellow-800';
+                    break;
+                case 'LOW':
+                    cardClass += 'border-green-500';
+                    statusClass = 'bg-green-100 text-green-800';
+                    break;
+                default:
+                    cardClass += 'border-gray-300';
+                    statusClass = 'bg-gray-100 text-gray-800';
+            }
+
+            card.className = cardClass;
+            card.onclick = () => showWorkCenterDetails(workCenter);
+
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-lg">WC ${workCenter.work_center_id}</h3>
+                    <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">
+                        ${severity}
+                    </span>
+                </div>
+                
+                <div class="space-y-2 mb-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Machines:</span>
+                        <span class="font-medium">${workCenter.total_machines}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Running:</span>
+                        <span class="font-medium text-green-600">${workCenter.running_machines}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Utilization:</span>
+                        <span class="font-medium">${workCenter.avg_utilization.toFixed(1)}%</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap mb-3">
+                    ${workCenter.machines.slice(0, 8).map(machine => 
+                        `<div class="machine-indicator" style="background-color: ${machine.status === 'RUNNING' ? '#22c55e' : '#9ca3af'}" 
+                              title="Machine ${machine.machine_id}: ${machine.status}"></div>`
+                    ).join('')}
+                    ${workCenter.machines.length > 8 ? `<div class="text-xs text-gray-500 ml-2">+${workCenter.machines.length - 8} more</div>` : ''}
+                </div>
+
+                ${aiInsights.estimated_delay_days > 0 ? `
+                    <div class="text-xs text-red-600 font-medium">
+                        ⚠️ ${aiInsights.estimated_delay_days.toFixed(1)} day delay risk
+                    </div>
+                ` : ''}
+
+                <div class="text-xs text-gray-500 mt-2 truncate" title="${aiInsights.recommendation}">
+                    💡 ${aiInsights.recommendation}
+                </div>
+            `;
+
+            return card;
+        }
+
+        function updateActionableInsights(insights) {
+            const container = document.getElementById('actionableInsights');
+            const section = document.getElementById('aiInsightsSection');
+            
+            if (!insights || insights.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = '';
+
+            insights.forEach(insight => {
+                const insightCard = document.createElement('div');
+                insightCard.className = 'border-l-4 border-blue-500 bg-blue-50 p-4 rounded-r-lg';
+                
+                let priorityColor = 'blue';
+                if (insight.priority === 'HIGH') priorityColor = 'red';
+                else if (insight.priority === 'MEDIUM') priorityColor = 'yellow';
+                
+                insightCard.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-semibold text-${priorityColor}-900">${insight.title}</h4>
+                        <span class="px-2 py-1 bg-${priorityColor}-200 text-${priorityColor}-800 text-xs rounded-full">
+                            ${insight.priority}
+                        </span>
+                    </div>
+                    <p class="text-${priorityColor}-800 text-sm mb-3">${insight.description}</p>
+                    <div class="text-sm text-${priorityColor}-700">
+                        <strong>Impact:</strong> ${insight.estimated_impact}
+                    </div>
+                    <details class="mt-2">
+                        <summary class="cursor-pointer text-sm text-${priorityColor}-600 hover:text-${priorityColor}-800">
+                            View Action Items
+                        </summary>
+                        <ul class="mt-2 text-sm text-${priorityColor}-700 list-disc list-inside">
+                            ${insight.action_items.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </details>
+                `;
+                
+                container.appendChild(insightCard);
+            });
+        }
+
+        function showWorkCenterDetails(workCenter) {
+            document.getElementById('modalTitle').textContent = `Work Center ${workCenter.work_center_id} Details`;
+            
+            const content = document.getElementById('modalContent');
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-3 rounded">
+                            <h4 class="font-medium text-gray-900">Capacity</h4>
+                            <p class="text-2xl font-bold text-blue-600">${workCenter.total_capacity.toFixed(0)} lbs/day</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded">
+                            <h4 class="font-medium text-gray-900">Utilization</h4>
+                            <p class="text-2xl font-bold text-green-600">${workCenter.avg_utilization.toFixed(1)}%</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">AI Recommendation</h4>
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                            <p class="text-blue-800">${workCenter.ai_insights.recommendation}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-3">Individual Machines</h4>
+                        <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                            ${workCenter.machines.map(machine => `
+                                <div class="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
+                                    <span>Machine ${machine.machine_id}</span>
+                                    <span class="px-2 py-1 rounded-full text-xs ${
+                                        machine.status === 'RUNNING' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-gray-100 text-gray-800'
+                                    }">
+                                        ${machine.status}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('workCenterModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('workCenterModal').classList.add('hidden');
+        }
+
+        function changeViewMode() {
+            const mode = document.getElementById('viewMode').value;
+            const container = document.getElementById('workCentersContainer');
+            
+            if (mode === 'list') {
+                container.className = 'space-y-3';
+                // Could implement list view styling here
+            } else {
+                container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
+            }
+        }
+
+        function refreshData() {
+            loadDashboardData();
+        }
+
+        function updateLastUpdated(timestamp) {
+            const date = new Date(timestamp);
+            document.getElementById('lastUpdated').textContent = 
+                `Last updated: ${date.toLocaleTimeString()}`;
+        }
+
+        function showError(message) {
+            // Simple error handling - could be enhanced with proper notification system
+            console.error(message);
+            document.getElementById('aiAnalysisStatus').textContent = 'Error loading data';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('workCenterModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

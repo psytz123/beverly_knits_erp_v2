@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## System Overview
 
-Beverly Knits ERP v2 - Production-ready textile manufacturing ERP with real-time inventory intelligence, ML-powered forecasting (90% accuracy at 9-week horizon), and 6-phase supply chain optimization. The system manages 1,198+ yarn items, 28,653+ BOM entries, and 221+ active production orders.
+Beverly Knits ERP v2 - Production-ready textile manufacturing ERP with real-time inventory intelligence, ML-powered forecasting, and 6-phase supply chain optimization. The system manages 1,199 yarn items, 28,653 BOM entries, and 194 active production orders.
+
+**Current System Health**: 75% operational (Day 0 fixes implemented, Phase 3 testing complete, Phase 4 ML configured)
 
 ## Primary Commands
 
@@ -78,6 +80,33 @@ make sync-data
 make validate
 ```
 
+### ML Operations
+```bash
+# Test ML configuration
+python3 src/config/ml_config.py
+
+# Run ML backtest
+python3 scripts/ml_backtest.py --save-results
+
+# Train specific model
+python3 scripts/ml_training_pipeline.py --model xgboost --force
+
+# Deploy model to production
+python3 scripts/ml_training_pipeline.py --deploy xgboost
+```
+
+### Emergency Fixes & Utilities
+```bash
+# Run Day 0 health check
+python3 scripts/day0_emergency_fixes.py --health-check
+
+# Apply Day 0 fixes to main ERP
+python3 scripts/apply_day0_fixes.py
+
+# Validate all fixes
+python3 scripts/day0_emergency_fixes.py --validate
+```
+
 ## High-Level Architecture
 
 ### Core Monolithic Application
@@ -116,10 +145,16 @@ src/
 │   ├── six_phase_planning_engine.py
 │   ├── enhanced_production_pipeline.py
 │   └── enhanced_production_suggestions_v2.py
-└── forecasting/          # ML forecasting
-    ├── enhanced_forecasting_engine.py
-    ├── forecast_accuracy_monitor.py
-    └── forecast_auto_retrain.py
+├── forecasting/          # ML forecasting
+│   ├── enhanced_forecasting_engine.py
+│   ├── forecast_accuracy_monitor.py
+│   └── forecast_auto_retrain.py
+├── config/               # Configuration management
+│   └── ml_config.py      # ML model configurations
+└── scripts/              # Utility scripts
+    ├── day0_emergency_fixes.py    # Critical data fixes
+    ├── ml_backtest.py              # ML backtesting
+    └── ml_training_pipeline.py    # Automated training
 ```
 
 ## Data Flow & Field Mappings
@@ -199,6 +234,18 @@ The system handles multiple column name formats. If you see "Planning Balance" e
 - Check both 'Planning Balance' and 'Planning_Balance' 
 - Use hasattr() checks before accessing DataFrame columns
 - Implement fallback logic for column variations
+
+### Day 0 Fixes Not Loading
+If you see `[DAY0] Emergency fixes not available: No module named 'scripts'`:
+- This is expected - Day 0 fixes work standalone but aren't integrated
+- Run fixes manually: `python3 scripts/day0_emergency_fixes.py --health-check`
+- Core functionality still works through existing code
+
+### ML Training Data Format Issues
+If ML training fails with price format errors:
+- Sales data contains "$" prefixes in price columns
+- Preprocess data before training: `df['price'] = df['price'].str.replace('$', '').astype(float)`
+- Use `Unit Price` or `Line Price` columns from sales data
 
 ### API Consolidation Rollback
 If issues arise with consolidated APIs:

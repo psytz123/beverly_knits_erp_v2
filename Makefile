@@ -145,7 +145,7 @@ db-backup:
 # Monitoring
 monitor:
 	@echo "Starting monitoring dashboard..."
-	python -m webbrowser http://localhost:5005/consolidated
+	python -m webbrowser http://localhost:5006/consolidated
 
 logs:
 	tail -f logs/app.log

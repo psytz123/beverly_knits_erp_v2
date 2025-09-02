@@ -1,0 +1,30 @@
+{
+  "timestamp": "20250902_012531",
+  "original_bom_entries": 28653,
+  "total_orphans": 1676,
+  "typos_corrected": 0,
+  "orphans_removed": 1676,
+  "orphan_categories": {
+    "discontinued": 0,
+    "future": 0,
+    "typo": 0,
+    "unknown": 1676
+  },
+  "cleanup_impact": {
+    "aggressive": {
+      "entries_after": 5922,
+      "entries_removed": 22731,
+      "percentage_removed": 79.33200711967334
+    },
+    "moderate": {
+      "entries_after": 5922,
+      "entries_removed": 22731,
+      "percentage_removed": 79.33200711967334
+    },
+    "conservative": {
+      "entries_after": 28653,
+      "entries_removed": 0,
+      "percentage_removed": 0.0
+    }
+  }
+}
