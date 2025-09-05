@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  erp-api:
+    build: .
+    container_name: beverly-knits-erp
+    ports:
+      - "5006:5006"
+    environment:
+      - REDIS_HOST=redis
+      - DB_HOST=postgres
+      - DB_USER=erp_user
+      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      - DB_NAME=beverly_knits
+      - ENV=production
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - CACHE_TTL=300
+      - MAX_WORKERS=4
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./data:/app/data:ro
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - erp-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: erp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - erp-network
+
+  postgres:
+    image: postgres:15
+    container_name: erp-postgres
+    environment:
+      POSTGRES_DB: beverly_knits
+      POSTGRES_USER: erp_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - erp-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: erp-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./web:/usr/share/nginx/html:ro
+    depends_on:
+      - erp-api
+    restart: unless-stopped
+    networks:
+      - erp-network
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  erp-network:
+    driver: bridge

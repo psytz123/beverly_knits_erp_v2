@@ -55,7 +55,9 @@ class MLBacktester:
         if data_path:
             self.data_path = Path(data_path)
         else:
-            self.data_path = Path(__file__).parent.parent / "data" / "production" / "5"
+            # Use project root for consistent path resolution
+            project_root = Path(__file__).parent.parent
+            self.data_path = project_root / "data" / "production" / "5"
         
         self.results = {}
         self.models = {}

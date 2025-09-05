@@ -178,6 +178,45 @@ const dataSafetyMonitor = {
 
 // === END COMPREHENSIVE SAFETY CHECKS ===
 
+
+// API Compatibility Layer for v2 endpoints
+const apiCompatibilityLayer = {
+    // Map old endpoints to new with parameter support
+    mapEndpoint(oldEndpoint) {
+        const mappings = {'/api/inventory-intelligence-enhanced': '/api/v2/inventory?analysis=intelligence&realtime=true', '/api/yarn-inventory': '/api/v2/inventory?view=yarn', '/api/yarn-data': '/api/v2/inventory?view=yarn&format=json', '/api/real-time-inventory-dashboard': '/api/v2/inventory?realtime=true', '/api/emergency-shortage-dashboard': '/api/v2/inventory?view=shortage&analysis=shortage', '/api/production-planning': '/api/v2/production?view=planning', '/api/production-status': '/api/v2/production?view=status', '/api/production-pipeline': '/api/v2/production?view=pipeline', '/api/production-recommendations-ml': '/api/v2/production?view=recommendations', '/api/machine-assignment-suggestions': '/api/v2/production?view=machines', '/api/production-flow': '/api/v2/production?view=flow', '/api/production-suggestions': '/api/v2/production?view=suggestions', '/api/ml-forecast-detailed': '/api/v2/forecast?detail=full', '/api/ml-forecasting': '/api/v2/forecast', '/api/yarn-intelligence': '/api/v2/yarn?analysis=intelligence', '/api/yarn-substitution-intelligent': '/api/v2/yarn?view=substitutions', '/api/comprehensive-kpis': '/api/v2/analytics/kpis', '/api/inventory-netting': '/api/v2/analytics/netting', '/api/po-risk-analysis': '/api/v2/analytics/risk', '/api/fabric-production': '/api/v2/fabric-production', '/api/knit-orders': '/api/knit-orders', '/api/retrain-ml': '/api/retrain-ml'};
+        return mappings[oldEndpoint] || oldEndpoint;
+    },
+    
+    // Enhanced fetch with automatic endpoint mapping
+    async fetchAPI(endpoint, options = {}) {
+        const mappedEndpoint = this.mapEndpoint(endpoint);
+        const url = (endpoint.startsWith('http') ? '' : (window.API_BASE_URL || window.baseUrl || '')) + mappedEndpoint;
+        
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok && mappedEndpoint !== endpoint) {
+                // Fallback to old endpoint if new one fails
+                console.warn(`New endpoint failed, falling back to old: ${endpoint}`);
+                return await fetch((window.API_BASE_URL || window.baseUrl || '') + endpoint, options);
+            }
+            return response;
+        } catch (error) {
+            console.error(`API call failed: ${endpoint}`, error);
+            throw error;
+        }
+    }
+};
+
+// Override fetch for API calls (optional - uncomment to enable)
+// const originalFetch = window.fetch;
+// window.fetch = function(url, ...args) {
+//     if (typeof url === 'string' && url.includes('/api/')) {
+//         const endpoint = url.replace(window.API_BASE_URL || window.baseUrl || '', '');
+//         return apiCompatibilityLayer.fetchAPI(endpoint, ...args);
+//     }
+//     return originalFetch(url, ...args);
+// };
+
 </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -3310,19 +3349,19 @@ const dataSafetyMonitor = {
         
         // Map of deprecated endpoints to new consolidated endpoints
         const API_REDIRECT_MAP = {
-            '/api/inventory-analysis': '/api/inventory-intelligence-enhanced',
+            '/api/inventory-analysis': '/api/v2/inventory?analysis=intelligence&realtime=true',
             '/api/inventory-overview': '/api/inventory-intelligence-enhanced?view=summary',
             '/api/real-time-inventory': '/api/inventory-intelligence-enhanced?realtime=true',
-            '/api/real-time-inventory-dashboard': '/api/inventory-intelligence-enhanced?view=dashboard&realtime=true',
-            '/api/yarn-data': '/api/yarn-intelligence?view=data',
+            '/api/v2/inventory?realtime=true': '/api/inventory-intelligence-enhanced?view=dashboard&realtime=true',
+            '/api/v2/inventory?view=yarn&format=json': '/api/yarn-intelligence?view=data',
             '/api/yarn-shortage-analysis': '/api/yarn-intelligence?analysis=shortage',
             '/api/yarn-alternatives': '/api/yarn-substitution-intelligent?view=alternatives',
             '/api/production-data': '/api/production-planning?view=data',
             '/api/production-orders': '/api/production-planning?view=orders',
-            '/api/ml-forecasting': '/api/ml-forecast-detailed?detail=summary',
+            '/api/v2/forecast': '/api/ml-forecast-detailed?detail=summary',
             '/api/ml-forecast-report': '/api/ml-forecast-detailed?format=report',
             // '/api/fabric-forecast': '/api/fabric-forecast-integrated', // Removed - calling correct endpoint directly
-            '/api/emergency-shortage': '/api/emergency-shortage-dashboard',
+            '/api/emergency-shortage': '/api/v2/inventory?view=shortage&analysis=shortage',
             '/api/supply-chain-analysis-cached': '/api/supply-chain-analysis'
         };
         
@@ -3364,15 +3403,15 @@ const dataSafetyMonitor = {
         const APICompat = {
             // Map old endpoints to new consolidated ones
             endpointMap: {
-                '/api/inventory-analysis': '/api/inventory-intelligence-enhanced',
+                '/api/inventory-analysis': '/api/v2/inventory?analysis=intelligence&realtime=true',
                 '/api/inventory-overview': '/api/inventory-intelligence-enhanced?view=summary',
-                '/api/yarn-data': '/api/yarn-intelligence?view=data',
+                '/api/v2/inventory?view=yarn&format=json': '/api/yarn-intelligence?view=data',
                 '/api/yarn-shortage-analysis': '/api/yarn-intelligence?analysis=shortage',
                 '/api/production-data': '/api/production-planning?view=data',
                 '/api/production-orders': '/api/production-planning?view=orders',
-                '/api/ml-forecasting': '/api/ml-forecast-detailed?detail=summary',
+                '/api/v2/forecast': '/api/ml-forecast-detailed?detail=summary',
                 '/api/ml-forecast-report': '/api/ml-forecast-detailed?format=report',
-                '/api/emergency-shortage': '/api/emergency-shortage-dashboard',
+                '/api/emergency-shortage': '/api/v2/inventory?view=shortage&analysis=shortage',
                 '/api/supply-chain-analysis-cached': '/api/supply-chain-analysis'
             },
             
@@ -3680,7 +3719,7 @@ const dataSafetyMonitor = {
                 if (forecastAccuracy) forecastAccuracy.textContent = kpisData.forecast_accuracy || '--';
                 
                 // Load yarn intelligence for shortage info
-                const yarnData = await fetchAPI('/api/yarn-intelligence');
+                const yarnData = await fetchAPI('/api/v2/yarn?analysis=intelligence');
                 console.log('Yarn intelligence loaded:', yarnData);
                 
                 if (yarnData.criticality_analysis && yarnData.criticality_analysis.summary) {
@@ -4492,7 +4531,7 @@ const dataSafetyMonitor = {
             console.log('Loading clean overview data (no tables)...');
             try {
                 // Load only KPI data for status cards
-                const kpiData = await fetchAPI('/api/comprehensive-kpis');
+                const kpiData = await fetchAPI('/api/v2/analytics/kpis');
                 
                 // Update status cards only
                 safeUpdateElement('inventoryValue', kpiData.inventory_value || '--');
@@ -4536,12 +4575,12 @@ const dataSafetyMonitor = {
                 
                 // Fetch multiple APIs for comprehensive live data including yarn intelligence
                 const [planningResponse, inventoryResponse, forecastResponse, nettingResponse, kpisResponse, yarnResponse] = await Promise.all([
-                    fetch(baseUrl + '/api/production-planning'),
-                    fetch(baseUrl + '/api/inventory-intelligence-enhanced'),
-                    fetch(baseUrl + '/api/ml-forecast-detailed'),
-                    fetch(baseUrl + '/api/inventory-netting'),
-                    fetch(baseUrl + '/api/comprehensive-kpis'),
-                    fetch(baseUrl + '/api/yarn-intelligence')
+                    fetch(baseUrl + '/api/v2/production?view=planning'),
+                    fetch(baseUrl + '/api/v2/inventory?analysis=intelligence&realtime=true'),
+                    fetch(baseUrl + '/api/v2/forecast?detail=full'),
+                    fetch(baseUrl + '/api/v2/analytics/netting'),
+                    fetch(baseUrl + '/api/v2/analytics/kpis'),
+                    fetch(baseUrl + '/api/v2/yarn?analysis=intelligence')
                 ]);
                 
                 if (!planningResponse.ok || !inventoryResponse.ok) {
@@ -4931,7 +4970,7 @@ const dataSafetyMonitor = {
                 const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
                 
                 // Fetch production suggestions
-                const response = await fetch(baseUrl + '/api/production-suggestions');
+                const response = await fetch(baseUrl + '/api/v2/production?view=suggestions');
                 if (!response.ok) {
                     throw new Error('Failed to fetch AI suggestions');
                 }
@@ -5127,10 +5166,10 @@ const dataSafetyMonitor = {
                 // Use direct fetch without the fetchAPI wrapper to avoid issues
                 const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
                 const [riskResult, suggestionsResult, nettingResult, pipelineResult] = await Promise.allSettled([
-                    fetch(baseUrl + '/api/po-risk-analysis'),
-                    fetch(baseUrl + '/api/production-suggestions'),
-                    fetch(baseUrl + '/api/inventory-netting'),
-                    fetch(baseUrl + '/api/production-pipeline')
+                    fetch(baseUrl + '/api/v2/analytics/risk'),
+                    fetch(baseUrl + '/api/v2/production?view=suggestions'),
+                    fetch(baseUrl + '/api/v2/analytics/netting'),
+                    fetch(baseUrl + '/api/v2/production?view=pipeline')
                 ]);
                 
                 console.log('Responses received, parsing JSON...');
@@ -5199,7 +5238,7 @@ const dataSafetyMonitor = {
                 
                 // Fallback to basic pipeline data
                 try {
-                    const data = await fetchAPI('/api/production-pipeline');
+                    const data = await fetchAPI('/api/v2/production?view=pipeline');
                     
                     if (data && data.pipeline) {
                         updateProductionTable(data);
@@ -6440,7 +6479,7 @@ const dataSafetyMonitor = {
                 loadYarnAlternatives();
                 
                 // Load enhanced inventory intelligence data
-                const intelligenceData = await fetchAPI('/api/inventory-intelligence-enhanced');
+                const intelligenceData = await fetchAPI('/api/v2/inventory?analysis=intelligence&realtime=true');
                 console.log('Inventory intelligence data loaded:', intelligenceData);
                 
                 // Update forecast comparison
@@ -6462,7 +6501,7 @@ const dataSafetyMonitor = {
         // Function to update risk count displays
         async function updateRiskCounts() {
             try {
-                const data = await fetchAPI('/api/yarn-intelligence');
+                const data = await fetchAPI('/api/v2/yarn?analysis=intelligence');
                 
                 if (data && data.criticality_analysis && data.criticality_analysis.yarns) {
                     const yarns = data.criticality_analysis.yarns;
@@ -6478,11 +6517,16 @@ const dataSafetyMonitor = {
                         }
                     });
                     
-                    // Update the display
-                    document.getElementById('criticalCount').textContent = critical;
-                    document.getElementById('highRiskCount').textContent = high;
-                    document.getElementById('mediumRiskCount').textContent = medium;
-                    document.getElementById('lowRiskCount').textContent = low;
+                    // Update the display with null checks
+                    const criticalEl = document.getElementById('criticalCount');
+                    const highEl = document.getElementById('highRiskCount');
+                    const mediumEl = document.getElementById('mediumRiskCount');
+                    const lowEl = document.getElementById('lowRiskCount');
+                    
+                    if (criticalEl) criticalEl.textContent = critical;
+                    if (highEl) highEl.textContent = high;
+                    if (mediumEl) mediumEl.textContent = medium;
+                    if (lowEl) lowEl.textContent = low;
                 }
             } catch (error) {
                 console.error('Error updating risk counts:', error);
@@ -6492,7 +6536,7 @@ const dataSafetyMonitor = {
         // Load yarn substitution opportunities
         async function loadYarnSubstitutions() {
             try {
-                const response = await fetch(API_BASE_URL + '/api/yarn-substitution-intelligent');
+                const response = await fetch(API_BASE_URL + '/api/v2/yarn?view=substitutions');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
@@ -6572,7 +6616,7 @@ const dataSafetyMonitor = {
                 // First try to get ML-powered recommendations
                 let mlRecommendations = null;
                 try {
-                    const mlResponse = await fetch(API_BASE_URL + '/api/production-recommendations-ml');
+                    const mlResponse = await fetch(API_BASE_URL + '/api/v2/production?view=recommendations');
                     if (mlResponse.ok) {
                         const mlData = await mlResponse.json();
                         if (mlData.status === 'success' && mlData.recommendations && mlData.recommendations.length > 0) {
@@ -6605,11 +6649,11 @@ const dataSafetyMonitor = {
                 
                 // Fetch all data sources in parallel
                 const dataPromises = [
-                    fetch(API_BASE_URL + '/api/production-pipeline').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(API_BASE_URL + '/api/ml-forecast-detailed').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(API_BASE_URL + '/api/inventory-intelligence-enhanced').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(API_BASE_URL + '/api/inventory-netting').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(API_BASE_URL + '/api/po-risk-analysis').then(r => r.ok ? r.json() : null).catch(() => null)
+                    fetch(API_BASE_URL + '/api/v2/production?view=pipeline').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/v2/forecast?detail=full').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/v2/inventory?analysis=intelligence&realtime=true').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/v2/analytics/netting').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/v2/analytics/risk').then(r => r.ok ? r.json() : null).catch(() => null)
                 ];
                 
                 [pipelineData, forecastData, inventoryData, nettingData, poRiskData] = await Promise.all(dataPromises);
@@ -7490,7 +7534,7 @@ const dataSafetyMonitor = {
         async function loadProductForecasts() {
             try {
                 // Fetch live yarn intelligence data
-                const data = await fetchAPI('/api/yarn-intelligence');
+                const data = await fetchAPI('/api/v2/yarn?analysis=intelligence');
                 
                 const tbody = document.querySelector('#productForecastTable tbody');
                 if (tbody) {
@@ -7647,7 +7691,7 @@ const dataSafetyMonitor = {
                 if (!container) return;
                 
                 // Fetch live yarn intelligence data
-                const yarnData = await fetchAPI('/api/yarn-intelligence');
+                const yarnData = await fetchAPI('/api/v2/yarn?analysis=intelligence');
                 
                 // Create inventory data from yarn data
                 const inventoryData = {
@@ -7733,8 +7777,8 @@ const dataSafetyMonitor = {
             try {
                 // Fetch live production and KPI data
                 const [pipelineData, kpiData] = await Promise.all([
-                    fetchAPI('/api/production-pipeline'),
-                    fetchAPI('/api/comprehensive-kpis')
+                    fetchAPI('/api/v2/production?view=pipeline'),
+                    fetchAPI('/api/v2/analytics/kpis')
                 ]);
                 
                 // Update production metrics with live data
@@ -8012,7 +8056,7 @@ const dataSafetyMonitor = {
                 updateMLStatus(reportData);
 
                 // Load detailed forecast
-                const forecastResponse = await fetchAPI('/api/ml-forecast-detailed');
+                const forecastResponse = await fetchAPI('/api/v2/forecast?detail=full');
                 updateForecastChart(forecastResponse);
                 updateWeeklyForecast(forecastResponse);
 
@@ -8625,7 +8669,7 @@ const dataSafetyMonitor = {
                 await loadMLForecastingData();
                 
                 // Load performance metrics
-                const perfData = await fetchAPI('/api/comprehensive-kpis');
+                const perfData = await fetchAPI('/api/v2/analytics/kpis');
                 updatePerformanceChart(perfData);
                 
                 // Load efficiency metrics
@@ -8804,7 +8848,7 @@ const dataSafetyMonitor = {
         // Yarn Intelligence Functions
         async function loadYarnIntelligence() {
             try {
-                const data = await fetchAPI('/api/yarn-intelligence');
+                const data = await fetchAPI('/api/v2/yarn?analysis=intelligence');
                 
                 if (data.error) {
                     console.error('Yarn intelligence error:', data.error);
@@ -8876,6 +8920,10 @@ const dataSafetyMonitor = {
 
         function displayCriticalYarns(yarns) {
             const container = document.getElementById('yarnCriticalList');
+            if (!container) {
+                console.warn('yarnCriticalList element not found - skipping critical yarns display');
+                return;
+            }
             if (!yarns || yarns.length === 0) {
                 container.innerHTML = '<div class="text-gray-500">No critical yarns</div>';
                 return;
@@ -10212,7 +10260,7 @@ const dataSafetyMonitor = {
         
         async function fetchAndUpdateProductionMetrics() {
             try {
-                const data = await fetchAPI('/api/production-pipeline');
+                const data = await fetchAPI('/api/v2/production?view=pipeline');
                 
                 // Update key metrics
                 document.getElementById('activeOrdersCount').textContent = data.summary?.total_orders || '0';
@@ -11894,7 +11942,7 @@ const dataSafetyMonitor = {
             tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading shortage data...</td></tr>';
             
             try {
-                const data = await fetchAPI('/api/yarn-intelligence');
+                const data = await fetchAPI('/api/v2/yarn?analysis=intelligence');
                 
                 console.log('Yarn intelligence response:', data);
                 console.log('Has criticality_analysis:', !!data.criticality_analysis);
@@ -12368,7 +12416,7 @@ const dataSafetyMonitor = {
                 
                 console.log('Shortage yarn IDs to filter:', Array.from(shortageYarnIds));
                 
-                const data = await fetchAPI('/api/yarn-substitution-intelligent');
+                const data = await fetchAPI('/api/v2/yarn?view=substitutions');
                 
                 if (data.status === 'success' && data.substitution_opportunities) {
                     // Show all opportunities with shortage amount > 0 (temporarily bypassing table filter)
@@ -12574,7 +12622,7 @@ const dataSafetyMonitor = {
             if (!tbody) return;
             
             // Load yarn intelligence data directly for better display
-            fetchAPI('/api/yarn-intelligence')
+            fetchAPI('/api/v2/yarn?analysis=intelligence')
                 .then(data => {
                     if (data.criticality_analysis && data.criticality_analysis.yarns) {
                         const yarns = data.criticality_analysis.yarns.slice(0, 20); // Show top 20 yarns
@@ -12907,7 +12955,7 @@ const dataSafetyMonitor = {
             const fabricSummaryElement = document.getElementById('fabricSummary');
             if (fabricSummaryElement) {
                 // Use production pipeline data for fabric count
-                fetchAPI('/api/production-pipeline')
+                fetchAPI('/api/v2/production?view=pipeline')
                     .then(prodData => {
                         // Sum up all WIP counts from production stages
                         const fabricCount = prodData.pipeline?.reduce((sum, stage) => sum + (stage.current_wip || 0), 0) || 10208;
@@ -13155,7 +13203,7 @@ const dataSafetyMonitor = {
                     // Load both factory floor data and machine suggestions
                     const [factoryResponse, suggestionsResponse] = await Promise.all([
                         fetchAPI('/api/factory-floor-ai-dashboard'),
-                        fetchAPI('/api/machine-assignment-suggestions')
+                        fetchAPI('/api/v2/production?view=machines')
                     ]);
                     
                     if (factoryResponse && factoryResponse.status === 'success') {
@@ -13179,40 +13227,97 @@ const dataSafetyMonitor = {
         }
         
         function updateMachinePlanningDashboard(data) {
-            // Update AI insights cards
-            updateMachinePlanningAIInsights(data.ai_analysis);
+            // Check if data exists
+            if (!data) {
+                console.error('No data provided to updateMachinePlanningDashboard');
+                return;
+            }
             
-            // Update factory overview
-            updateMachinePlanningFactoryOverview(data.factory_overview);
+            // Update AI insights cards if available
+            if (data.ai_analysis) {
+                updateMachinePlanningAIInsights(data.ai_analysis);
+                
+                // Convert recommendations to actionable insights format
+                if (data.ai_analysis.recommendations) {
+                    const actionableInsights = data.ai_analysis.recommendations.map((rec, idx) => ({
+                        priority: idx === 0 ? 'HIGH' : 'MEDIUM', // First recommendation is high priority
+                        message: rec,
+                        action: 'Review and implement',
+                        affected_area: 'Production'
+                    }));
+                    updateMachinePlanningActionableInsights(actionableInsights);
+                } else if (data.ai_analysis.actionable_insights) {
+                    // Fallback to actionable_insights if available
+                    updateMachinePlanningActionableInsights(data.ai_analysis.actionable_insights);
+                }
+            }
             
-            // Update work centers
-            updateMachinePlanningWorkCenters(data.work_center_groups);
+            // Update factory overview if available
+            if (data.factory_overview) {
+                updateMachinePlanningFactoryOverview(data.factory_overview);
+            }
             
-            // Update actionable insights
-            updateMachinePlanningActionableInsights(data.ai_analysis.actionable_insights);
+            // Update work centers if available
+            if (data.work_center_groups) {
+                updateMachinePlanningWorkCenters(data.work_center_groups);
+            }
         }
         
         function updateMachinePlanningAIInsights(aiAnalysis) {
-            // AI Analysis Card
-            safeUpdateElement('aiAnalysisStatus', `${aiAnalysis.bottlenecks.length} issues detected`);
-            safeUpdateElement('bottleneckCount', aiAnalysis.ai_kpis.bottleneck_summary.total);
-            safeUpdateElement('criticalCount', aiAnalysis.ai_kpis.bottleneck_summary.critical);
-            safeUpdateElement('modelConfidence', `85%`); // Default confidence
-
-            // Optimization Card
-            safeUpdateElement('optimizationStatus', `${aiAnalysis.optimizations.length} opportunities found`);
-            safeUpdateElement('optimizationOpportunities', aiAnalysis.ai_kpis.optimization_potential.opportunities);
-            safeUpdateElement('avgImprovement', `${aiAnalysis.ai_kpis.optimization_potential.avg_improvement_percent}%`);
-            safeUpdateElement('capacityHealth', aiAnalysis.ai_kpis.capacity_health);
-
-            // Factory Status Card  
-            safeUpdateElement('factoryStatus', `Monitoring ${aiAnalysis.ai_kpis.optimization_potential.opportunities} opportunities`);
+            // Ensure aiAnalysis exists
+            if (!aiAnalysis) {
+                console.warn('No AI analysis data available');
+                return;
+            }
+            
+            // AI Analysis Card - using actual structure from API
+            if (aiAnalysis.bottlenecks) {
+                const bottlenecks = aiAnalysis.bottlenecks;
+                safeUpdateElement('aiAnalysisStatus', `${bottlenecks.length} issues detected`);
+                
+                // Count critical and total bottlenecks
+                const criticalCount = bottlenecks.filter(b => b.severity === 'HIGH').length;
+                const totalCount = bottlenecks.length;
+                
+                safeUpdateElement('bottleneckCount', totalCount);
+                safeUpdateElement('criticalCount', criticalCount);
+            }
+            
+            // Optimization opportunities from recommendations
+            if (aiAnalysis.recommendations) {
+                const opportunities = aiAnalysis.recommendations.length;
+                safeUpdateElement('optimizationStatus', `${opportunities} opportunities found`);
+                safeUpdateElement('optimizationOpportunities', opportunities);
+                safeUpdateElement('factoryStatus', `Monitoring ${opportunities} opportunities`);
+            }
+            
+            // Efficiency score
+            if (aiAnalysis.efficiency_score !== undefined) {
+                safeUpdateElement('avgImprovement', `${aiAnalysis.efficiency_score.toFixed(1)}%`);
+                
+                // Determine capacity health based on efficiency score
+                let health = 'GOOD';
+                if (aiAnalysis.efficiency_score < 50) health = 'CRITICAL';
+                else if (aiAnalysis.efficiency_score < 70) health = 'WARNING';
+                
+                safeUpdateElement('capacityHealth', health);
+            }
+            
+            // Model confidence from parent data or default
+            safeUpdateElement('modelConfidence', `${(window.machinePlanningData?.model_confidence || 0.75) * 100}%`);
         }
         
         function updateMachinePlanningFactoryOverview(factoryOverview) {
-            safeUpdateElement('totalMachines', factoryOverview.total_machines);
-            safeUpdateElement('runningMachines', factoryOverview.running_machines);
-            safeUpdateElement('avgUtilization', `${factoryOverview.avg_utilization_percent.toFixed(1)}%`);
+            if (!factoryOverview) {
+                console.warn('No factory overview data available');
+                return;
+            }
+            
+            safeUpdateElement('totalMachines', factoryOverview.total_machines || 0);
+            safeUpdateElement('runningMachines', factoryOverview.running_machines || 0);
+            
+            const utilization = factoryOverview.avg_utilization_percent || 0;
+            safeUpdateElement('avgUtilization', `${utilization.toFixed ? utilization.toFixed(1) : utilization}%`);
         }
         
         function updateMachinePlanningWorkCenters(workCenterGroups) {
@@ -15000,7 +15105,7 @@ Customer: ${order.customer || 'Unknown'}
                 
                 // Fetch forecast data
                 try {
-                    const response = await fetchAPI('/api/ml-forecast-detailed');
+                    const response = await fetchAPI('/api/v2/forecast?detail=full');
                     forecastData = response;
                 } catch (e) {
                     console.error('Forecast fetch error:', e);

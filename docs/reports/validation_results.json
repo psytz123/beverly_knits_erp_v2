@@ -1,0 +1,130 @@
+{
+  "timestamp": "2025-09-05T01:33:23.908648",
+  "total_tests": 16,
+  "passed": 5,
+  "failed": 11,
+  "errors": [
+    {
+      "endpoint": "/api/production-planning",
+      "name": "Production Planning API",
+      "error": "Missing required fields: ['production_plan', 'capacity']"
+    },
+    {
+      "endpoint": "/api/inventory-intelligence-enhanced",
+      "name": "Inventory Intelligence API",
+      "error": "Expected status 200, got 500"
+    },
+    {
+      "endpoint": "/api/ml-forecast-detailed",
+      "name": "ML Forecast API",
+      "error": "Missing required fields: ['forecast']"
+    },
+    {
+      "endpoint": "/api/inventory-netting",
+      "name": "Inventory Netting API",
+      "error": "Missing required fields: ['netting_results']"
+    },
+    {
+      "endpoint": "/api/comprehensive-kpis",
+      "name": "KPIs API",
+      "error": "Expected status 200, got 500"
+    },
+    {
+      "endpoint": "/api/yarn-intelligence",
+      "name": "Yarn Intelligence API",
+      "error": "Missing required fields: ['yarn_analysis']"
+    },
+    {
+      "endpoint": "/api/yarn-substitution-intelligent",
+      "name": "Yarn Substitution API",
+      "error": "Expected status 200, got 500"
+    },
+    {
+      "endpoint": "/api/health",
+      "name": "Health Check API",
+      "error": "Expected status 200, got 404"
+    },
+    {
+      "endpoint": "business_logic",
+      "name": "Planning Balance Formula",
+      "error": "No yarn_analysis in response"
+    },
+    {
+      "endpoint": "business_logic",
+      "name": "Negative Allocated Values",
+      "error": "'yarn_analysis'"
+    },
+    {
+      "endpoint": "business_logic",
+      "name": "Yarn Shortage Detection",
+      "error": "'yarn_analysis'"
+    }
+  ],
+  "endpoint_results": {
+    "/api/production-planning": {
+      "name": "Production Planning API",
+      "passed": false,
+      "message": "Missing required fields: ['production_plan', 'capacity']"
+    },
+    "/api/inventory-intelligence-enhanced": {
+      "name": "Inventory Intelligence API",
+      "passed": false,
+      "message": "Expected status 200, got 500"
+    },
+    "/api/ml-forecast-detailed": {
+      "name": "ML Forecast API",
+      "passed": false,
+      "message": "Missing required fields: ['forecast']"
+    },
+    "/api/inventory-netting": {
+      "name": "Inventory Netting API",
+      "passed": false,
+      "message": "Missing required fields: ['netting_results']"
+    },
+    "/api/comprehensive-kpis": {
+      "name": "KPIs API",
+      "passed": false,
+      "message": "Expected status 200, got 500"
+    },
+    "/api/yarn-intelligence": {
+      "name": "Yarn Intelligence API",
+      "passed": false,
+      "message": "Missing required fields: ['yarn_analysis']"
+    },
+    "/api/production-suggestions": {
+      "name": "Production Suggestions API",
+      "passed": true,
+      "message": "OK"
+    },
+    "/api/po-risk-analysis": {
+      "name": "PO Risk Analysis API",
+      "passed": true,
+      "message": "OK"
+    },
+    "/api/production-pipeline": {
+      "name": "Production Pipeline API",
+      "passed": true,
+      "message": "OK"
+    },
+    "/api/yarn-substitution-intelligent": {
+      "name": "Yarn Substitution API",
+      "passed": false,
+      "message": "Expected status 200, got 500"
+    },
+    "/api/knit-orders": {
+      "name": "Knit Orders API",
+      "passed": true,
+      "message": "OK"
+    },
+    "/api/health": {
+      "name": "Health Check API",
+      "passed": false,
+      "message": "Expected status 200, got 404"
+    },
+    "/consolidated": {
+      "name": "Consolidated Dashboard",
+      "passed": true,
+      "message": "OK"
+    }
+  }
+}

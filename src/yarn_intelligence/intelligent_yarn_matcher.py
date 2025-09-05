@@ -451,7 +451,10 @@ def main():
         'status': 'success'
     }
     
-    output_file = "/mnt/d/Agent-MCP-1-ddd/trained_yarn_substitutions.json"
+    # Use project root path
+    from pathlib import Path
+    project_root = Path(__file__).parent.parent.parent
+    output_file = str(project_root / "trained_yarn_substitutions.json")
     with open(output_file, 'w') as f:
         json.dump(output, f, indent=2)
     

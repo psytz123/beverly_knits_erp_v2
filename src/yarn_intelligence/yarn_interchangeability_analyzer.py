@@ -1111,7 +1111,8 @@ class YarnInterchangeabilityAnalyzer:
                 target_ids.append(int(target_desc_id))
             elif isinstance(target_desc_id, int):
                 target_ids.append(str(target_desc_id))
-        except:
+        except (ValueError, TypeError, AttributeError):
+            # Handle type conversion errors silently
             pass
         
         # Find target yarn details

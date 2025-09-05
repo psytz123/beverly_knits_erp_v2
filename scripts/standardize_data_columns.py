@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 
 class DataStandardizer:
     def __init__(self):
-        self.data_path = Path('/mnt/c/finalee/beverly_knits_erp_v2/data/production/5')
+        # Use project root for consistent path resolution
+        project_root = Path(__file__).parent.parent
+        self.data_path = project_root / 'data' / 'production' / '5'
         self.erp_path = self.data_path / 'ERP Data'
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.changes_made = []

@@ -1,19 +1,73 @@
-  {
+{
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/mnt/c/finalee/beverly_knits_erp_v2"],
-      "env": {}
-    },
-    "memory": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "env": {}
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:\\tmux"],
+      "env": {
+        "NODE_ENV": "production"
+      }
     },
     "git": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-git", "--repository", "/mnt/c/finalee/beverly_knits_erp_v2"],
-      "env": {}
+      "args": ["-y", "@modelcontextprotocol/server-git", "--repository", "D:\\tmux"],
+      "timeout": 30000
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y", 
+        "@modelcontextprotocol/server-postgres", 
+        "postgresql://localhost:5432/efab_db"
+      ],
+      "env": {
+        "PGPASSWORD": "${POSTGRES_PASSWORD}"
+      }
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "./database.db"],
+      "cwd": "D:\\tmux"
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "timeout": 15000
+    },
+    "browser": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "env": {
+        "PUPPETEER_EXECUTABLE_PATH": "/usr/bin/chromium-browser"
+      }
+    },
+    "time": {
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "praisonai": {
+      "url": "https://gitmcp.io/MervinPraison/PraisonAI",
+      "timeout": 30000
+    },
+    "fastapi": {
+      "url": "https://gitmcp.io/tiangolo/fastapi"
+    },
+    "streamlit": {
+      "url": "https://gitmcp.io/streamlit/streamlit"
+    },
+    "sqlalchemy": {
+      "url": "https://gitmcp.io/sqlalchemy/sqlalchemy"
     }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json"
+  },
+  "security": {
+    "allowedHosts": ["localhost", "127.0.0.1"],
+    "maxConnections": 10
   }
 }

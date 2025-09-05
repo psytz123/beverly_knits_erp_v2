@@ -8,7 +8,15 @@
       "Bash(find:*)",
       "Bash(pkill:*)",
       "Bash(pip install:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(tar:*)",
+      "Bash(unzip:*)",
+      "Bash(./ngrok version)",
+      "Bash(./ngrok.exe version)",
+      "Read(//c/Users/psytz/Downloads/**)",
+      "Bash(ls:*)",
+      "Bash(tree:*)",
+      "Bash(pytest:*)"
     ],
     "deny": [],
     "ask": []

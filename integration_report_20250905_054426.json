@@ -1,0 +1,33 @@
+{
+  "passed": [
+    "Server Running",
+    "Main Page Loads",
+    "API_inventory-intelligence",
+    "API_inventory-intelligence_JSON",
+    "API_v2-inventory",
+    "API_v2-inventory_JSON",
+    "API_v2-yarn",
+    "API_v2-yarn_JSON",
+    "API_fabric-production",
+    "API_fabric-production_JSON",
+    "Redirect_/api/ml-forecasting",
+    "Dashboard File Exists",
+    "API Compatibility Layer",
+    "V2 Endpoints in Dashboard"
+  ],
+  "failed": [
+    "API_yarn-inventory",
+    "API_production-status",
+    "API_v2-production",
+    "Redirect_/api/yarn-inventory",
+    "Redirect_/api/production-status",
+    "Import UnifiedDataLoader",
+    "Import DataFrameOptimizer",
+    "Import MemoryOptimizer",
+    "Import AsyncProcessor",
+    "Import CacheManager",
+    "Import ForecastAccuracyMonitor",
+    "Import ProductionRecommendationsML"
+  ],
+  "warnings": []
+}

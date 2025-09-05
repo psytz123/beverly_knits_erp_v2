@@ -9,6 +9,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import numpy as np
+from pathlib import Path
 
 def update_schema_and_load():
     # Connect to database
@@ -20,7 +21,9 @@ def update_schema_and_load():
     )
     cursor = conn.cursor()
     
-    base_path = '/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/8-28-2025'
+    # Use project root for consistent path resolution
+    project_root = Path(__file__).parent.parent.parent
+    base_path = str(project_root / 'data' / 'production' / '5' / 'ERP Data' / '8-28-2025')
     snapshot_date = datetime(2025, 8, 28).date()
     
     print("=" * 80)

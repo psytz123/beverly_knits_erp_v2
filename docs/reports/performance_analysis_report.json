@@ -1,0 +1,542 @@
+{
+  "timestamp": "2025-09-05T00:49:23.190678",
+  "endpoints": {
+    "/api/production-planning": {
+      "endpoint": "/api/production-planning",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.0605154514312742,
+      "min_time": 2.053380250930786,
+      "max_time": 2.0764434337615967,
+      "std_time": 0.008255203365270644,
+      "avg_memory_delta_mb": 0.0078125,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/inventory-intelligence-enhanced": {
+      "endpoint": "/api/inventory-intelligence-enhanced",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.048949670791626,
+      "min_time": 2.0353856086730957,
+      "max_time": 2.0653703212738037,
+      "std_time": 0.01329554336858908,
+      "avg_memory_delta_mb": 0.00078125,
+      "errors": [
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:35.5",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:37.5",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:39.6",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:41.7",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:43.7"
+      ],
+      "error_rate": 1.0
+    },
+    "/api/ml-forecast-detailed": {
+      "endpoint": "/api/ml-forecast-detailed",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.056693124771118,
+      "min_time": 2.0408051013946533,
+      "max_time": 2.071673631668091,
+      "std_time": 0.011222272202943025,
+      "avg_memory_delta_mb": 0.040625,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/inventory-netting": {
+      "endpoint": "/api/inventory-netting",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.0624858379364013,
+      "min_time": 2.0480074882507324,
+      "max_time": 2.07313871383667,
+      "std_time": 0.010294464649023219,
+      "avg_memory_delta_mb": 0.0,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/comprehensive-kpis": {
+      "endpoint": "/api/comprehensive-kpis",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.0565277576446532,
+      "min_time": 2.0464465618133545,
+      "max_time": 2.0661582946777344,
+      "std_time": 0.00785197607935029,
+      "avg_memory_delta_mb": 0.0015625,
+      "errors": [
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n",
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n",
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n",
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n",
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n"
+      ],
+      "error_rate": 1.0
+    },
+    "/api/yarn-intelligence": {
+      "endpoint": "/api/yarn-intelligence",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.047903299331665,
+      "min_time": 2.0325450897216797,
+      "max_time": 2.065488576889038,
+      "std_time": 0.012644422547669908,
+      "avg_memory_delta_mb": -0.0109375,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/production-suggestions": {
+      "endpoint": "/api/production-suggestions",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.053376054763794,
+      "min_time": 2.0386288166046143,
+      "max_time": 2.06003737449646,
+      "std_time": 0.007854083995796403,
+      "avg_memory_delta_mb": 0.0,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/po-risk-analysis": {
+      "endpoint": "/api/po-risk-analysis",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.0942534446716308,
+      "min_time": 2.0684385299682617,
+      "max_time": 2.118518114089966,
+      "std_time": 0.017210259395013996,
+      "avg_memory_delta_mb": 0.00390625,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/production-pipeline": {
+      "endpoint": "/api/production-pipeline",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.066142749786377,
+      "min_time": 2.051638126373291,
+      "max_time": 2.0987648963928223,
+      "std_time": 0.017674674629839113,
+      "avg_memory_delta_mb": 0.0,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/yarn-substitution-intelligent": {
+      "endpoint": "/api/yarn-substitution-intelligent",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.0506861209869385,
+      "min_time": 2.029768705368042,
+      "max_time": 2.0756654739379883,
+      "std_time": 0.018938403878004443,
+      "avg_memory_delta_mb": 0.00078125,
+      "errors": [
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n"
+      ],
+      "error_rate": 1.0
+    },
+    "/api/production-recommendations-ml": {
+      "endpoint": "/api/production-recommendations-ml",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.0454246044158935,
+      "min_time": 2.025543212890625,
+      "max_time": 2.0624845027923584,
+      "std_time": 0.012316080547806352,
+      "avg_memory_delta_mb": 0.00078125,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/knit-orders": {
+      "endpoint": "/api/knit-orders",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.08066086769104,
+      "min_time": 2.0608372688293457,
+      "max_time": 2.0935237407684326,
+      "std_time": 0.010818488708207487,
+      "avg_memory_delta_mb": 0.053125,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/machine-assignment-suggestions": {
+      "endpoint": "/api/machine-assignment-suggestions",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.040150833129883,
+      "min_time": 2.0299510955810547,
+      "max_time": 2.056318998336792,
+      "std_time": 0.009105329714225717,
+      "avg_memory_delta_mb": -0.00390625,
+      "errors": [
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n",
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n",
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n",
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n",
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n"
+      ],
+      "error_rate": 1.0
+    },
+    "/api/factory-floor-ai-dashboard": {
+      "endpoint": "/api/factory-floor-ai-dashboard",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.0494266033172606,
+      "min_time": 2.0270416736602783,
+      "max_time": 2.0695667266845703,
+      "std_time": 0.014372264424953493,
+      "avg_memory_delta_mb": 0.0,
+      "errors": [
+        "Status 500: {\"error\":\"float division by zero\"}\n",
+        "Status 500: {\"error\":\"float division by zero\"}\n",
+        "Status 500: {\"error\":\"float division by zero\"}\n",
+        "Status 500: {\"error\":\"float division by zero\"}\n",
+        "Status 500: {\"error\":\"float division by zero\"}\n"
+      ],
+      "error_rate": 1.0
+    },
+    "/api/execute-planning": {
+      "endpoint": "/api/execute-planning",
+      "method": "POST",
+      "iterations": 5,
+      "avg_time": 2.0474722385406494,
+      "min_time": 2.0360448360443115,
+      "max_time": 2.0556704998016357,
+      "std_time": 0.0071830344828910635,
+      "avg_memory_delta_mb": 0.00078125,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/six-phase-supply-chain": {
+      "endpoint": "/api/six-phase-supply-chain",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.037084436416626,
+      "min_time": 2.023418664932251,
+      "max_time": 2.045708179473877,
+      "std_time": 0.00781747613736403,
+      "avg_memory_delta_mb": 0.00078125,
+      "errors": [
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai"
+      ],
+      "error_rate": 1.0
+    },
+    "/api/reload-data": {
+      "endpoint": "/api/reload-data",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.0560941219329836,
+      "min_time": 2.0234768390655518,
+      "max_time": 2.075701951980591,
+      "std_time": 0.020785853586233246,
+      "avg_memory_delta_mb": 0.0,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/debug-data": {
+      "endpoint": "/api/debug-data",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.06467981338501,
+      "min_time": 2.048628568649292,
+      "max_time": 2.0836658477783203,
+      "std_time": 0.01184207715624654,
+      "avg_memory_delta_mb": 0.00078125,
+      "errors": [],
+      "error_rate": 0.0
+    },
+    "/api/health": {
+      "endpoint": "/api/health",
+      "method": "GET",
+      "iterations": 5,
+      "avg_time": 2.05593523979187,
+      "min_time": 2.0362143516540527,
+      "max_time": 2.068514585494995,
+      "std_time": 0.011868058627373744,
+      "avg_memory_delta_mb": 0.0,
+      "errors": [
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai"
+      ],
+      "error_rate": 1.0
+    }
+  },
+  "memory_analysis": {
+    "current_memory_mb": 72.8984375,
+    "virtual_memory_mb": 407.015625,
+    "cpu_percent": 0.0,
+    "num_threads": 13,
+    "open_files": 3,
+    "connections": 0,
+    "system": {
+      "total_mb": 32425.15625,
+      "available_mb": 8522.6484375,
+      "percent_used": 73.7
+    }
+  },
+  "data_loader_comparison": {
+    "error": "No module named 'src.data_loaders.optimized_data_loader'"
+  },
+  "bottlenecks": [
+    {
+      "endpoint": "/api/inventory-intelligence-enhanced",
+      "issue": "High error rate",
+      "error_rate": 1.0,
+      "errors": [
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:35.5",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:37.5",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:39.6",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:41.7",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"parameters\":{\"ai\":\"false\",\"analysis\":\"standard\",\"realtime\":\"false\",\"view\":\"full\"},\"status\":\"error\",\"timestamp\":\"2025-09-05T00:49:43.7"
+      ],
+      "impact": "CRITICAL"
+    },
+    {
+      "endpoint": "/api/comprehensive-kpis",
+      "issue": "High error rate",
+      "error_rate": 1.0,
+      "errors": [
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n",
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n",
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n",
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n",
+        "Status 500: {\"error\":\"'charmap' codec can't encode character '\\\\u274c' in position 0: character maps to <undefined>\"}\n"
+      ],
+      "impact": "CRITICAL"
+    },
+    {
+      "endpoint": "/api/yarn-substitution-intelligent",
+      "issue": "High error rate",
+      "error_rate": 1.0,
+      "errors": [
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n",
+        "Status 500: {\"error\":\"'<' not supported between instances of 'str' and 'int'\",\"status\":\"error\",\"substitution_opportunities\":[]}\n"
+      ],
+      "impact": "CRITICAL"
+    },
+    {
+      "endpoint": "/api/machine-assignment-suggestions",
+      "issue": "High error rate",
+      "error_rate": 1.0,
+      "errors": [
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n",
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n",
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n",
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n",
+        "Status 404: {\"message\":\"Required data files not found\",\"status\":\"error\"}\n"
+      ],
+      "impact": "CRITICAL"
+    },
+    {
+      "endpoint": "/api/factory-floor-ai-dashboard",
+      "issue": "High error rate",
+      "error_rate": 1.0,
+      "errors": [
+        "Status 500: {\"error\":\"float division by zero\"}\n",
+        "Status 500: {\"error\":\"float division by zero\"}\n",
+        "Status 500: {\"error\":\"float division by zero\"}\n",
+        "Status 500: {\"error\":\"float division by zero\"}\n",
+        "Status 500: {\"error\":\"float division by zero\"}\n"
+      ],
+      "impact": "CRITICAL"
+    },
+    {
+      "endpoint": "/api/six-phase-supply-chain",
+      "issue": "High error rate",
+      "error_rate": 1.0,
+      "errors": [
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai"
+      ],
+      "impact": "CRITICAL"
+    },
+    {
+      "endpoint": "/api/health",
+      "issue": "High error rate",
+      "error_rate": 1.0,
+      "errors": [
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai",
+        "Status 404: <!doctype html>\n<html lang=en>\n<title>404 Not Found</title>\n<h1>Not Found</h1>\n<p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try agai"
+      ],
+      "impact": "CRITICAL"
+    },
+    {
+      "endpoint": "/api/production-planning",
+      "issue": "Slow response",
+      "avg_time": 2.0605154514312742,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/inventory-intelligence-enhanced",
+      "issue": "Slow response",
+      "avg_time": 2.048949670791626,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/ml-forecast-detailed",
+      "issue": "Slow response",
+      "avg_time": 2.056693124771118,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/inventory-netting",
+      "issue": "Slow response",
+      "avg_time": 2.0624858379364013,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/comprehensive-kpis",
+      "issue": "Slow response",
+      "avg_time": 2.0565277576446532,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/yarn-intelligence",
+      "issue": "Slow response",
+      "avg_time": 2.047903299331665,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/production-suggestions",
+      "issue": "Slow response",
+      "avg_time": 2.053376054763794,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/po-risk-analysis",
+      "issue": "Slow response",
+      "avg_time": 2.0942534446716308,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/production-pipeline",
+      "issue": "Slow response",
+      "avg_time": 2.066142749786377,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/yarn-substitution-intelligent",
+      "issue": "Slow response",
+      "avg_time": 2.0506861209869385,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/production-recommendations-ml",
+      "issue": "Slow response",
+      "avg_time": 2.0454246044158935,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/knit-orders",
+      "issue": "Slow response",
+      "avg_time": 2.08066086769104,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/machine-assignment-suggestions",
+      "issue": "Slow response",
+      "avg_time": 2.040150833129883,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/factory-floor-ai-dashboard",
+      "issue": "Slow response",
+      "avg_time": 2.0494266033172606,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/execute-planning",
+      "issue": "Slow response",
+      "avg_time": 2.0474722385406494,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/six-phase-supply-chain",
+      "issue": "Slow response",
+      "avg_time": 2.037084436416626,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/reload-data",
+      "issue": "Slow response",
+      "avg_time": 2.0560941219329836,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/debug-data",
+      "issue": "Slow response",
+      "avg_time": 2.06467981338501,
+      "impact": "MEDIUM"
+    },
+    {
+      "endpoint": "/api/health",
+      "issue": "Slow response",
+      "avg_time": 2.05593523979187,
+      "impact": "MEDIUM"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "category": "Performance",
+      "recommendation": "Implement caching for slow endpoints",
+      "details": "Found 19 slow endpoints. Consider Redis caching.",
+      "affected_endpoints": [
+        "/api/production-planning",
+        "/api/inventory-intelligence-enhanced",
+        "/api/ml-forecast-detailed",
+        "/api/inventory-netting",
+        "/api/comprehensive-kpis",
+        "/api/yarn-intelligence",
+        "/api/production-suggestions",
+        "/api/po-risk-analysis",
+        "/api/production-pipeline",
+        "/api/yarn-substitution-intelligent",
+        "/api/production-recommendations-ml",
+        "/api/knit-orders",
+        "/api/machine-assignment-suggestions",
+        "/api/factory-floor-ai-dashboard",
+        "/api/execute-planning",
+        "/api/six-phase-supply-chain",
+        "/api/reload-data",
+        "/api/debug-data",
+        "/api/health"
+      ]
+    },
+    {
+      "priority": "CRITICAL",
+      "category": "Stability",
+      "recommendation": "Fix error-prone endpoints immediately",
+      "details": "Found 7 endpoints with high error rates.",
+      "affected_endpoints": [
+        "/api/inventory-intelligence-enhanced",
+        "/api/comprehensive-kpis",
+        "/api/yarn-substitution-intelligent",
+        "/api/machine-assignment-suggestions",
+        "/api/factory-floor-ai-dashboard",
+        "/api/six-phase-supply-chain",
+        "/api/health"
+      ]
+    }
+  ]
+}

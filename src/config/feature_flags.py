@@ -35,7 +35,42 @@ FEATURE_FLAGS = {
     "performance_monitoring": True,
     
     # Enable compatibility layer in dashboard
-    "dashboard_compatibility_layer": True
+    "dashboard_compatibility_layer": True,
+    
+    # ===== eFab API Integration Feature Flags =====
+    
+    # Main eFab API integration control
+    "efab_api_enabled": False,  # Master switch for eFab API integration
+    
+    # eFab API data source priority
+    "efab_api_priority": True,  # Use API as primary data source when enabled
+    
+    # eFab API fallback mechanism
+    "efab_fallback_enabled": True,  # Always fall back to files if API fails
+    
+    # Gradual rollout controls - percentage of requests to route through API
+    "efab_rollout_percentage": 0,  # Overall rollout percentage (0-100)
+    "efab_rollout_yarn_inventory": 0,  # Yarn inventory endpoint
+    "efab_rollout_knit_orders": 0,  # Knit orders endpoint
+    "efab_rollout_po_deliveries": 0,  # PO deliveries endpoint
+    "efab_rollout_sales_data": 0,  # Sales data endpoint
+    "efab_rollout_greige": 0,  # Greige inventory endpoint
+    "efab_rollout_finished": 0,  # Finished goods endpoint
+    
+    # eFab API monitoring
+    "efab_metrics_enabled": True,  # Track API performance metrics
+    "efab_log_api_calls": True,  # Log all API calls for debugging
+    "efab_validate_api_data": True,  # Validate API responses
+    "efab_strict_validation": False,  # Fail on validation errors (production = true)
+    
+    # eFab API circuit breaker
+    "efab_circuit_breaker_enabled": True,  # Enable circuit breaker pattern
+    "efab_circuit_breaker_threshold": 5,  # Failures before circuit opens
+    
+    # eFab API testing/development
+    "efab_debug_mode": False,  # Enable detailed debug logging
+    "efab_mock_api_responses": False,  # Use mock responses for testing
+    "efab_api_dry_run": False  # Simulate API calls without making them
 }
 
 # API consolidation metadata
@@ -117,6 +152,103 @@ def emergency_rollback():
     })
     print(f"[{datetime.now()}] EMERGENCY ROLLBACK ACTIVATED")
 
+# ===== eFab API Integration Functions =====
+
+def is_efab_api_enabled():
+    """Check if eFab API integration is enabled."""
+    import os
+    # Check environment variable first, then feature flag
+    env_enabled = os.getenv('EFAB_API_ENABLED', 'false').lower() == 'true'
+    flag_enabled = get_feature_flag("efab_api_enabled")
+    return env_enabled or flag_enabled
+
+def get_efab_rollout_percentage(endpoint_type=None):
+    """
+    Get the rollout percentage for eFab API.
+    
+    Args:
+        endpoint_type: Optional specific endpoint type 
+                      (yarn_inventory, knit_orders, po_deliveries, etc.)
+    
+    Returns:
+        int: Rollout percentage (0-100)
+    """
+    if endpoint_type:
+        flag_name = f"efab_rollout_{endpoint_type}"
+        return get_feature_flag(flag_name, 0)
+    return get_feature_flag("efab_rollout_percentage", 0)
+
+def should_use_efab_api(endpoint_type=None):
+    """
+    Determine if a request should use eFab API based on rollout percentage.
+    
+    Args:
+        endpoint_type: Optional specific endpoint type
+    
+    Returns:
+        bool: True if should use API, False otherwise
+    """
+    if not is_efab_api_enabled():
+        return False
+    
+    import random
+    rollout = get_efab_rollout_percentage(endpoint_type)
+    
+    if rollout == 0:
+        return False
+    elif rollout >= 100:
+        return True
+    else:
+        # Random selection based on rollout percentage
+        return random.randint(1, 100) <= rollout
+
+def enable_efab_api():
+    """Enable eFab API integration."""
+    global FEATURE_FLAGS
+    FEATURE_FLAGS["efab_api_enabled"] = True
+    print(f"[{datetime.now()}] eFab API Integration ENABLED")
+
+def disable_efab_api():
+    """Disable eFab API integration."""
+    global FEATURE_FLAGS
+    FEATURE_FLAGS["efab_api_enabled"] = False
+    FEATURE_FLAGS["efab_rollout_percentage"] = 0
+    print(f"[{datetime.now()}] eFab API Integration DISABLED")
+
+def set_efab_rollout(percentage, endpoint_type=None):
+    """
+    Set the rollout percentage for eFab API.
+    
+    Args:
+        percentage: Rollout percentage (0-100)
+        endpoint_type: Optional specific endpoint type
+    """
+    global FEATURE_FLAGS
+    percentage = max(0, min(100, percentage))  # Clamp to 0-100
+    
+    if endpoint_type:
+        flag_name = f"efab_rollout_{endpoint_type}"
+        FEATURE_FLAGS[flag_name] = percentage
+        print(f"[{datetime.now()}] eFab API rollout for {endpoint_type}: {percentage}%")
+    else:
+        FEATURE_FLAGS["efab_rollout_percentage"] = percentage
+        print(f"[{datetime.now()}] eFab API overall rollout: {percentage}%")
+
+def emergency_disable_efab():
+    """Emergency disable of eFab API integration."""
+    global FEATURE_FLAGS
+    FEATURE_FLAGS.update({
+        "efab_api_enabled": False,
+        "efab_rollout_percentage": 0,
+        "efab_rollout_yarn_inventory": 0,
+        "efab_rollout_knit_orders": 0,
+        "efab_rollout_po_deliveries": 0,
+        "efab_rollout_sales_data": 0,
+        "efab_rollout_greige": 0,
+        "efab_rollout_finished": 0
+    })
+    print(f"[{datetime.now()}] eFab API EMERGENCY DISABLED")
+
 # Export commonly used functions
 __all__ = [
     'FEATURE_FLAGS',
@@ -130,5 +262,13 @@ __all__ = [
     'should_enforce_new_apis',
     'enable_consolidation',
     'disable_consolidation',
-    'emergency_rollback'
+    'emergency_rollback',
+    # eFab API functions
+    'is_efab_api_enabled',
+    'get_efab_rollout_percentage',
+    'should_use_efab_api',
+    'enable_efab_api',
+    'disable_efab_api',
+    'set_efab_rollout',
+    'emergency_disable_efab'
 ]

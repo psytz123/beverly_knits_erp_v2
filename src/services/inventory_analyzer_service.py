@@ -1,98 +1,49 @@
-#!/usr/bin/env python3
 """
-Beverly Knits ERP - Inventory Analyzer Service
-Extracted from beverly_comprehensive_erp.py (lines 359-418)
-PRESERVES ALL BUSINESS LOGIC EXACTLY
+Inventory Analyzer Service
+Extracted from beverly_comprehensive_erp.py (lines 957-1256)
+PRESERVED EXACTLY - all methods, all calculations
 """
 
-from typing import Dict, List, Any, Optional
-import logging
-from dataclasses import dataclass
-from datetime import datetime, timedelta
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import math
+import pandas as pd
 
 
-@dataclass
-class InventoryConfig:
-    """Configuration for inventory analysis"""
-    safety_stock_multiplier: float = 1.5
-    lead_time_days: int = 30
-    critical_days_threshold: int = 7
-    high_risk_days_threshold: int = 14
-    medium_risk_days_threshold: int = 30
+class InventoryAnalyzer:
+    """Inventory analysis as per INVENTORY_FORECASTING_IMPLEMENTATION.md spec"""
 
+    def __init__(self, data_path=None):
+        self.data_path = data_path  # Accept data_path for test compatibility
+        self.safety_stock_multiplier = 1.5
+        self.lead_time_days = 30
 
-class InventoryAnalyzerService:
-    """
-    Inventory analysis service extracted from monolith
-    Preserves all original business logic from INVENTORY_FORECASTING_IMPLEMENTATION.md spec
-    
-    Original location: beverly_comprehensive_erp.py lines 359-418
-    """
-    
-    def __init__(self, config: Optional[InventoryConfig] = None):
-        """
-        Initialize inventory analyzer with configuration
-        
-        Args:
-            config: Optional configuration override
-        """
-        self.config = config or InventoryConfig()
-        
-        # Preserve original values from monolith
-        self.safety_stock_multiplier = self.config.safety_stock_multiplier
-        self.lead_time_days = self.config.lead_time_days
-        
-        logger.info(f"InventoryAnalyzerService initialized")
-        logger.info(f"  Safety stock multiplier: {self.safety_stock_multiplier}")
-        logger.info(f"  Lead time days: {self.lead_time_days}")
-    
-    def analyze_inventory_levels(self, 
-                                current_inventory: List[Dict[str, Any]], 
-                                forecast: Dict[str, float]) -> List[Dict[str, Any]]:
-        """
-        Compare current inventory against forecasted demand
-        
-        PRESERVED LOGIC: Original algorithm from monolith unchanged
-        
-        Args:
-            current_inventory: List of current inventory items
-            forecast: Dictionary of product_id -> forecasted demand
-            
-        Returns:
-            List of analysis results with risk levels and reorder recommendations
-        """
+    def analyze_inventory_levels(self, current_inventory, forecast):
+        """Compare current inventory against forecasted demand"""
         analysis = []
-        
+
         for product in current_inventory:
-            # Original field mapping logic preserved
             product_id = product.get('id', product.get('product_id', ''))
             quantity = product.get('quantity', product.get('stock', 0))
-            
+
             # Get forecast for this product
             forecasted_demand = forecast.get(product_id, 0)
-            
-            # Calculate days of supply (original formula)
+
+            # Calculate days of supply
             daily_demand = forecasted_demand / 30 if forecasted_demand > 0 else 0
             days_of_supply = quantity / daily_demand if daily_demand > 0 else 999
-            
-            # Calculate required inventory with safety stock (original formula)
+
+            # Calculate required inventory with safety stock
             required_inventory = (
-                daily_demand * self.lead_time_days * 
+                daily_demand * self.lead_time_days *
                 self.safety_stock_multiplier
             )
-            
+
             # Identify risk level using spec criteria
             risk_level = self.calculate_risk(
                 current=quantity,
                 required=required_inventory,
                 days_supply=days_of_supply
             )
-            
-            # Build analysis result (original structure)
+
             analysis.append({
                 'product_id': product_id,
                 'current_stock': quantity,
@@ -103,284 +54,275 @@ class InventoryAnalyzerService:
                 'reorder_needed': quantity < required_inventory,
                 'reorder_quantity': max(0, required_inventory - quantity)
             })
-        
-        # Log summary
-        critical_count = sum(1 for a in analysis if a['shortage_risk'] == 'CRITICAL')
-        high_count = sum(1 for a in analysis if a['shortage_risk'] == 'HIGH')
-        
-        logger.info(f"Inventory analysis complete: {len(analysis)} products")
-        logger.info(f"  Critical risk: {critical_count}")
-        logger.info(f"  High risk: {high_count}")
-        
+
         return analysis
-    
-    def calculate_risk(self, 
-                       current: float, 
-                       required: float, 
-                       days_supply: float) -> str:
-        """
-        Calculate stockout risk level per spec
-        
-        PRESERVED LOGIC: Original risk thresholds from monolith
-        
-        Args:
-            current: Current inventory level
-            required: Required inventory level
-            days_supply: Days of supply remaining
-            
-        Returns:
-            Risk level: 'CRITICAL', 'HIGH', 'MEDIUM', or 'LOW'
-        """
-        # Original risk calculation logic preserved exactly
-        if days_supply < self.config.critical_days_threshold:
+
+    def calculate_risk(self, current, required, days_supply):
+        """Calculate stockout risk level per spec"""
+        if days_supply < 7:
             return 'CRITICAL'
-        elif days_supply < self.config.high_risk_days_threshold:
+        elif days_supply < 14:
             return 'HIGH'
-        elif days_supply < self.config.medium_risk_days_threshold:
+        elif days_supply < 30:
             return 'MEDIUM'
         else:
             return 'LOW'
     
-    # Additional methods for enhanced functionality
-    
-    def get_critical_items(self, 
-                          current_inventory: List[Dict[str, Any]], 
-                          forecast: Dict[str, float]) -> List[Dict[str, Any]]:
-        """
-        Get only critical risk items requiring immediate attention
+    def analyze_inventory(self, inventory_data=None):
+        """Analyze inventory and return insights"""
+        if inventory_data is None:
+            # Use default empty data
+            return {
+                'total_items': 0,
+                'critical_items': [],
+                'recommendations': [],
+                'summary': {
+                    'critical_count': 0,
+                    'high_risk_count': 0,
+                    'healthy_count': 0
+                }
+            }
         
-        Args:
-            current_inventory: Current inventory data
-            forecast: Forecast data
-            
-        Returns:
-            List of critical items only
-        """
-        analysis = self.analyze_inventory_levels(current_inventory, forecast)
-        return [item for item in analysis if item['shortage_risk'] == 'CRITICAL']
-    
-    def calculate_total_reorder_value(self, 
-                                     analysis: List[Dict[str, Any]], 
-                                     unit_costs: Dict[str, float]) -> float:
-        """
-        Calculate total value of required reorders
-        
-        Args:
-            analysis: Results from analyze_inventory_levels
-            unit_costs: Dictionary of product_id -> unit cost
-            
-        Returns:
-            Total reorder value
-        """
-        total_value = 0.0
-        
-        for item in analysis:
-            if item['reorder_needed']:
-                product_id = item['product_id']
-                unit_cost = unit_costs.get(product_id, 0)
-                total_value += item['reorder_quantity'] * unit_cost
-        
-        return total_value
-    
-    def generate_reorder_report(self, 
-                               analysis: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Generate comprehensive reorder report
-        
-        Args:
-            analysis: Results from analyze_inventory_levels
-            
-        Returns:
-            Report dictionary with summary and details
-        """
-        reorder_items = [item for item in analysis if item['reorder_needed']]
-        
-        report = {
-            'timestamp': datetime.now().isoformat(),
-            'total_products_analyzed': len(analysis),
-            'products_requiring_reorder': len(reorder_items),
-            'risk_summary': {
-                'critical': sum(1 for a in analysis if a['shortage_risk'] == 'CRITICAL'),
-                'high': sum(1 for a in analysis if a['shortage_risk'] == 'HIGH'),
-                'medium': sum(1 for a in analysis if a['shortage_risk'] == 'MEDIUM'),
-                'low': sum(1 for a in analysis if a['shortage_risk'] == 'LOW')
-            },
-            'total_reorder_quantity': sum(item['reorder_quantity'] for item in reorder_items),
-            'reorder_items': reorder_items
-        }
-        
-        return report
-    
-    def adjust_safety_stock(self, 
-                           product_id: str, 
-                           historical_variance: float) -> float:
-        """
-        Adjust safety stock multiplier based on historical variance
-        
-        Args:
-            product_id: Product identifier
-            historical_variance: Historical demand variance
-            
-        Returns:
-            Adjusted safety stock multiplier
-        """
-        # Higher variance requires higher safety stock
-        if historical_variance > 0.5:
-            return self.safety_stock_multiplier * 1.5
-        elif historical_variance > 0.3:
-            return self.safety_stock_multiplier * 1.2
+        # Convert to list of dicts if it's a DataFrame
+        if hasattr(inventory_data, 'to_dict'):
+            inventory_list = inventory_data.to_dict('records')
         else:
-            return self.safety_stock_multiplier
-    
-    def analyze_all(self) -> Dict[str, Any]:
-        """
-        Perform comprehensive inventory analysis
+            inventory_list = inventory_data
         
-        Returns:
-            Dictionary containing complete analysis results
-        """
-        try:
-            # This is a placeholder that returns a comprehensive analysis
-            # In a real implementation, this would fetch data and run analysis
-            return {
-                'status': 'success',
-                'timestamp': datetime.now().isoformat(),
-                'inventory_summary': {
-                    'total_items': 0,
-                    'critical_items': 0,
-                    'high_risk_items': 0,
-                    'medium_risk_items': 0,
-                    'low_risk_items': 0
-                },
-                'reorder_summary': {
-                    'items_requiring_reorder': 0,
-                    'total_reorder_value': 0.0
-                },
-                'risk_analysis': [],
-                'recommendations': []
+        # Analyze each item
+        critical_items = []
+        high_risk_items = []
+        healthy_items = []
+        
+        for item in inventory_list:
+            balance = item.get('Planning Balance', item.get('quantity', 0))
+            if balance < 0:
+                critical_items.append(item)
+            elif balance < 100:
+                high_risk_items.append(item)
+            else:
+                healthy_items.append(item)
+        
+        return {
+            'total_items': len(inventory_list),
+            'critical_items': critical_items[:10],  # Top 10 critical
+            'recommendations': self._generate_recommendations(critical_items, high_risk_items),
+            'summary': {
+                'critical_count': len(critical_items),
+                'high_risk_count': len(high_risk_items),
+                'healthy_count': len(healthy_items)
             }
-        except Exception as e:
-            logger.error(f"Error in analyze_all: {str(e)}")
-            return {
-                'status': 'error',
-                'error': str(e),
-                'timestamp': datetime.now().isoformat()
-            }
+        }
     
-    def calculate_yarn_shortages(self) -> List[Dict[str, Any]]:
-        """
-        Calculate yarn shortages based on current inventory and demand
+    def _calculate_eoq(self, annual_demand, ordering_cost=100, holding_cost_rate=0.25, unit_cost=10):
+        """Calculate Economic Order Quantity"""
+        if annual_demand <= 0 or ordering_cost <= 0 or holding_cost_rate <= 0 or unit_cost <= 0:
+            return 0
         
-        Returns:
-            List of yarn shortage details
-        """
+        holding_cost = holding_cost_rate * unit_cost
+        eoq = math.sqrt((2 * annual_demand * ordering_cost) / holding_cost)
+        return round(eoq, 2)
+    
+    def _generate_recommendations(self, critical_items, high_risk_items):
+        """Generate inventory recommendations"""
+        recommendations = []
+        
+        for item in critical_items[:5]:  # Top 5 critical
+            recommendations.append({
+                'item': item.get('Desc#', item.get('Item', 'Unknown')),
+                'action': 'URGENT ORDER',
+                'quantity': abs(item.get('Planning Balance', 0)),
+                'priority': 'CRITICAL'
+            })
+        
+        for item in high_risk_items[:3]:  # Top 3 high risk
+            recommendations.append({
+                'item': item.get('Desc#', item.get('Item', 'Unknown')),
+                'action': 'REORDER SOON',
+                'quantity': 100 - item.get('Planning Balance', 0),
+                'priority': 'HIGH'
+            })
+        
+        return recommendations
+
+
+class InventoryManagementPipeline:
+    """Complete inventory management pipeline as per spec"""
+
+    def __init__(self, supply_chain_ai=None):
+        self.supply_chain_ai = supply_chain_ai
+        self.inventory_analyzer = InventoryAnalyzer()
+
+    def run_complete_analysis(self, sales_data=None, inventory_data=None, yarn_data=None):
+        """Execute complete inventory analysis pipeline"""
+        results = {}
+
         try:
-            # This is a placeholder that returns yarn shortage analysis
-            # In a real implementation, this would analyze yarn inventory
-            return []
+            # Step 1: Use existing forecast or generate new one
+            if self.supply_chain_ai and hasattr(self.supply_chain_ai, 'demand_forecast'):
+                sales_forecast = self.supply_chain_ai.demand_forecast
+            else:
+                # Simple forecast based on historical data
+                sales_forecast = self._generate_simple_forecast(sales_data)
+            results['sales_forecast'] = sales_forecast
+
+            # Step 2: Analyze inventory levels
+            if inventory_data is not None:
+                current_inventory = self._prepare_inventory_data(inventory_data)
+                inventory_analysis = self.inventory_analyzer.analyze_inventory_levels(
+                    current_inventory=current_inventory,
+                    forecast=sales_forecast
+                )
+                results['inventory_analysis'] = inventory_analysis
+
+                # Step 3: Generate production plan
+                production_plan = self.generate_production_plan(
+                    inventory_analysis=inventory_analysis,
+                    forecast=sales_forecast
+                )
+                results['production_plan'] = production_plan
+
+                # Step 4: Calculate material requirements
+                if yarn_data is not None:
+                    yarn_requirements = self._calculate_material_requirements(
+                        production_plan, yarn_data
+                    )
+                    results['yarn_requirements'] = yarn_requirements
+
+                    # Step 5: Detect shortages
+                    shortage_analysis = self._analyze_material_shortages(
+                        yarn_requirements, yarn_data
+                    )
+                    results['shortage_analysis'] = shortage_analysis
+
+            # Step 6: Generate recommendations
+            results['recommendations'] = self._generate_recommendations(results)
+
         except Exception as e:
-            logger.error(f"Error in calculate_yarn_shortages: {str(e)}")
-            return []
-    
-    def validate_inventory_data(self, 
-                               inventory_data: List[Dict[str, Any]]) -> tuple[bool, List[str]]:
-        """
-        Validate inventory data before analysis
-        
-        Args:
-            inventory_data: Raw inventory data
-            
-        Returns:
-            Tuple of (is_valid, list of issues)
-        """
-        issues = []
-        
-        if not inventory_data:
-            issues.append("Empty inventory data")
-            return False, issues
-        
-        for idx, item in enumerate(inventory_data):
-            # Check for required fields
-            if not item.get('id') and not item.get('product_id'):
-                issues.append(f"Item {idx}: Missing product identifier")
-            
-            # Check for quantity
-            if 'quantity' not in item and 'stock' not in item:
-                issues.append(f"Item {idx}: Missing quantity/stock field")
-            
-            # Validate numeric fields
-            quantity = item.get('quantity', item.get('stock', 0))
-            try:
-                float(quantity)
-            except (TypeError, ValueError):
-                issues.append(f"Item {idx}: Invalid quantity value: {quantity}")
-        
-        return len(issues) == 0, issues
+            print(f"Error in pipeline analysis: {e}")
+            results['error'] = str(e)
 
+        return results
 
-# Singleton instance for backward compatibility
-_instance = None
+    def generate_production_plan(self, inventory_analysis, forecast):
+        """Create production plan based on inventory gaps"""
+        production_plan = {}
 
-def get_inventory_analyzer() -> InventoryAnalyzerService:
-    """
-    Get singleton instance of InventoryAnalyzerService
-    Maintains backward compatibility with monolith
-    """
-    global _instance
-    if _instance is None:
-        _instance = InventoryAnalyzerService()
-    return _instance
+        for item in inventory_analysis:
+            if item['reorder_needed']:
+                # Calculate production quantity
+                product_id = item['product_id']
+                production_qty = item['reorder_quantity'] + forecast.get(product_id, 0)
+                production_plan[product_id] = {
+                    'quantity': production_qty,
+                    'priority': 'HIGH' if item['shortage_risk'] in ['CRITICAL', 'HIGH'] else 'NORMAL',
+                    'risk_level': item['shortage_risk']
+                }
 
+        return production_plan
 
-# For backward compatibility with original class name
-InventoryAnalyzer = InventoryAnalyzerService
+    def _prepare_inventory_data(self, inventory_data):
+        """Convert DataFrame to list format for analyzer"""
+        if hasattr(inventory_data, 'iterrows'):
+            # It's a DataFrame
+            inventory_list = []
+            for idx, row in inventory_data.iterrows():
+                inventory_list.append({
+                    'id': str(row.get('Description', row.get('Item', idx))),
+                    'quantity': row.get('Planning Balance', row.get('Stock', 0))
+                })
+            return inventory_list
+        return inventory_data
 
+    def _generate_simple_forecast(self, sales_data):
+        """Generate simple forecast if no advanced forecasting available"""
+        if sales_data is None:
+            return {}
 
-def test_service():
-    """Test the extracted service"""
-    print("=" * 80)
-    print("Testing InventoryAnalyzerService")
-    print("=" * 80)
-    
-    # Create service instance
-    analyzer = InventoryAnalyzerService()
-    
-    # Test data
-    test_inventory = [
-        {'product_id': 'YARN001', 'quantity': 100},
-        {'product_id': 'YARN002', 'stock': 50},
-        {'product_id': 'YARN003', 'quantity': 200},
-        {'product_id': 'YARN004', 'stock': 10}
-    ]
-    
-    test_forecast = {
-        'YARN001': 300,  # Will need reorder
-        'YARN002': 150,  # Will need reorder
-        'YARN003': 100,  # Sufficient stock
-        'YARN004': 200   # Critical shortage
-    }
-    
-    # Run analysis
-    print("\nRunning inventory analysis...")
-    analysis = analyzer.analyze_inventory_levels(test_inventory, test_forecast)
-    
-    # Display results
-    print(f"\nAnalyzed {len(analysis)} products:")
-    for item in analysis:
-        print(f"  {item['product_id']}: Risk={item['shortage_risk']}, " 
-              f"Days Supply={item['days_of_supply']:.1f}, "
-              f"Reorder={item['reorder_needed']}")
-    
-    # Generate report
-    report = analyzer.generate_reorder_report(analysis)
-    print(f"\nReorder Report:")
-    print(f"  Products requiring reorder: {report['products_requiring_reorder']}")
-    print(f"  Risk summary: {report['risk_summary']}")
-    print(f"  Total reorder quantity: {report['total_reorder_quantity']:.0f}")
-    
-    print("\n" + "=" * 80)
-    print("✅ Service test complete")
+        # Simple moving average forecast
+        forecast = {}
+        if hasattr(sales_data, 'iterrows'):
+            for _, row in sales_data.iterrows():
+                item_id = str(row.get('Description', row.get('Item', '')))
+                # Use last month's consumption as forecast
+                forecast[item_id] = row.get('Consumed', row.get('Sales', 0)) * 1.1  # 10% growth
 
+        return forecast
 
-if __name__ == "__main__":
-    test_service()
+    def _calculate_material_requirements(self, production_plan, yarn_data):
+        """Calculate material requirements based on production plan"""
+        requirements = {}
+
+        # Simple BOM assumption: 1 unit of product requires materials
+        for product_id, plan in production_plan.items():
+            requirements[product_id] = {
+                'quantity_needed': plan['quantity'] * 1.2,  # 20% waste factor
+                'priority': plan['priority']
+            }
+
+        return requirements
+
+    def _analyze_material_shortages(self, requirements, yarn_data):
+        """Analyze material shortages"""
+        shortages = []
+
+        for material_id, req in requirements.items():
+            # Find current stock
+            current_stock = 0
+            if hasattr(yarn_data, 'iterrows'):
+                for _, row in yarn_data.iterrows():
+                    if str(row.get('Description', '')) == material_id:
+                        current_stock = row.get('Planning Balance', 0)
+                        break
+
+            if current_stock < req['quantity_needed']:
+                shortages.append({
+                    'material_id': material_id,
+                    'current_stock': current_stock,
+                    'required': req['quantity_needed'],
+                    'shortage': req['quantity_needed'] - current_stock,
+                    'priority': req['priority']
+                })
+
+        return shortages
+
+    def _generate_recommendations(self, analysis_results):
+        """Generate actionable recommendations"""
+        recommendations = []
+
+        # Check inventory analysis
+        if 'inventory_analysis' in analysis_results:
+            critical_items = [
+                item for item in analysis_results['inventory_analysis']
+                if item['shortage_risk'] in ['CRITICAL', 'HIGH']
+            ]
+            if critical_items:
+                recommendations.append({
+                    'type': 'URGENT',
+                    'message': f'{len(critical_items)} items at critical/high stockout risk',
+                    'action': 'Expedite production and procurement'
+                })
+
+        # Check shortage analysis
+        if 'shortage_analysis' in analysis_results:
+            if analysis_results['shortage_analysis']:
+                recommendations.append({
+                    'type': 'PROCUREMENT',
+                    'message': f'{len(analysis_results["shortage_analysis"])} material shortages detected',
+                    'action': 'Review and order materials urgently'
+                })
+
+        # Check production plan
+        if 'production_plan' in analysis_results:
+            high_priority = [
+                p for p in analysis_results['production_plan'].values()
+                if p['priority'] == 'HIGH'
+            ]
+            if high_priority:
+                recommendations.append({
+                    'type': 'PRODUCTION',
+                    'message': f'{len(high_priority)} high-priority production orders',
+                    'action': 'Schedule priority production runs'
+                })
+
+        return recommendations

@@ -1,0 +1,818 @@
+{
+  "project_root": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2",
+  "files_analyzed": 1,
+  "total_refactoring_candidates": 63,
+  "critical_issues": 7,
+  "high_priority_issues": 8,
+  "candidates": [
+    {
+      "type": "module",
+      "name": "beverly_comprehensive_erp.py",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        1,
+        18000
+      ],
+      "complexity": 18000,
+      "priority": "CRITICAL",
+      "suggested_actions": [
+        "Break into multiple modules",
+        "Extract services"
+      ],
+      "estimated_effort": "weeks"
+    },
+    {
+      "type": "function",
+      "name": "load_all_data",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        3623,
+        3963
+      ],
+      "complexity": 84,
+      "priority": "CRITICAL",
+      "suggested_actions": [
+        "Break into multiple functions",
+        "Extract complex conditionals",
+        "Consider Strategy pattern",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "execute_planning",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        9189,
+        9792
+      ],
+      "complexity": 80,
+      "priority": "CRITICAL",
+      "suggested_actions": [
+        "Break into multiple functions",
+        "Extract complex conditionals",
+        "Consider Strategy pattern",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "get_fabric_forecast",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        11194,
+        11567
+      ],
+      "complexity": 79,
+      "priority": "CRITICAL",
+      "suggested_actions": [
+        "Break into multiple functions",
+        "Extract complex conditionals",
+        "Consider Strategy pattern",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "get_yarn_intelligence",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        12270,
+        12649
+      ],
+      "complexity": 73,
+      "priority": "CRITICAL",
+      "suggested_actions": [
+        "Break into multiple functions",
+        "Extract complex conditionals",
+        "Consider Strategy pattern",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "get_bom_explosion_net_requirements",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        10821,
+        11082
+      ],
+      "complexity": 63,
+      "priority": "CRITICAL",
+      "suggested_actions": [
+        "Break into multiple functions",
+        "Extract complex conditionals",
+        "Consider Strategy pattern",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "production_suggestions",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        17376,
+        17635
+      ],
+      "complexity": 61,
+      "priority": "CRITICAL",
+      "suggested_actions": [
+        "Break into multiple functions",
+        "Extract complex conditionals",
+        "Consider Strategy pattern",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "class",
+      "name": "ManufacturingSupplyChainAI",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        3479,
+        8558
+      ],
+      "complexity": 5080,
+      "priority": "HIGH",
+      "suggested_actions": [
+        "Extract service",
+        "Split responsibilities"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "class",
+      "name": "SalesForecastingEngine",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        1272,
+        2472
+      ],
+      "complexity": 1201,
+      "priority": "HIGH",
+      "suggested_actions": [
+        "Extract service",
+        "Split responsibilities"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "calculate_comprehensive_kpis",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        4778,
+        4973
+      ],
+      "complexity": 47,
+      "priority": "HIGH",
+      "suggested_actions": [
+        "Extract helper functions",
+        "Simplify conditional logic",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "hours"
+    },
+    {
+      "type": "function",
+      "name": "production_planning_api",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        16092,
+        16414
+      ],
+      "complexity": 47,
+      "priority": "HIGH",
+      "suggested_actions": [
+        "Extract helper functions",
+        "Simplify conditional logic",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "get_ml_forecast_detailed",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        14756,
+        15083
+      ],
+      "complexity": 46,
+      "priority": "HIGH",
+      "suggested_actions": [
+        "Extract helper functions",
+        "Simplify conditional logic",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "po_risk_analysis",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        16428,
+        16661
+      ],
+      "complexity": 42,
+      "priority": "HIGH",
+      "suggested_actions": [
+        "Extract helper functions",
+        "Simplify conditional logic",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "get_yarn_forecast_shortages",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        15575,
+        15752
+      ],
+      "complexity": 32,
+      "priority": "HIGH",
+      "suggested_actions": [
+        "Extract helper functions",
+        "Simplify conditional logic",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "hours"
+    },
+    {
+      "type": "function",
+      "name": "get_knit_orders",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        10429,
+        10591
+      ],
+      "complexity": 31,
+      "priority": "HIGH",
+      "suggested_actions": [
+        "Extract helper functions",
+        "Simplify conditional logic",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "hours"
+    },
+    {
+      "type": "class",
+      "name": "ProductionDashboardManager",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        2828,
+        3257
+      ],
+      "complexity": 430,
+      "priority": "MEDIUM",
+      "suggested_actions": [
+        "Extract service",
+        "Split responsibilities"
+      ],
+      "estimated_effort": "hours"
+    },
+    {
+      "type": "function",
+      "name": "get_inventory_intelligence_enhanced",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        13011,
+        13247
+      ],
+      "complexity": 28,
+      "priority": "MEDIUM",
+      "suggested_actions": [
+        "Extract validation logic",
+        "Reduce nesting levels",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    },
+    {
+      "type": "function",
+      "name": "get_ensemble_forecast",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        13942,
+        14084
+      ],
+      "complexity": 28,
+      "priority": "MEDIUM",
+      "suggested_actions": [
+        "Extract validation logic",
+        "Reduce nesting levels",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "hours"
+    },
+    {
+      "type": "function",
+      "name": "get_advanced_inventory_optimization",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        7038,
+        7226
+      ],
+      "complexity": 27,
+      "priority": "MEDIUM",
+      "suggested_actions": [
+        "Extract validation logic",
+        "Reduce nesting levels",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "hours"
+    },
+    {
+      "type": "function",
+      "name": "execute_simplified_planning",
+      "file_path": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+      "line_range": [
+        8833,
+        9147
+      ],
+      "complexity": 26,
+      "priority": "MEDIUM",
+      "suggested_actions": [
+        "Extract validation logic",
+        "Reduce nesting levels",
+        "Split into smaller functions"
+      ],
+      "estimated_effort": "days"
+    }
+  ],
+  "service_extraction_plan": {
+    "source_file": "D:\\AI\\Workspaces\\efab.ai\\beverly_knits_erp_v2\\src\\core\\beverly_comprehensive_erp.py",
+    "total_lines": 18000,
+    "services": [
+      {
+        "name": "forecasting_service",
+        "functions": [
+          "clean_html_from_string",
+          "_generate_simple_forecast",
+          "initialize_ml_engines",
+          "fallback_forecast",
+          "forecast_with_consistency",
+          "_get_fallback_forecast_results",
+          "_generate_simple_forecast_fallback",
+          "generate_forecast_output",
+          "initialize_ml_models",
+          "backtest_forecasts",
+          "get_ml_forecasting_insights",
+          "_get_ml_error_response",
+          "_get_ml_fallback_forecast",
+          "_format_forecast_results",
+          "_fallback_ml_forecasting",
+          "generate_90_day_forecast",
+          "_get_default_forecast_results",
+          "_simple_90_day_forecast",
+          "_generate_production_plan_from_forecast",
+          "_convert_forecast_to_weekly",
+          "_generate_demand_forecast",
+          "get_sales_forecast",
+          "get_demand_forecast",
+          "get_ml_forecast_report",
+          "get_ml_forecast_detailed",
+          "get_forecasted_orders",
+          "get_production_recommendations_ml",
+          "get_ml_forecasting",
+          "get_sales_forecast_analysis",
+          "get_fabric_forecast",
+          "get_consistency_forecast",
+          "get_fabric_forecast_integrated",
+          "get_ensemble_forecast",
+          "_get_fallback_ensemble_forecast",
+          "get_pipeline_forecast",
+          "get_forecast_vs_stock",
+          "get_forecast_accuracy",
+          "get_ml_forecast_report",
+          "get_ml_forecast_detailed",
+          "get_ml_validation_summary",
+          "retrain_ml_models",
+          "get_ml_production_recommendations",
+          "production_plan_forecast",
+          "get_ai_production_forecast"
+        ],
+        "function_count": 44,
+        "total_complexity": 393,
+        "suggested_path": "src/services/forecasting_service.py"
+      },
+      {
+        "name": "inventory_service",
+        "functions": [
+          "run_inventory_analysis",
+          "get_yarn_shortage_report",
+          "get_inventory_risk_report",
+          "analyze_inventory_levels",
+          "analyze_inventory",
+          "_prepare_inventory_data",
+          "process_yarn_requirements",
+          "get_critical_yarns",
+          "load_stage_inventory",
+          "get_yarn_time_phased_data",
+          "calculate_yarn_requirements_for_knit_orders",
+          "get_advanced_inventory_optimization",
+          "analyze_sales_and_forecast_yarn_needs",
+          "_analyze_yarn_consumption_requirements",
+          "compare_forecast_to_inventory",
+          "compare_yarn_needs_to_inventory",
+          "_detect_inventory_columns",
+          "identify_excess_inventory",
+          "get_yarn_inventory_status",
+          "get_production_inventory",
+          "get_inventory_intelligence_enhanced",
+          "get_yarn_shortages",
+          "get_yarn_forecast_shortages",
+          "get_yarn_alternatives",
+          "get_yarn_substitution_intelligent",
+          "get_yarn_aggregation",
+          "get_yarn_data_test",
+          "real_time_inventory_dashboard",
+          "yarn_shortage_analysis",
+          "get_yarn_alternatives",
+          "yarn_requirements_calculation",
+          "calculate_yarn_requirements",
+          "get_inventory_netting",
+          "get_yarn_data",
+          "get_inventory_analysis",
+          "get_yarn_aggregation",
+          "get_yarn_intelligence",
+          "yarn_shortage_timeline",
+          "yarn_intelligence_with_time_phased",
+          "get_inventory_intelligence_enhanced",
+          "get_real_time_inventory_dashboard",
+          "get_multi_stage_inventory",
+          "get_ai_yarn_forecast",
+          "get_ai_inventory_intelligence",
+          "get_pipeline_yarn_shortages",
+          "get_pipeline_inventory_risks",
+          "run_complete_inventory_analysis",
+          "get_yarn_shortages",
+          "calculate_yarn_requirements_from_plan",
+          "get_inventory_action_items",
+          "get_inventory_dashboard_data",
+          "inventory_overview",
+          "get_yarn_substitution_opportunities",
+          "get_intelligent_yarn_substitutions",
+          "get_yarn_forecast_shortages",
+          "get_yarn_backtest_comprehensive"
+        ],
+        "function_count": 56,
+        "total_complexity": 551,
+        "suggested_path": "src/services/inventory_service.py"
+      },
+      {
+        "name": "core_service",
+        "functions": [
+          "timeout",
+          "decorator",
+          "wrapper",
+          "timeout_handler",
+          "standardize_columns",
+          "clear_memory",
+          "limit_dataframe_size",
+          "periodic_memory_cleanup",
+          "encode",
+          "default",
+          "handle_internal_server_error",
+          "handle_not_found_error",
+          "handle_general_exception",
+          "decorator",
+          "wrapper",
+          "redirect_handler",
+          "intercept_deprecated_endpoints",
+          "test_early",
+          "favicon",
+          "has_complete_data",
+          "after_request",
+          "decorator",
+          "find_column",
+          "find_column_value",
+          "__init__",
+          "calculate_risk",
+          "_calculate_eoq",
+          "_generate_recommendations",
+          "__init__",
+          "run_complete_analysis",
+          "_calculate_material_requirements",
+          "_analyze_material_shortages",
+          "_generate_recommendations",
+          "__init__",
+          "calculate_consistency_score",
+          "_calculate_weighted_average",
+          "analyze_portfolio_consistency",
+          "extract_features",
+          "_extract_seasonality_patterns",
+          "_extract_promotion_effects",
+          "_extract_customer_segments",
+          "_calculate_seasonality_strength",
+          "_find_peak_period",
+          "_is_multiplicative_seasonality",
+          "_extract_trend_features",
+          "_extract_cyclical_patterns",
+          "_calculate_avg_duration",
+          "train_models",
+          "_prepare_time_series",
+          "_train_arima",
+          "_get_fallback_model_result",
+          "_get_best_available_model",
+          "_train_prophet",
+          "_train_lstm",
+          "_train_xgboost",
+          "_create_ensemble",
+          "validate_accuracy",
+          "__init__",
+          "load_bom_data",
+          "calculate_procurement_needs",
+          "__init__",
+          "load_all_stages",
+          "get_stage_summary",
+          "track_item_across_stages",
+          "__init__",
+          "calculate_finite_capacity_requirements",
+          "identify_capacity_bottlenecks",
+          "_calculate_bottleneck_impact",
+          "_get_available_capacity",
+          "__init__",
+          "_generate_kpi_array",
+          "get_machines_status",
+          "get_mock_machines_data",
+          "__init__",
+          "generate_finite_capacity_schedule",
+          "calculate_critical_path",
+          "_find_earliest_slot",
+          "_assign_machine",
+          "_get_setup_time",
+          "__init__",
+          "calculate_time_phased_requirements",
+          "apply_lot_sizing_rules",
+          "calculate_safety_stock",
+          "_explode_bom_with_timing",
+          "_calculate_eoq",
+          "_calculate_poq",
+          "__init__",
+          "_get_default_mapping",
+          "_find_column",
+          "load_all_data",
+          "initialize_time_phased_data",
+          "load_knit_orders",
+          "classify_ko_status",
+          "enhance_knit_order_data",
+          "classify_ko_status",
+          "_standardize_columns",
+          "_train_models",
+          "generate_alerts",
+          "validate_data_integrity",
+          "explode_bom_multilevel",
+          "explode_level",
+          "explode_textile_bom",
+          "verify_calculations",
+          "calculate_comprehensive_kpis",
+          "parse_price",
+          "_try_exponential_smoothing",
+          "_try_moving_average",
+          "_try_linear_regression",
+          "_prepare_time_series_data",
+          "auto_select_best_model",
+          "detect_demand_anomalies",
+          "_get_anomaly_recommendation",
+          "_detect_demand_patterns",
+          "_calculate_seasonality_from_sales",
+          "_calculate_holding_cost_rate",
+          "_calculate_safety_stock",
+          "_process_eoq_item",
+          "calculate_dynamic_eoq",
+          "_get_eoq_recommendation",
+          "_calculate_delivery_score",
+          "_calculate_quality_score",
+          "_calculate_lead_time_score",
+          "_get_risk_classification",
+          "calculate_supplier_risk_score",
+          "_get_bom_structure",
+          "_get_lead_times",
+          "_get_default_orders",
+          "_predict_quality_metrics",
+          "analyze_knit_orders_status",
+          "_create_expedited_options",
+          "_get_urgency_level",
+          "_get_action_plan",
+          "handle_emergency_procurement",
+          "_calculate_growth_rate",
+          "_analyze_stockout_risks",
+          "_generate_action_items",
+          "_get_current_stock_for_style",
+          "_calculate_abc_categories",
+          "_get_management_strategy",
+          "_calculate_stockout_probability",
+          "_calculate_safety_stock",
+          "perform_abc_analysis",
+          "detect_stockout_risk",
+          "calculate_reorder_points",
+          "_get_lead_time_by_type",
+          "get_executive_insights",
+          "get_supplier_risk_intelligence",
+          "get_debug_data",
+          "reload_data",
+          "comprehensive_dashboard",
+          "consolidated_dashboard",
+          "ai_factory_floor_dashboard",
+          "test_tabs",
+          "final_test",
+          "test_dashboard",
+          "get_comprehensive_kpis",
+          "capture_progress",
+          "get_advanced_optimization",
+          "debug_data",
+          "consolidation_metrics",
+          "reload_data",
+          "emergency_shortage_dashboard",
+          "get_supplier_intelligence",
+          "handle_purchase_orders",
+          "validate_substitution",
+          "get_knit_orders_styles",
+          "get_knit_orders",
+          "safe_float",
+          "knit_orders_analysis",
+          "generate_knit_orders",
+          "get_procurement_recommendations",
+          "convert_fabric",
+          "get_fabric_specs",
+          "get_bom_explosion_net_requirements",
+          "explode_textile_bom",
+          "determine_fabric_type",
+          "get_executive_insights",
+          "get_emergency_shortage_dashboard",
+          "supply_chain_analysis",
+          "clean_response_for_json",
+          "clean_for_json",
+          "po_delivery_schedule",
+          "debug_time_phased_init",
+          "get_safety_stock_calculations",
+          "get_sales_data",
+          "parse_price",
+          "get_dynamic_eoq",
+          "get_supplier_risk_scoring",
+          "get_emergency_procurement",
+          "get_ai_reorder_recommendation",
+          "run_pipeline",
+          "get_stock_risks",
+          "run_backtest",
+          "get_backtest_models",
+          "serve_live_sales_js",
+          "hello",
+          "test_po",
+          "po_risk_analysis",
+          "get_style_mapping",
+          "get_machine_utilization",
+          "get_work_center_capacity",
+          "get_factory_floor_status",
+          "get_ai_bottleneck_detection",
+          "get_ai_optimization_recommendations",
+          "get_machine_assignment_suggestions",
+          "clean_balance",
+          "get_factory_floor_ai_dashboard",
+          "get_fabric_backtest_comprehensive",
+          "get_full_backtest_report"
+        ],
+        "function_count": 209,
+        "total_complexity": 1319,
+        "suggested_path": "src/services/core_service.py"
+      },
+      {
+        "name": "api_layer",
+        "functions": [
+          "deprecated_api",
+          "redirect_to_new_api",
+          "_optimize_delivery_routes",
+          "machines_status_api",
+          "live_sales_api"
+        ],
+        "function_count": 5,
+        "total_complexity": 41,
+        "suggested_path": "src/services/api_layer.py"
+      },
+      {
+        "name": "optimization_service",
+        "functions": [
+          "cached",
+          "optimize_capacity_allocation",
+          "optimize_setup_sequences",
+          "get_cache_stats",
+          "get_cache_stats",
+          "clear_cache",
+          "supply_chain_analysis_cached",
+          "optimize_safety_stock"
+        ],
+        "function_count": 8,
+        "total_complexity": 28,
+        "suggested_path": "src/services/optimization_service.py"
+      },
+      {
+        "name": "production_service",
+        "functions": [
+          "generate_production_plan",
+          "initialize_production_database",
+          "get_production_data",
+          "get_mock_production_data",
+          "get_production_orders",
+          "get_mock_production_orders",
+          "create_production_order",
+          "get_6_phase_planning_results",
+          "run_advanced_planning_cycle",
+          "_get_production_orders",
+          "_generate_planning_summary",
+          "get_production_pipeline_intelligence",
+          "get_ai_production_suggestions",
+          "get_production_status",
+          "get_six_phase_planning",
+          "get_capacity_planning",
+          "get_planning_optimization",
+          "get_planning_phases",
+          "execute_simplified_planning",
+          "planning_status",
+          "planning_execute_alias",
+          "execute_planning_status",
+          "execute_planning",
+          "six_phase_planning_api",
+          "get_enhanced_production_metrics",
+          "get_fabric_production",
+          "get_production_pipeline",
+          "time_phased_planning",
+          "production_data_api",
+          "production_orders_api",
+          "create_production_order_api",
+          "production_planning_api",
+          "get_production_capacity",
+          "get_production_machine_mapping",
+          "get_ai_production_insights",
+          "get_production_schedule",
+          "production_suggestions"
+        ],
+        "function_count": 37,
+        "total_complexity": 354,
+        "suggested_path": "src/services/production_service.py"
+      },
+      {
+        "name": "InventoryAnalyzer_service",
+        "class": "InventoryAnalyzer",
+        "line_count": 136,
+        "suggested_path": "src/services/inventoryanalyzer_service.py"
+      },
+      {
+        "name": "InventoryManagementPipeline_service",
+        "class": "InventoryManagementPipeline",
+        "line_count": 167,
+        "suggested_path": "src/services/inventorymanagementpipeline_service.py"
+      },
+      {
+        "name": "MultiStageInventoryTracker_service",
+        "class": "MultiStageInventoryTracker",
+        "line_count": 142,
+        "suggested_path": "src/services/multistageinventorytracker_service.py"
+      }
+    ],
+    "migration_steps": [
+      "1. Create service directory structure (src/services/)",
+      "2. Extract data models to src/models/",
+      "3. Create base service classes",
+      "4. Extract forecasting_service to src/services/forecasting_service.py",
+      "5. Extract inventory_service to src/services/inventory_service.py",
+      "6. Extract core_service to src/services/core_service.py",
+      "7. Extract api_layer to src/services/api_layer.py",
+      "8. Extract optimization_service to src/services/optimization_service.py",
+      "9. Extract production_service to src/services/production_service.py",
+      "10. Extract InventoryAnalyzer_service to src/services/inventoryanalyzer_service.py",
+      "11. Extract InventoryManagementPipeline_service to src/services/inventorymanagementpipeline_service.py",
+      "12. Extract MultiStageInventoryTracker_service to src/services/multistageinventorytracker_service.py",
+      "13. Update imports in main file",
+      "14. Create service registry",
+      "15. Implement dependency injection",
+      "16. Add comprehensive tests",
+      "17. Validate functionality",
+      "18. Remove extracted code from monolith"
+    ],
+    "estimated_effort": "1-2 weeks",
+    "benefits": [
+      "Improved maintainability",
+      "Better testability",
+      "Scalable architecture",
+      "Clear separation of concerns"
+    ]
+  },
+  "recommendations": [
+    "URGENT: Address 7 critical complexity issues immediately",
+    "Break down 1 monolithic files into services",
+    "Implement automated code quality checks in CI/CD",
+    "Set complexity thresholds for new code",
+    "Establish refactoring sprints every quarter",
+    "Create coding standards documentation",
+    "Implement comprehensive test coverage before refactoring"
+  ]
+}

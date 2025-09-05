@@ -70,16 +70,18 @@ class ConsolidatedDataLoader:
         """Initialize consolidated data loader with all features"""
         
         # Data paths - comprehensive search from all loaders
+        # Get project root for relative paths
+        project_root = Path(__file__).parent.parent.parent
+        
         self.data_paths = [
-            Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data"),  # Current primary
-            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data"),  # Legacy primary
-            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/08-09"),  # Most recent
-            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/08-06"),
-            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/08-04"),
-            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/5"),
-            Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5"),
-            Path("/mnt/c/finalee/beverly_knits_erp_v2/data/archive/08-04"),
-            Path("/mnt/c/finalee/beverly_knits_erp_v2/data")
+            project_root / "data" / "production" / "5",  # Primary path
+            project_root / "data" / "production" / "5" / "ERP Data",  # ERP Data subfolder
+            project_root / "data" / "production",  # Production folder
+            Path("D:/AI/Workspaces/efab.ai/beverly_knits_erp_v2/data/production/5"),  # Absolute Windows path
+            Path("data/production/5"),  # Relative path fallback
+            Path("data/production/5/ERP Data"),
+            project_root / "data" / "archive",
+            project_root / "data"
         ]
         
         if data_path:

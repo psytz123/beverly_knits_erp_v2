@@ -1,0 +1,122 @@
+{
+  "Vectorized_Planning_Balance_100": {
+    "time_seconds": 0.0014913999984855764,
+    "memory_mb": 0.21484375,
+    "timestamp": "2025-09-05T05:42:18.984849"
+  },
+  "Vectorized_Shortage_Detection_100": {
+    "time_seconds": 0.0010933000012300909,
+    "memory_mb": 0.22265625,
+    "timestamp": "2025-09-05T05:42:19.000756"
+  },
+  "Vectorized_Groupby_100": {
+    "time_seconds": 0.0071924999938346446,
+    "memory_mb": 0.484375,
+    "timestamp": "2025-09-05T05:42:19.021733"
+  },
+  "Vectorized_Planning_Balance_1000": {
+    "time_seconds": 0.0007955000037327409,
+    "memory_mb": 0.0,
+    "timestamp": "2025-09-05T05:42:19.040023"
+  },
+  "Vectorized_Shortage_Detection_1000": {
+    "time_seconds": 0.0008535000015399419,
+    "memory_mb": 0.0078125,
+    "timestamp": "2025-09-05T05:42:19.058104"
+  },
+  "Vectorized_Groupby_1000": {
+    "time_seconds": 0.005407299999205861,
+    "memory_mb": 0.08984375,
+    "timestamp": "2025-09-05T05:42:19.083904"
+  },
+  "Vectorized_Planning_Balance_10000": {
+    "time_seconds": 0.0008997000040835701,
+    "memory_mb": 0.0703125,
+    "timestamp": "2025-09-05T05:42:19.109682"
+  },
+  "Vectorized_Shortage_Detection_10000": {
+    "time_seconds": 0.0015366000006906688,
+    "memory_mb": 0.03125,
+    "timestamp": "2025-09-05T05:42:19.128117"
+  },
+  "Vectorized_Groupby_10000": {
+    "time_seconds": 0.007987799996044487,
+    "memory_mb": 0.6640625,
+    "timestamp": "2025-09-05T05:42:19.153241"
+  },
+  "Vectorized_Planning_Balance_50000": {
+    "time_seconds": 0.0011537000027601607,
+    "memory_mb": 0.4609375,
+    "timestamp": "2025-09-05T05:42:19.202890"
+  },
+  "Vectorized_Shortage_Detection_50000": {
+    "time_seconds": 0.0018915999971795827,
+    "memory_mb": 0.72265625,
+    "timestamp": "2025-09-05T05:42:19.224210"
+  },
+  "Vectorized_Groupby_50000": {
+    "time_seconds": 0.015570399998978246,
+    "memory_mb": 0.546875,
+    "timestamp": "2025-09-05T05:42:19.258024"
+  },
+  "API_/api/v2/inventory?view=summary": {
+    "time_seconds": 2.0484947000004468,
+    "memory_mb": 0.01953125,
+    "timestamp": "2025-09-05T05:42:23.359805"
+  },
+  "API_/api/v2/production?view=status": {
+    "time_seconds": 2.0568065000043134,
+    "memory_mb": 0.00390625,
+    "timestamp": "2025-09-05T05:42:25.432641"
+  },
+  "API_/api/v2/forecast": {
+    "time_seconds": 2.0457893000057084,
+    "memory_mb": 0.0,
+    "timestamp": "2025-09-05T05:42:27.496196"
+  },
+  "API_/api/v2/yarn?analysis=intelligence": {
+    "time_seconds": 2.0328368000045884,
+    "memory_mb": 0.00390625,
+    "timestamp": "2025-09-05T05:42:29.553441"
+  },
+  "API_/api/v2/analytics/kpis": {
+    "time_seconds": 2.042932500000461,
+    "memory_mb": 0.0,
+    "timestamp": "2025-09-05T05:42:31.613295"
+  },
+  "Cache_Miss": {
+    "time_seconds": 2.033640800000285,
+    "memory_mb": 0.0,
+    "timestamp": "2025-09-05T05:42:33.669537"
+  },
+  "Cache_Hit_1": {
+    "time_seconds": 2.0400995000018156,
+    "memory_mb": 0.00390625,
+    "timestamp": "2025-09-05T05:42:35.731283"
+  },
+  "Cache_Hit_2": {
+    "time_seconds": 2.026581999998598,
+    "memory_mb": 0.00390625,
+    "timestamp": "2025-09-05T05:42:37.778478"
+  },
+  "Memory_Before_Optimization": {
+    "time_seconds": 0.012120200000936165,
+    "memory_mb": 0.0234375,
+    "timestamp": "2025-09-05T05:42:37.818324"
+  },
+  "Memory_Optimization": {
+    "time_seconds": 0.009473899997828994,
+    "memory_mb": -0.5390625,
+    "timestamp": "2025-09-05T05:42:37.842007"
+  },
+  "Sequential_Execution": {
+    "time_seconds": 0.5405954000016209,
+    "memory_mb": 0.015625,
+    "timestamp": "2025-09-05T05:42:38.398430"
+  },
+  "Concurrent_Execution": {
+    "time_seconds": 0.10001669999473961,
+    "memory_mb": 0.00390625,
+    "timestamp": "2025-09-05T05:42:38.526661"
+  }
+}

@@ -26,7 +26,11 @@ class YarnCompatibilityMLTrainer:
     Learns from historical production data and material properties
     """
     
-    def __init__(self, data_path: str = "/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/5"):
+    def __init__(self, data_path: str = None):
+        if data_path is None:
+            # Use relative path from project root
+            project_root = Path(__file__).parent.parent.parent
+            data_path = project_root / "data" / "production" / "5"
         self.data_path = Path(data_path)
         self.model = None
         self.scaler = StandardScaler()
@@ -356,10 +360,15 @@ class YarnCompatibilityMLTrainer:
         
         return recommendations[:5]  # Return top 5 recommendations
     
-    def save_trained_model(self, output_path: str = "/mnt/d/Agent-MCP-1-ddd/trained_yarn_compatibility_model.json"):
+    def save_trained_model(self, output_path: str = None):
         """
         Save the trained model and material properties
         """
+        if output_path is None:
+            # Use project root for trained model
+            project_root = Path(__file__).parent.parent.parent
+            output_path = project_root / "trained_yarn_compatibility_model.json"
+        
         try:
             model_data = {
                 'training_date': datetime.now().isoformat(),
@@ -434,7 +443,8 @@ class YarnCompatibilityMLTrainer:
                             }
                 
                 # Save the trained substitutions
-                output_file = "/mnt/d/Agent-MCP-1-ddd/trained_yarn_substitutions.json"
+                project_root = Path(__file__).parent.parent.parent
+                output_file = project_root / "trained_yarn_substitutions.json"
                 with open(output_file, 'w') as f:
                     json.dump({
                         'training_date': datetime.now().isoformat(),

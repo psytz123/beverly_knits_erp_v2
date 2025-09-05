@@ -1,0 +1,15 @@
+{
+  "test_date": "2025-09-05T01:29:59.692917",
+  "config": {
+    "horizon_weeks": 9,
+    "min_accuracy_threshold": 0.9,
+    "ensemble_weights": {
+      "prophet": 0.4,
+      "xgboost": 0.35,
+      "arima": 0.15,
+      "lstm": 0.1
+    }
+  },
+  "results": [
+    {
+      "yarn_id": 

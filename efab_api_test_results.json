@@ -1,0 +1,189 @@
+[
+  {
+    "endpoint": "/api/yarn/active",
+    "url": "https://efab.bkiapps.com/api/yarn/active",
+    "status_code": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "response_size": 1828134,
+    "error": null,
+    "sample_data": null
+  },
+  {
+    "endpoint": "/api/greige/g00",
+    "url": "https://efab.bkiapps.com/api/greige/g00",
+    "status_code": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "response_size": 1953863,
+    "error": null,
+    "sample_data": null
+  },
+  {
+    "endpoint": "/api/greige/g02",
+    "url": "https://efab.bkiapps.com/api/greige/g02",
+    "status_code": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "response_size": 9207883,
+    "error": null,
+    "sample_data": null
+  },
+  {
+    "endpoint": "/api/finished/i01",
+    "url": "https://efab.bkiapps.com/api/finished/i01",
+    "status_code": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "response_size": 754079,
+    "error": null,
+    "sample_data": null
+  },
+  {
+    "endpoint": "/api/finished/f01",
+    "url": "https://efab.bkiapps.com/api/finished/f01",
+    "status_code": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "response_size": 46888845,
+    "error": null,
+    "sample_data": null
+  },
+  {
+    "endpoint": "/api/yarn-po",
+    "url": "https://efab.bkiapps.com/api/yarn-po",
+    "status_code": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "response_size": 227048,
+    "error": null,
+    "sample_data": null
+  },
+  {
+    "endpoint": "/fabric/knitorder/list",
+    "url": "https://efab.bkiapps.com/fabric/knitorder/list",
+    "status_code": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "response_size": 30566,
+    "error": null,
+    "sample_data": null
+  },
+  {
+    "endpoint": "/api/styles",
+    "url": "https://efab.bkiapps.com/api/styles",
+    "status_code": 200,
+    "content_type": "application/json",
+    "response_size": 49931758,
+    "error": null,
+    "sample_data": {
+      "type": "list",
+      "count": 11421,
+      "first_item_keys": [
+        "description",
+        "code",
+        "cf_version",
+        "id"
+      ]
+    }
+  },
+  {
+    "endpoint": "/api/report/yarn_expected",
+    "url": "https://efab.bkiapps.com/api/report/yarn_expected",
+    "status_code": 200,
+    "content_type": "application/json",
+    "response_size": 263393,
+    "error": null,
+    "sample_data": {
+      "type": "list",
+      "count": 79,
+      "first_item_keys": [
+        "modified",
+        "ship_method",
+        "serial_number",
+        "buyer",
+        "qty_updated",
+        "count_1",
+        "week_0",
+        "weekly_qty",
+        "yarn",
+        "count_2",
+        "uom",
+        "week_2",
+        "week_5",
+        "status",
+        "closed",
+        "carrier",
+        "weekly_start",
+        "placed",
+        "payment_term",
+        "weeks_to_show",
+        "count_6",
+        "week_6",
+        "week_3",
+        "id",
+        "week_4",
+        "initial_asap",
+        "prior_schedule",
+        "quoted_date",
+        "qty_ordered",
+        "created_by",
+        "week_1",
+        "count_4",
+        "active",
+        "internal_notes",
+        "week_9",
+        "fully_invoiced",
+        "unscheduled",
+        "initial_qty",
+        "equal_shipments",
+        "job",
+        "count_8",
+        "week_7",
+        "week_8",
+        "count_9",
+        "instructions",
+        "purchased_from",
+        "initial_ship_date",
+        "unit_price",
+        "count_5",
+        "created_date",
+        "qty_received",
+        "requested_date",
+        "count_0",
+        "count_7",
+        "po_updated",
+        "updated_by",
+        "yarn_po_shipments",
+        "past_due",
+        "count_3"
+      ]
+    }
+  },
+  {
+    "endpoint": "/api/report/sales_activity",
+    "url": "https://efab.bkiapps.com/api/report/sales_activity",
+    "status_code": 404,
+    "content_type": "text/html; charset=UTF-8",
+    "response_size": 1272,
+    "error": null,
+    "sample_data": null
+  },
+  {
+    "endpoint": "/api/report/yarn_demand",
+    "url": "https://efab.bkiapps.com/api/report/yarn_demand",
+    "status_code": null,
+    "content_type": null,
+    "response_size": 0,
+    "error": "Timeout",
+    "sample_data": null
+  },
+  {
+    "endpoint": "/api/sales-order/plan/list",
+    "url": "https://efab.bkiapps.com/api/sales-order/plan/list",
+    "status_code": 200,
+    "content_type": "application/json",
+    "response_size": 862968,
+    "error": null,
+    "sample_data": {
+      "type": "dict",
+      "keys": [
+        "cache_time",
+        "rows"
+      ]
+    }
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "base_url": "https://efab.bkiapps.com",
+  "api_endpoints": {
+    "styles": "/api/styles",
+    "yarn_inventory": "/api/yarn/active",
+    "knit_orders": "/api/fabric/knitorder/list",
+    "sales_orders": "/api/sales-order/list",
+    "bom": "/api/bom/list"
+  },
+  "authentication": {
+    "method": "api_key",
+    "api_key": "YOUR_API_KEY_HERE",
+    "api_secret": "YOUR_API_SECRET_HERE_IF_NEEDED"
+  },
+  "options": {
+    "timeout": 30,
+    "retry_count": 3,
+    "cache_ttl": 300
+  }
+}

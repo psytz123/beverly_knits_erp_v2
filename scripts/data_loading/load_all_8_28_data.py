@@ -19,8 +19,10 @@ def load_all_data():
     )
     cursor = conn.cursor()
     
-    # Base path for all data
-    data_path = '/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/8-28-2025'
+    # Base path for all data - use project root for consistent path resolution
+    from pathlib import Path
+    project_root = Path(__file__).parent.parent.parent
+    data_path = str(project_root / 'data' / 'production' / '5' / 'ERP Data' / '8-28-2025')
     snapshot_date = datetime(2025, 8, 28).date()  # Use 8-28-2025 as snapshot date
     
     print("=" * 70)

@@ -50,8 +50,8 @@
     "rollback_on_failure": true,
     "a_b_testing": false,
     "canary_deployment": false,
-    "model_registry": "/mnt/c/finalee/beverly_knits_erp_v2/models",
-    "training_registry": "/mnt/c/finalee/beverly_knits_erp_v2/training_results"
+    "model_registry": "models",
+    "training_registry": "training_results"
   },
   "models": {
     "arima": {

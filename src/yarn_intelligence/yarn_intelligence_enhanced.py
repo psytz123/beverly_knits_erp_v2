@@ -61,10 +61,9 @@ def clean_for_json(obj):
 class YarnIntelligenceEngine:
     def __init__(self, data_path=None):
         if data_path is None:
-            if platform.system() == "Windows":
-                data_path = "D:/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/prompts/5"
-            else:
-                data_path = "/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/prompts/5"
+            # Use relative path from project root
+            project_root = Path(__file__).parent.parent.parent
+            data_path = project_root / "data" / "production" / "5"
         self.data_path = Path(data_path)
         self.yarn_demand = None
         self.yarn_by_style = None

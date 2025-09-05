@@ -471,7 +471,7 @@ class ProductionCapacityManager:
                     self.get_machine_assignment(machine_id) or 'default'
                 ),
                 'workload_lbs': workload_lbs,
-                'days_of_work': round(workload_lbs / self.default_capacity, 1) if workload_lbs > 0 else 0,
+                'days_of_work': round(workload_lbs / self.default_capacity, 1) if workload_lbs > 0 and self.default_capacity > 0 else 0,
                 'status': 'RUNNING' if utilization > 20 else 'IDLE'
             }
             machine_status.append(status)

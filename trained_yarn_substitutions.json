@@ -1,0 +1,1140 @@
+{
+  "training_date": "2025-08-17T14:42:52.685299",
+  "trained_substitutions": {
+    "19003": {
+      "yarn_id": "19003",
+      "description": "1/75/36 100% Polyester Semi Dull NIM First Grade D",
+      "shortage_qty": 41619.5514162,
+      "shortage_amount": 41619.5514162,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 75,
+        "filaments": 36,
+        "type": "FILAMENT"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18788",
+          "description": "1/75/48 100% Polyester Semi Dull DTY 2H SET SIM ",
+          "available_qty": 3275.0,
+          "supplier": "CS AMERICA",
+          "compatibility_score": 0.7,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 70,
+          "success_rate": 95,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 3275.0,
+      "coverage_percent": 7.8688978822708755,
+      "interchangeable_group": "POLYESTER|75|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    "19066": {
+      "yarn_id": "19066",
+      "description": "1/300/68 100% Polyester Natural Set ",
+      "shortage_qty": 5050.14424,
+      "shortage_amount": 5050.14424,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 300,
+        "filaments": 68,
+        "type": "FILAMENT"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18763",
+          "description": "2/300/68 100% Polyester Semi Dull LIM (Low Intermi",
+          "available_qty": 25194.305541400005,
+          "supplier": "MUTU GADING TEKSTIL",
+          "compatibility_score": 0.8800000000000001,
+          "compatibility": "HIGH",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Different ply"
+          ],
+          "backtest_confidence": 88,
+          "success_rate": 98,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 25194.305541400005,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|300|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    "18372": {
+      "yarn_id": "18372",
+      "description": "1/150/36 100% Polyester Black ",
+      "shortage_qty": 1240.8720802000003,
+      "shortage_amount": 1240.8720802000003,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 150,
+        "filaments": 36,
+        "type": "FILAMENT"
+      },
+      "color": "BLACK",
+      "substitutes": [
+        {
+          "substitute_id": "10027",
+          "description": "2/150/34 100% Polyester SOLDY BLK SET W/ TACKS SAT",
+          "available_qty": 6815.029814000001,
+          "supplier": "UNIFI",
+          "compatibility_score": 0.8800000000000001,
+          "compatibility": "HIGH",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Different ply"
+          ],
+          "backtest_confidence": 88,
+          "success_rate": 98,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18894",
+          "description": "1/150/48 100% Polyester Torso Blue ",
+          "available_qty": 6034.4743968,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18233",
+          "description": "1/150/48 100% Polyester BRT TRILOB ",
+          "available_qty": 5122.458064799999,
+          "supplier": "PROMPTEX YARNS INC",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 17971.962275600003,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|BLACK",
+      "supply_chain_risk": "LOW"
+    },
+    "19020": {
+      "yarn_id": "19020",
+      "description": "30/1 55/45 Recycled Polyester/Recycled Cotton Indi",
+      "shortage_qty": 975.8558399999997,
+      "shortage_amount": 975.8558399999997,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "count": 30,
+        "ply": 1,
+        "type": "SPUN"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18553",
+          "description": "28/1 80/20 Celliant/Polyester Natural RS",
+          "available_qty": 1507.722976,
+          "supplier": "SPUNLAB",
+          "compatibility_score": 0.5599999999999999,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Count close (10% variance)",
+            "Color match: NATURAL"
+          ],
+          "backtest_confidence": 55,
+          "success_rate": 93,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 1507.722976,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|30|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    "18553": {
+      "yarn_id": "18553",
+      "description": "28/1 80/20 Celliant/Polyester Natural RS",
+      "shortage_qty": 729.5930239999998,
+      "shortage_amount": 729.5930239999998,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "count": 28,
+        "ply": 1,
+        "type": "SPUN"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "19020",
+          "description": "30/1 55/45 Recycled Polyester/Recycled Cotton Indi",
+          "available_qty": 2696.0625600000003,
+          "supplier": "R BELDA LLORENS",
+          "compatibility_score": 0.5599999999999999,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Count close (10% variance)",
+            "Color match: NATURAL"
+          ],
+          "backtest_confidence": 55,
+          "success_rate": 93,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 2696.0625600000003,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|28|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    "18233": {
+      "yarn_id": "18233",
+      "description": "1/150/48 100% Polyester BRT TRILOB ",
+      "shortage_qty": 713.5633352000004,
+      "shortage_amount": 713.5633352000004,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 150,
+        "filaments": 48,
+        "type": "FILAMENT"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18894",
+          "description": "1/150/48 100% Polyester Torso Blue ",
+          "available_qty": 6034.4743968,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.6,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 60,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18372",
+          "description": "1/150/36 100% Polyester Black ",
+          "available_qty": 1781.6411197999996,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.6,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 60,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 7816.1155166,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|NATURAL",
+      "supply_chain_risk": "MEDIUM"
+    },
+    "10027": {
+      "yarn_id": "10027",
+      "description": "2/150/34 100% Polyester SOLDY BLK SET W/ TACKS SAT",
+      "shortage_qty": 598.6752859999979,
+      "shortage_amount": 598.6752859999979,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 2,
+        "denier": 150,
+        "filaments": 34,
+        "type": "FILAMENT"
+      },
+      "color": "BLACK",
+      "substitutes": [
+        {
+          "substitute_id": "18372",
+          "description": "1/150/36 100% Polyester Black ",
+          "available_qty": 1781.6411197999996,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.8,
+          "compatibility": "HIGH",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Different ply"
+          ],
+          "backtest_confidence": 80,
+          "success_rate": 97,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 1781.6411197999996,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|BLACK",
+      "supply_chain_risk": "HIGH"
+    },
+    "18788": {
+      "yarn_id": "18788",
+      "description": "1/75/48 100% Polyester Semi Dull DTY 2H SET SIM ",
+      "shortage_qty": 205.0,
+      "shortage_amount": 205.0,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 75,
+        "filaments": 48,
+        "type": "FILAMENT"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "19003",
+          "description": "1/75/36 100% Polyester Semi Dull NIM First Grade D",
+          "available_qty": 25385.7420838,
+          "supplier": "Atlas Yarns",
+          "compatibility_score": 0.77,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 77,
+          "success_rate": 96,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 25385.7420838,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|75|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    "18894": {
+      "yarn_id": "18894",
+      "description": "1/150/48 100% Polyester Torso Blue ",
+      "shortage_qty": 162.48214319999988,
+      "shortage_amount": 162.48214319999988,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 150,
+        "filaments": 48,
+        "type": "FILAMENT"
+      },
+      "color": "BLUE",
+      "substitutes": [
+        {
+          "substitute_id": "18233",
+          "description": "1/150/48 100% Polyester BRT TRILOB ",
+          "available_qty": 5122.458064799999,
+          "supplier": "PROMPTEX YARNS INC",
+          "compatibility_score": 0.6,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 60,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18372",
+          "description": "1/150/36 100% Polyester Black ",
+          "available_qty": 1781.6411197999996,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.6,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 60,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 6904.099184599999,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|BLUE",
+      "supply_chain_risk": "MEDIUM"
+    },
+    "18629": {
+      "yarn_id": "18629",
+      "description": "30/1 50/50 Polyester/Reclaimed Cotton Evening Haze",
+      "shortage_qty": 99.61940480000003,
+      "shortage_amount": 99.61940480000003,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "count": 30,
+        "ply": 1,
+        "type": "SPUN"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18553",
+          "description": "28/1 80/20 Celliant/Polyester Natural RS",
+          "available_qty": 1507.722976,
+          "supplier": "SPUNLAB",
+          "compatibility_score": 0.8800000000000001,
+          "compatibility": "HIGH",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Count close (10% variance)",
+            "Color match: NATURAL"
+          ],
+          "backtest_confidence": 88,
+          "success_rate": 98,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "19020",
+          "description": "30/1 55/45 Recycled Polyester/Recycled Cotton Indi",
+          "available_qty": 2696.0625600000003,
+          "supplier": "R BELDA LLORENS",
+          "compatibility_score": 0.77,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Count match within 5%",
+            "Color match: NATURAL"
+          ],
+          "backtest_confidence": 77,
+          "success_rate": 96,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 4203.785536,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|30|NATURAL",
+      "supply_chain_risk": "MEDIUM"
+    },
+    "18713": {
+      "yarn_id": "18713",
+      "description": "1/150/50 100% Polyethylene White MUST HAVE APPROVA",
+      "shortage_qty": 14.144824,
+      "shortage_amount": 14.144824,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 150,
+        "filaments": 50,
+        "type": "FILAMENT"
+      },
+      "color": "WHITE",
+      "substitutes": [
+        {
+          "substitute_id": "18894",
+          "description": "1/150/48 100% Polyester Torso Blue ",
+          "available_qty": 6034.4743968,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18233",
+          "description": "1/150/48 100% Polyester BRT TRILOB ",
+          "available_qty": 5122.458064799999,
+          "supplier": "PROMPTEX YARNS INC",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18372",
+          "description": "1/150/36 100% Polyester Black ",
+          "available_qty": 1781.6411197999996,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "10027",
+          "description": "2/150/34 100% Polyester SOLDY BLK SET W/ TACKS SAT",
+          "available_qty": 6815.029814000001,
+          "supplier": "UNIFI",
+          "compatibility_score": 0.528,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Different ply"
+          ],
+          "backtest_confidence": 52,
+          "success_rate": 92,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 19753.6033954,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|WHITE",
+      "supply_chain_risk": "LOW"
+    }
+  },
+  "model_version": "Intelligent_Beverly_2.0",
+  "quality_standard": "NOT FOR NOT",
+  "tolerances": {
+    "size": "5%",
+    "color": "0% (exact match)",
+    "blend": "4%",
+    "material": "Exact family match required"
+  },
+  "total_yarns_analyzed": 27,
+  "shortage_yarns_count": 26,
+  "substitutions_found": 11,
+  "total_shortage": 51409.5015936,
+  "mitigatable_shortage": 13064.950177399998,
+  "mitigation_percentage": 25.41349317229417,
+  "substitution_opportunities": [
+    {
+      "yarn_id": "19003",
+      "description": "1/75/36 100% Polyester Semi Dull NIM First Grade D",
+      "shortage_qty": 41619.5514162,
+      "shortage_amount": 41619.5514162,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 75,
+        "filaments": 36,
+        "type": "FILAMENT"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18788",
+          "description": "1/75/48 100% Polyester Semi Dull DTY 2H SET SIM ",
+          "available_qty": 3275.0,
+          "supplier": "CS AMERICA",
+          "compatibility_score": 0.7,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 70,
+          "success_rate": 95,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 3275.0,
+      "coverage_percent": 7.8688978822708755,
+      "interchangeable_group": "POLYESTER|75|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    {
+      "yarn_id": "19066",
+      "description": "1/300/68 100% Polyester Natural Set ",
+      "shortage_qty": 5050.14424,
+      "shortage_amount": 5050.14424,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 300,
+        "filaments": 68,
+        "type": "FILAMENT"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18763",
+          "description": "2/300/68 100% Polyester Semi Dull LIM (Low Intermi",
+          "available_qty": 25194.305541400005,
+          "supplier": "MUTU GADING TEKSTIL",
+          "compatibility_score": 0.8800000000000001,
+          "compatibility": "HIGH",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Different ply"
+          ],
+          "backtest_confidence": 88,
+          "success_rate": 98,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 25194.305541400005,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|300|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    {
+      "yarn_id": "18372",
+      "description": "1/150/36 100% Polyester Black ",
+      "shortage_qty": 1240.8720802000003,
+      "shortage_amount": 1240.8720802000003,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 150,
+        "filaments": 36,
+        "type": "FILAMENT"
+      },
+      "color": "BLACK",
+      "substitutes": [
+        {
+          "substitute_id": "10027",
+          "description": "2/150/34 100% Polyester SOLDY BLK SET W/ TACKS SAT",
+          "available_qty": 6815.029814000001,
+          "supplier": "UNIFI",
+          "compatibility_score": 0.8800000000000001,
+          "compatibility": "HIGH",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Different ply"
+          ],
+          "backtest_confidence": 88,
+          "success_rate": 98,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18894",
+          "description": "1/150/48 100% Polyester Torso Blue ",
+          "available_qty": 6034.4743968,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18233",
+          "description": "1/150/48 100% Polyester BRT TRILOB ",
+          "available_qty": 5122.458064799999,
+          "supplier": "PROMPTEX YARNS INC",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 17971.962275600003,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|BLACK",
+      "supply_chain_risk": "LOW"
+    },
+    {
+      "yarn_id": "19020",
+      "description": "30/1 55/45 Recycled Polyester/Recycled Cotton Indi",
+      "shortage_qty": 975.8558399999997,
+      "shortage_amount": 975.8558399999997,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "count": 30,
+        "ply": 1,
+        "type": "SPUN"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18553",
+          "description": "28/1 80/20 Celliant/Polyester Natural RS",
+          "available_qty": 1507.722976,
+          "supplier": "SPUNLAB",
+          "compatibility_score": 0.5599999999999999,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Count close (10% variance)",
+            "Color match: NATURAL"
+          ],
+          "backtest_confidence": 55,
+          "success_rate": 93,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 1507.722976,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|30|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    {
+      "yarn_id": "18553",
+      "description": "28/1 80/20 Celliant/Polyester Natural RS",
+      "shortage_qty": 729.5930239999998,
+      "shortage_amount": 729.5930239999998,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "count": 28,
+        "ply": 1,
+        "type": "SPUN"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "19020",
+          "description": "30/1 55/45 Recycled Polyester/Recycled Cotton Indi",
+          "available_qty": 2696.0625600000003,
+          "supplier": "R BELDA LLORENS",
+          "compatibility_score": 0.5599999999999999,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Count close (10% variance)",
+            "Color match: NATURAL"
+          ],
+          "backtest_confidence": 55,
+          "success_rate": 93,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 2696.0625600000003,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|28|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    {
+      "yarn_id": "18233",
+      "description": "1/150/48 100% Polyester BRT TRILOB ",
+      "shortage_qty": 713.5633352000004,
+      "shortage_amount": 713.5633352000004,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 150,
+        "filaments": 48,
+        "type": "FILAMENT"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18894",
+          "description": "1/150/48 100% Polyester Torso Blue ",
+          "available_qty": 6034.4743968,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.6,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 60,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18372",
+          "description": "1/150/36 100% Polyester Black ",
+          "available_qty": 1781.6411197999996,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.6,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 60,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 7816.1155166,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|NATURAL",
+      "supply_chain_risk": "MEDIUM"
+    },
+    {
+      "yarn_id": "10027",
+      "description": "2/150/34 100% Polyester SOLDY BLK SET W/ TACKS SAT",
+      "shortage_qty": 598.6752859999979,
+      "shortage_amount": 598.6752859999979,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 2,
+        "denier": 150,
+        "filaments": 34,
+        "type": "FILAMENT"
+      },
+      "color": "BLACK",
+      "substitutes": [
+        {
+          "substitute_id": "18372",
+          "description": "1/150/36 100% Polyester Black ",
+          "available_qty": 1781.6411197999996,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.8,
+          "compatibility": "HIGH",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Different ply"
+          ],
+          "backtest_confidence": 80,
+          "success_rate": 97,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 1781.6411197999996,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|BLACK",
+      "supply_chain_risk": "HIGH"
+    },
+    {
+      "yarn_id": "18788",
+      "description": "1/75/48 100% Polyester Semi Dull DTY 2H SET SIM ",
+      "shortage_qty": 205.0,
+      "shortage_amount": 205.0,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 75,
+        "filaments": 48,
+        "type": "FILAMENT"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "19003",
+          "description": "1/75/36 100% Polyester Semi Dull NIM First Grade D",
+          "available_qty": 25385.7420838,
+          "supplier": "Atlas Yarns",
+          "compatibility_score": 0.77,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 77,
+          "success_rate": 96,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 25385.7420838,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|75|NATURAL",
+      "supply_chain_risk": "HIGH"
+    },
+    {
+      "yarn_id": "18894",
+      "description": "1/150/48 100% Polyester Torso Blue ",
+      "shortage_qty": 162.48214319999988,
+      "shortage_amount": 162.48214319999988,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 150,
+        "filaments": 48,
+        "type": "FILAMENT"
+      },
+      "color": "BLUE",
+      "substitutes": [
+        {
+          "substitute_id": "18233",
+          "description": "1/150/48 100% Polyester BRT TRILOB ",
+          "available_qty": 5122.458064799999,
+          "supplier": "PROMPTEX YARNS INC",
+          "compatibility_score": 0.6,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 60,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18372",
+          "description": "1/150/36 100% Polyester Black ",
+          "available_qty": 1781.6411197999996,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.6,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 60,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 6904.099184599999,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|BLUE",
+      "supply_chain_risk": "MEDIUM"
+    },
+    {
+      "yarn_id": "18629",
+      "description": "30/1 50/50 Polyester/Reclaimed Cotton Evening Haze",
+      "shortage_qty": 99.61940480000003,
+      "shortage_amount": 99.61940480000003,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "count": 30,
+        "ply": 1,
+        "type": "SPUN"
+      },
+      "color": "NATURAL",
+      "substitutes": [
+        {
+          "substitute_id": "18553",
+          "description": "28/1 80/20 Celliant/Polyester Natural RS",
+          "available_qty": 1507.722976,
+          "supplier": "SPUNLAB",
+          "compatibility_score": 0.8800000000000001,
+          "compatibility": "HIGH",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Count close (10% variance)",
+            "Color match: NATURAL"
+          ],
+          "backtest_confidence": 88,
+          "success_rate": 98,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "19020",
+          "description": "30/1 55/45 Recycled Polyester/Recycled Cotton Indi",
+          "available_qty": 2696.0625600000003,
+          "supplier": "R BELDA LLORENS",
+          "compatibility_score": 0.77,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Count match within 5%",
+            "Color match: NATURAL"
+          ],
+          "backtest_confidence": 77,
+          "success_rate": 96,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 4203.785536,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|30|NATURAL",
+      "supply_chain_risk": "MEDIUM"
+    },
+    {
+      "yarn_id": "18713",
+      "description": "1/150/50 100% Polyethylene White MUST HAVE APPROVA",
+      "shortage_qty": 14.144824,
+      "shortage_amount": 14.144824,
+      "material_type": "POLYESTER",
+      "size_specs": {
+        "ply": 1,
+        "denier": 150,
+        "filaments": 50,
+        "type": "FILAMENT"
+      },
+      "color": "WHITE",
+      "substitutes": [
+        {
+          "substitute_id": "18894",
+          "description": "1/150/48 100% Polyester Torso Blue ",
+          "available_qty": 6034.4743968,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18233",
+          "description": "1/150/48 100% Polyester BRT TRILOB ",
+          "available_qty": 5122.458064799999,
+          "supplier": "PROMPTEX YARNS INC",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "18372",
+          "description": "1/150/36 100% Polyester Black ",
+          "available_qty": 1781.6411197999996,
+          "supplier": "DECA GLOBAL",
+          "compatibility_score": 0.66,
+          "compatibility": "MEDIUM",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Same ply count"
+          ],
+          "backtest_confidence": 66,
+          "success_rate": 94,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        },
+        {
+          "substitute_id": "10027",
+          "description": "2/150/34 100% Polyester SOLDY BLK SET W/ TACKS SAT",
+          "available_qty": 6815.029814000001,
+          "supplier": "UNIFI",
+          "compatibility_score": 0.528,
+          "compatibility": "LOW",
+          "material_match": true,
+          "reasons": [
+            "Material match: POLYESTER",
+            "Size match within 5%",
+            "Different ply"
+          ],
+          "backtest_confidence": 52,
+          "success_rate": 92,
+          "tested_instances": 10,
+          "quality_standard": "NOT FOR NOT"
+        }
+      ],
+      "total_available": 19753.6033954,
+      "coverage_percent": 100,
+      "interchangeable_group": "POLYESTER|150|WHITE",
+      "supply_chain_risk": "LOW"
+    }
+  ],
+  "status": "success"
+}

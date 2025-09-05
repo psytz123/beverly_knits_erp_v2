@@ -46,11 +46,12 @@ class DynamicPathResolver:
         self.logger = logging.getLogger(f'{__name__}.DynamicPathResolver')
         
         # Primary data paths in order of preference
+        project_root = Path(__file__).parent.parent
         self.primary_paths = [
-            "/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data",
-            "/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data",
-            "/mnt/c/finalee/beverly_knits_erp_v2/data/production/5",
-            "/mnt/c/Users/psytz/sc data/ERP Data"
+            str(project_root / "data" / "production" / "5" / "ERP Data"),
+            str(project_root / "data" / "production" / "5"),
+            str(project_root / "data" / "mock" / "5" / "ERP Data"),
+            str(project_root / "data" / "sample")
         ]
         
         # Dated subdirectories to check (newest first)
@@ -61,9 +62,9 @@ class DynamicPathResolver:
         
         # Mock/test data fallback paths
         self.fallback_paths = [
-            "/mnt/c/finalee/beverly_knits_erp_v2/data/mock/5/ERP Data",
-            "/mnt/c/finalee/beverly_knits_erp_v2/data/mock/5",
-            "/mnt/c/finalee/beverly_knits_erp_v2/data/sample"
+            str(project_root / "data" / "mock" / "5" / "ERP Data"),
+            str(project_root / "data" / "mock" / "5"),
+            str(project_root / "data" / "sample")
         ]
         
         # File name patterns for different data types

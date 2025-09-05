@@ -381,9 +381,24 @@ class CacheOptimizer:
             if self._get_from_cache(key) is not None:
                 continue
             
-            # TODO: Implement actual data fetching based on endpoint
-            # For now, we'll just log the warming request
-            logger.debug(f"Would warm cache for {endpoint} with params {params}")
+            # Fetch data based on endpoint type
+            try:
+                if endpoint_type == "yarn":
+                    # Pre-fetch yarn data
+                    from src.data_loaders.unified_data_loader import UnifiedDataLoader
+                    loader = UnifiedDataLoader()
+                    data = loader.load_yarn_inventory()
+                    self._set_cache(key, data.to_dict() if hasattr(data, 'to_dict') else data, ttl=3600)
+                elif endpoint_type == "inventory":
+                    # Pre-fetch inventory data
+                    from src.data_loaders.unified_data_loader import UnifiedDataLoader
+                    loader = UnifiedDataLoader()
+                    data = loader.load_yarn_inventory()
+                    self._set_cache(key, data.to_dict() if hasattr(data, 'to_dict') else data, ttl=1800)
+                else:
+                    logger.debug(f"Cache warming for {endpoint_type} endpoint type not yet implemented")
+            except Exception as e:
+                logger.warning(f"Failed to warm cache for {endpoint}: {e}")
     
     def start_cache_warming(self):
         """Start automatic cache warming"""

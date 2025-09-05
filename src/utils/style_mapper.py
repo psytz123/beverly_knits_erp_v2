@@ -155,9 +155,29 @@ def get_style_mapper(mapping_file_path: Optional[str] = None) -> StyleMapper:
     global _style_mapper
     
     if _style_mapper is None:
-        # Default path
+        # Default path - try multiple locations
         if mapping_file_path is None:
-            mapping_file_path = "/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/eFab_Styles_20250902.xlsx"
+            # Try multiple possible paths in order
+            possible_paths = [
+                # Relative to project root (works from any subdirectory)
+                Path(__file__).parent.parent.parent / "data/production/5/ERP Data/eFab_Styles_20250902.xlsx",
+                # Windows path
+                Path("D:/AI/Workspaces/efab.ai/beverly_knits_erp_v2/data/production/5/ERP Data/eFab_Styles_20250902.xlsx"),
+                # Alternative Windows path with backslashes
+                Path(r"D:\AI\Workspaces\efab.ai\beverly_knits_erp_v2\data\production\5\ERP Data\eFab_Styles_20250902.xlsx"),
+                # WSL fallback
+                Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/eFab_Styles_20250902.xlsx")
+            ]
+            
+            for path in possible_paths:
+                if path.exists():
+                    mapping_file_path = str(path)
+                    logger.info(f"Found style mapping file at: {mapping_file_path}")
+                    break
+            else:
+                # If no path exists, use the first one as default (it will fail gracefully)
+                mapping_file_path = str(possible_paths[0])
+                logger.warning(f"Style mapping file not found in any expected location, using: {mapping_file_path}")
         
         _style_mapper = StyleMapper(mapping_file_path)
     

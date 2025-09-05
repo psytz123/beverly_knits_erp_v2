@@ -14,6 +14,16 @@ import logging
 import json
 from dataclasses import dataclass, asdict
 
+# Import QuadS API client
+try:
+    from ..api_clients.quads_api_client import get_quads_client
+except ImportError:
+    # Fallback import
+    import sys
+    import os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+    from src.api_clients.quads_api_client import get_quads_client
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -107,6 +117,30 @@ class MachineWorkCenterMapper:
     def load_quads_data(self) -> bool:
         """Load QuadS greige fabric list - Style to Work Center mapping"""
         try:
+            # Try to load from QuadS API first
+            try:
+                logger.info("Attempting to load style mappings from QuadS API")
+                quads_client = get_quads_client()
+                
+                # Test connection
+                if quads_client.test_connection():
+                    # Get style to work center mappings from API
+                    mapping = quads_client.get_style_work_center_mapping()
+                    
+                    if mapping:
+                        self.style_to_work_center = mapping
+                        self.quads_loaded = True
+                        logger.info(f"Loaded {len(self.style_to_work_center)} style→work center mappings from QuadS API")
+                        return True
+                    else:
+                        logger.warning("No mappings returned from QuadS API, falling back to local file")
+                else:
+                    logger.warning("QuadS API connection test failed, falling back to local file")
+                    
+            except Exception as api_error:
+                logger.warning(f"QuadS API error: {api_error}, falling back to local file")
+            
+            # Fallback to local file
             quads_file = Path(self.data_path) / "QuadS_greigeFabricList_ (1).xlsx"
             
             if not quads_file.exists():
@@ -120,7 +154,7 @@ class MachineWorkCenterMapper:
             else:
                 df = pd.read_excel(quads_file)
             
-            logger.info(f"Loaded QuadS data with {len(df)} records")
+            logger.info(f"Loaded QuadS data from file with {len(df)} records")
             
             # Extract Style to Work Center mapping
             # Look for common column variations
@@ -328,6 +362,36 @@ class MachineWorkCenterMapper:
             style for style, wc in self.style_to_work_center.items() 
             if wc == work_center
         ]
+    
+    def refresh_from_api(self) -> bool:
+        """Refresh style to work center mappings from QuadS API"""
+        try:
+            logger.info("Refreshing style mappings from QuadS API")
+            quads_client = get_quads_client()
+            
+            # Get fresh mappings from API
+            mapping = quads_client.get_style_work_center_mapping()
+            
+            if mapping:
+                # Update mappings
+                self.style_to_work_center = mapping
+                
+                # Rebuild mapping chain with new data
+                self._build_mapping_chain()
+                
+                # Update work center summaries
+                self._update_work_center_summaries()
+                
+                self.last_update = datetime.now()
+                logger.info(f"Successfully refreshed {len(mapping)} style mappings from API")
+                return True
+            else:
+                logger.warning("No mappings returned from QuadS API refresh")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error refreshing from API: {e}")
+            return False
     
     def get_complete_mapping_for_style(self, style: str) -> Optional[Dict]:
         """Get complete mapping chain for a style"""
