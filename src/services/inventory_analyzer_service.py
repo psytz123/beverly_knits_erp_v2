@@ -326,3 +326,11 @@ class InventoryManagementPipeline:
                 })
 
         return recommendations
+
+# Alias for backward compatibility
+InventoryAnalyzerService = InventoryAnalyzer
+
+# Factory function for getting inventory analyzer instance
+def get_inventory_analyzer(data_path=None):
+    """Get an instance of InventoryAnalyzer"""
+    return InventoryAnalyzer(data_path)

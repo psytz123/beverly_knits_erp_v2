@@ -94,7 +94,7 @@ except ImportError:
 
 # Import Service Integration to wire up extracted services
 try:
-    from services.service_integration import (
+    from src.services.service_integration import (
         ServiceIntegration, 
         get_service_integration,
         integrate_with_monolith
@@ -103,7 +103,7 @@ try:
     print("[OK] Service integration module loaded - ready to connect extracted services")
 except ImportError:
     try:
-        from src.services.service_integration import (
+        from services.service_integration import (
             ServiceIntegration, 
             get_service_integration,
             integrate_with_monolith

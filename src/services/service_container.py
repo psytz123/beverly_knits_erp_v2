@@ -9,34 +9,38 @@ from datetime import datetime
 
 # Import all services with fallback paths
 try:
-    from services.inventory_analyzer_service import InventoryAnalyzerService
-    from services.sales_forecasting_service import SalesForecastingEngine
-    from services.capacity_planning_service import CapacityPlanningService
-    from services.yarn_requirement_service import YarnRequirementService
-    from services.production_scheduler_service import ProductionSchedulerService
-    from services.manufacturing_supply_chain_service import ManufacturingSupplyChainService
-    from services.time_phased_mrp_service import TimePhasedMRPService
-except ImportError:
-    from src.services.inventory_analyzer_service import InventoryAnalyzerService
+    from src.services.inventory_analyzer_service import InventoryAnalyzer as InventoryAnalyzerService
     from src.services.sales_forecasting_service import SalesForecastingEngine
-    from src.services.capacity_planning_service import CapacityPlanningService
-    from src.services.yarn_requirement_service import YarnRequirementService
+    from src.services.capacity_planning_service import CapacityPlanningEngine as CapacityPlanningService
+    from src.services.yarn_requirement_service import YarnRequirementCalculatorService as YarnRequirementService
     from src.services.production_scheduler_service import ProductionSchedulerService
     from src.services.manufacturing_supply_chain_service import ManufacturingSupplyChainService
     from src.services.time_phased_mrp_service import TimePhasedMRPService
+except ImportError:
+    from .inventory_analyzer_service import InventoryAnalyzer as InventoryAnalyzerService
+    from .sales_forecasting_service import SalesForecastingEngine
+    from .capacity_planning_service import CapacityPlanningEngine as CapacityPlanningService
+    from .yarn_requirement_service import YarnRequirementCalculatorService as YarnRequirementService
+    from .production_scheduler_service import ProductionSchedulerService
+    from .manufacturing_supply_chain_service import ManufacturingSupplyChainService
+    from .time_phased_mrp_service import TimePhasedMRPService
 
 # Import data loaders and utilities with fallback paths
 try:
-    from data_loaders.optimized_data_loader import OptimizedDataLoader
-    from utils.cache_manager import UnifiedCacheManager
-except ImportError:
-    from src.data_loaders.optimized_data_loader import OptimizedDataLoader
+    from src.data_loaders.unified_data_loader import UnifiedDataLoader as OptimizedDataLoader
     from src.utils.cache_manager import UnifiedCacheManager
+except ImportError:
+    try:
+        from ..data_loaders.unified_data_loader import UnifiedDataLoader as OptimizedDataLoader
+        from ..utils.cache_manager import UnifiedCacheManager
+    except ImportError:
+        OptimizedDataLoader = None
+        UnifiedCacheManager = None
 
 logger = logging.getLogger(__name__)
 
 
-class ServiceContainer:
+class Service_Container:
     """Centralized service container with dependency injection"""
     
     _instance = None
@@ -44,7 +48,7 @@ class ServiceContainer:
     def __new__(cls):
         """Implement singleton pattern"""
         if cls._instance is None:
-            cls._instance = super(ServiceContainer, cls).__new__(cls)
+            cls._instance = super(Service_Container, cls).__new__(cls)
             cls._instance._initialized = False
         return cls._instance
     
@@ -71,23 +75,32 @@ class ServiceContainer:
         """Initialize core infrastructure services"""
         try:
             # Data loader
-            self.register('data_loader', OptimizedDataLoader())
-            logger.info("Data loader service registered")
+            if OptimizedDataLoader is not None:
+                self.register('data_loader', OptimizedDataLoader())
+                logger.info("Data loader service registered")
+            else:
+                logger.warning("Data loader service not available")
             
             # Cache manager
-            self.register('cache', UnifiedCacheManager())
-            logger.info("Cache manager service registered")
+            if UnifiedCacheManager is not None:
+                self.register('cache', UnifiedCacheManager())
+                logger.info("Cache manager service registered")
+            else:
+                logger.warning("Cache manager service not available")
             
         except Exception as e:
             logger.error(f"Error initializing core services: {e}")
-            raise
     
     def _initialize_business_services(self):
         """Initialize business logic services"""
         try:
             # Get dependencies
-            data_loader = self.get('data_loader')
-            cache = self.get('cache')
+            data_loader = self.get('data_loader') if 'data_loader' in self._services else None
+            cache = self.get('cache') if 'cache' in self._services else None
+            
+            if data_loader is None:
+                logger.warning("Skipping business services initialization - data_loader not available")
+                return
             
             # Inventory Analyzer Service
             inventory_service = InventoryAnalyzerService(data_loader, cache)
@@ -320,7 +333,7 @@ class ServiceContainer:
 
 
 # Global service container instance
-services = ServiceContainer()
+services = Service_Container()
 
 
 def get_service(name: str) -> Any:

@@ -11,33 +11,33 @@ from datetime import datetime
 
 # Import the service container
 try:
-    from services.service_container import ServiceContainer
+    from src.services.service_container import Service_Container as ServiceContainer
 except ImportError:
     try:
-        from src.services.service_container import ServiceContainer
+        from .service_container import Service_Container as ServiceContainer
     except ImportError as e:
         print(f"[ERROR] ServiceContainer not available: {e}")
         ServiceContainer = None
 
 # Import individual services for direct access if needed
 try:
-    from services.inventory_analyzer_service import InventoryAnalyzerService
-    from services.sales_forecasting_service import SalesForecastingEngine
-    from services.capacity_planning_service import CapacityPlanningService
-    from services.yarn_requirement_service import YarnRequirementService
-    from services.production_scheduler_service import ProductionSchedulerService
-    from services.manufacturing_supply_chain_service import ManufacturingSupplyChainService
-    from services.time_phased_mrp_service import TimePhasedMRPService
+    from src.services.inventory_analyzer_service import InventoryAnalyzer
+    from src.services.sales_forecasting_service import SalesForecastingEngine
+    from src.services.capacity_planning_service import CapacityPlanningEngine
+    from src.services.yarn_requirement_service import YarnRequirementCalculatorService
+    from src.services.production_scheduler_service import ProductionSchedulerService
+    from src.services.manufacturing_supply_chain_service import ManufacturingSupplyChainService
+    from src.services.time_phased_mrp_service import TimePhasedMRPService
     SERVICES_AVAILABLE = True
 except ImportError:
     try:
-        from src.services.inventory_analyzer_service import InventoryAnalyzerService
-        from src.services.sales_forecasting_service import SalesForecastingEngine
-        from src.services.capacity_planning_service import CapacityPlanningService
-        from src.services.yarn_requirement_service import YarnRequirementService
-        from src.services.production_scheduler_service import ProductionSchedulerService
-        from src.services.manufacturing_supply_chain_service import ManufacturingSupplyChainService
-        from src.services.time_phased_mrp_service import TimePhasedMRPService
+        from .inventory_analyzer_service import InventoryAnalyzer
+        from .sales_forecasting_service import SalesForecastingEngine
+        from .capacity_planning_service import CapacityPlanningEngine
+        from .yarn_requirement_service import YarnRequirementCalculatorService
+        from .production_scheduler_service import ProductionSchedulerService
+        from .manufacturing_supply_chain_service import ManufacturingSupplyChainService
+        from .time_phased_mrp_service import TimePhasedMRPService
         SERVICES_AVAILABLE = True
     except ImportError as e:
         SERVICES_AVAILABLE = False
@@ -45,13 +45,13 @@ except ImportError:
 
 # Import data loaders
 try:
-    from data_loaders.optimized_data_loader import OptimizedDataLoader
-    from utils.cache_manager import UnifiedCacheManager
+    from src.data_loaders.unified_data_loader import UnifiedDataLoader as OptimizedDataLoader
+    from src.utils.cache_manager import UnifiedCacheManager
     DATA_LOADER_AVAILABLE = True
 except ImportError:
     try:
-        from src.data_loaders.optimized_data_loader import OptimizedDataLoader
-        from src.utils.cache_manager import UnifiedCacheManager
+        from ..data_loaders.unified_data_loader import UnifiedDataLoader as OptimizedDataLoader
+        from ..utils.cache_manager import UnifiedCacheManager
         DATA_LOADER_AVAILABLE = True
     except ImportError:
         DATA_LOADER_AVAILABLE = False
