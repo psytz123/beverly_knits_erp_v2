@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eva - eFab Implementation Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-10px) scale(1.02); }
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        
+        @keyframes talk {
+            0%, 100% { transform: scaleY(1); }
+            25% { transform: scaleY(0.95); }
+            75% { transform: scaleY(1.05); }
+        }
+        
+        .avatar-container {
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        .avatar-active::before {
+            content: '';
+            position: absolute;
+            inset: -20px;
+            border-radius: 50%;
+            border: 3px solid rgba(59, 130, 246, 0.5);
+            animation: pulse-ring 2s ease-out infinite;
+        }
+        
+        .avatar-talking .avatar-mouth {
+            animation: talk 0.3s ease-in-out infinite;
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #3B82F6;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+        }
+        
+        .status-indicator {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid white;
+        }
+        
+        .status-online { background-color: #10B981; }
+        .status-busy { background-color: #F59E0B; }
+        .status-offline { background-color: #6B7280; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Eva - Your eFab Implementation Agent</h1>
+                    <p class="text-gray-600 mt-2">AI-powered ERP onboarding assistant</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                        Active
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Avatar Section -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex flex-col items-center">
+                        <!-- Avatar -->
+                        <div class="relative avatar-container mb-6" id="evaAvatar">
+                            <div class="w-48 h-48 relative avatar-active">
+                                <!-- SVG Avatar -->
+                                <svg viewBox="0 0 200 200" class="w-full h-full">
+                                    <!-- Head -->
+                                    <circle cx="100" cy="100" r="60" fill="#FEF3C7"/>
+                                    <!-- Hair -->
+                                    <path d="M 40 80 Q 100 40, 160 80 Q 150 60, 100 50 Q 50 60, 40 80" fill="#92400E"/>
+                                    <!-- Eyes -->
+                                    <circle cx="80" cy="90" r="8" fill="#1F2937"/>
+                                    <circle cx="120" cy="90" r="8" fill="#1F2937"/>
+                                    <circle cx="82" cy="88" r="3" fill="white"/>
+                                    <circle cx="122" cy="88" r="3" fill="white"/>
+                                    <!-- Mouth -->
+                                    <path d="M 80 120 Q 100 130, 120 120" stroke="#DC2626" stroke-width="2" fill="none" class="avatar-mouth"/>
+                                    <!-- Professional attire hint -->
+                                    <rect x="70" y="150" width="60" height="30" rx="5" fill="#1E40AF"/>
+                                </svg>
+                                <div class="status-indicator status-online"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Eva Info -->
+                        <h2 class="text-xl font-bold text-gray-800 mb-2">Eva</h2>
+                        <p class="text-sm text-gray-600 text-center mb-4">
+                            Project Manager & Implementation Specialist
+                        </p>
+                        
+                        <!-- Capabilities -->
+                        <div class="w-full space-y-2">
+                            <div class="flex items-center text-sm text-gray-700">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                Data Collection & Cleaning
+                            </div>
+                            <div class="flex items-center text-sm text-gray-700">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                Process Mapping
+                            </div>
+                            <div class="flex items-center text-sm text-gray-700">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                Dashboard Configuration
+                            </div>
+                            <div class="flex items-center text-sm text-gray-700">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                AI Inventory Optimization
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Implementation Progress -->
+                <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Implementation Progress</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Data Collection</span>
+                                <span id="dataProgress">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 0%" id="dataProgressBar"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>System Configuration</span>
+                                <span id="configProgress">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-600 h-2 rounded-full" style="width: 0%" id="configProgressBar"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Training & Testing</span>
+                                <span id="trainingProgress">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-purple-600 h-2 rounded-full" style="width: 0%" id="trainingProgressBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Interface -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-lg h-full flex flex-col" style="min-height: 600px;">
+                    <!-- Chat Header -->
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-400 rounded-full mr-3 animate-pulse"></div>
+                                <h3 class="font-semibold">Chat with Eva</h3>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="toggleVoice()" class="p-2 hover:bg-blue-800 rounded-lg transition">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <button onclick="downloadChat()" class="p-2 hover:bg-blue-800 rounded-lg transition">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatMessages">
+                        <!-- Welcome Message -->
+                        <div class="flex items-start space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                <span class="text-blue-600 font-semibold">E</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="bg-gray-100 rounded-lg p-4 max-w-lg">
+                                    <p class="text-sm font-semibold text-gray-800 mb-1">Eva</p>
+                                    <p class="text-gray-700">
+                                        Hello! I'm Eva, your eFab implementation agent. I'm here to make your ERP onboarding fast, clean, and painless. 
+                                        I'll be managing your entire implementation process, from data collection to system configuration.
+                                    </p>
+                                    <p class="text-gray-700 mt-2">
+                                        How can I help you today? Would you like to:
+                                    </p>
+                                    <div class="mt-3 space-y-2">
+                                        <button onclick="sendQuickReply('Start data collection')" class="w-full text-left px-3 py-2 bg-white rounded border border-gray-300 hover:bg-blue-50 transition text-sm">
+                                            📊 Start data collection process
+                                        </button>
+                                        <button onclick="sendQuickReply('Review implementation timeline')" class="w-full text-left px-3 py-2 bg-white rounded border border-gray-300 hover:bg-blue-50 transition text-sm">
+                                            📅 Review implementation timeline
+                                        </button>
+                                        <button onclick="sendQuickReply('Learn about eFab features')" class="w-full text-left px-3 py-2 bg-white rounded border border-gray-300 hover:bg-blue-50 transition text-sm">
+                                            💡 Learn about eFab features
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Just now</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div class="px-4 py-2 hidden" id="typingIndicator">
+                        <div class="flex items-center space-x-2">
+                            <div class="text-sm text-gray-500">Eva is typing</div>
+                            <div class="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="border-t p-4">
+                        <div class="flex space-x-3">
+                            <button onclick="attachFile()" class="p-2 text-gray-500 hover:text-gray-700 transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                </svg>
+                            </button>
+                            <input 
+                                type="text" 
+                                id="chatInput"
+                                placeholder="Type your message..."
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                onkeypress="handleKeyPress(event)"
+                            >
+                            <button 
+                                onclick="sendMessage()"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                            >
+                                Send
+                            </button>
+                        </div>
+                        <input type="file" id="fileInput" class="hidden" onchange="handleFileUpload(event)" multiple>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Eva's personality and response patterns
+        const evaPersonality = {
+            greeting: [
+                "Hello! I'm Eva, ready to help with your implementation.",
+                "Hi there! Eva here, your dedicated implementation specialist.",
+                "Welcome! I'm Eva, and I'll be guiding you through the entire ERP setup."
+            ],
+            dataCollection: [
+                "Let's start by gathering your data. I'll need your sales forecasts, inventory records, BOMs, and supplier details.",
+                "I'll help you collect and organize all your data. Don't worry about the format - I can work with spreadsheets, CSVs, or legacy system exports.",
+                "Data collection is my specialty. I'll clean and organize everything so it uploads perfectly into your new system."
+            ],
+            processMapping: [
+                "I'll map out your entire workflow to ensure the ERP fits your specific needs.",
+                "Let me understand your current processes so I can configure the system accordingly.",
+                "Process mapping ensures everything works smoothly from day one."
+            ],
+            timeline: [
+                "Typical implementation takes 4-6 weeks, but I can accelerate that with good data.",
+                "I'll create a customized timeline based on your specific requirements.",
+                "With my AI capabilities, we can cut implementation time by 60% compared to traditional methods."
+            ]
+        };
+
+        // Avatar state management
+        let isListening = false;
+        let isSpeaking = false;
+        let conversationHistory = [];
+
+        // Initialize Eva
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEva();
+            simulateProgress();
+        });
+
+        function initializeEva() {
+            // Set initial avatar state
+            updateAvatarState('active');
+            
+            // Initialize speech recognition if available
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                initializeSpeechRecognition();
+            }
+        }
+
+        function updateAvatarState(state) {
+            const avatar = document.getElementById('evaAvatar');
+            const statusIndicator = avatar.querySelector('.status-indicator');
+            
+            switch(state) {
+                case 'listening':
+                    avatar.classList.add('avatar-active');
+                    statusIndicator.className = 'status-indicator status-online';
+                    break;
+                case 'speaking':
+                    avatar.querySelector('.avatar-active').classList.add('avatar-talking');
+                    break;
+                case 'thinking':
+                    showTypingIndicator();
+                    break;
+                case 'active':
+                default:
+                    avatar.querySelector('.avatar-active').classList.remove('avatar-talking');
+                    statusIndicator.className = 'status-indicator status-online';
+                    hideTypingIndicator();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage(message, 'user');
+            
+            // Clear input
+            input.value = '';
+            
+            // Eva is thinking
+            updateAvatarState('thinking');
+            
+            // Simulate Eva's response
+            setTimeout(() => {
+                const response = generateEvaResponse(message);
+                addMessage(response, 'eva');
+                updateAvatarState('active');
+                
+                // Optional: Speak the response
+                if (window.speechSynthesis) {
+                    speakResponse(response);
+                }
+            }, 1500 + Math.random() * 1000);
+        }
+
+        function generateEvaResponse(userMessage) {
+            const lowerMessage = userMessage.toLowerCase();
+            
+            // Pattern matching for intelligent responses
+            if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+                return evaPersonality.greeting[Math.floor(Math.random() * evaPersonality.greeting.length)];
+            } else if (lowerMessage.includes('data') || lowerMessage.includes('collect')) {
+                return evaPersonality.dataCollection[Math.floor(Math.random() * evaPersonality.dataCollection.length)];
+            } else if (lowerMessage.includes('process') || lowerMessage.includes('workflow')) {
+                return evaPersonality.processMapping[Math.floor(Math.random() * evaPersonality.processMapping.length)];
+            } else if (lowerMessage.includes('timeline') || lowerMessage.includes('how long')) {
+                return evaPersonality.timeline[Math.floor(Math.random() * evaPersonality.timeline.length)];
+            } else if (lowerMessage.includes('help')) {
+                return "I'm here to help! I can assist with data collection, process mapping, system configuration, and training. What specific area would you like to focus on?";
+            } else {
+                // Default intelligent response
+                return "I understand your concern. Let me help you with that. Could you provide more details about what you're trying to accomplish?";
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const messageHtml = sender === 'user' ? `
+                <div class="flex items-start space-x-3 justify-end">
+                    <div class="flex-1 text-right">
+                        <div class="bg-blue-600 text-white rounded-lg p-4 max-w-lg ml-auto">
+                            <p class="text-sm font-semibold mb-1">You</p>
+                            <p>${text}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${timestamp}</p>
+                    </div>
+                </div>
+            ` : `
+                <div class="flex items-start space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <span class="text-blue-600 font-semibold">E</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="bg-gray-100 rounded-lg p-4 max-w-lg">
+                            <p class="text-sm font-semibold text-gray-800 mb-1">Eva</p>
+                            <p class="text-gray-700">${text}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${timestamp}</p>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Store in conversation history
+            conversationHistory.push({ sender, text, timestamp });
+        }
+
+        function sendQuickReply(text) {
+            document.getElementById('chatInput').value = text;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').classList.remove('hidden');
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').classList.add('hidden');
+        }
+
+        function attachFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                let fileNames = Array.from(files).map(f => f.name).join(', ');
+                addMessage(`Uploading files: ${fileNames}`, 'user');
+                
+                setTimeout(() => {
+                    addMessage(`Great! I've received your files. I'll analyze them and extract the relevant data for your ERP setup. This typically takes a few minutes.`, 'eva');
+                    
+                    // Update progress
+                    updateProgress('data', 25);
+                }, 1000);
+            }
+        }
+
+        function toggleVoice() {
+            // Toggle voice interaction
+            if (!isListening) {
+                startListening();
+            } else {
+                stopListening();
+            }
+        }
+
+        function startListening() {
+            if (window.recognition) {
+                window.recognition.start();
+                isListening = true;
+                updateAvatarState('listening');
+            }
+        }
+
+        function stopListening() {
+            if (window.recognition) {
+                window.recognition.stop();
+                isListening = false;
+                updateAvatarState('active');
+            }
+        }
+
+        function initializeSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            window.recognition = new SpeechRecognition();
+            window.recognition.continuous = false;
+            window.recognition.interimResults = false;
+            
+            window.recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('chatInput').value = transcript;
+                sendMessage();
+            };
+            
+            window.recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                stopListening();
+            };
+        }
+
+        function speakResponse(text) {
+            if (window.speechSynthesis.speaking) return;
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = speechSynthesis.getVoices().find(voice => voice.name.includes('female')) || speechSynthesis.getVoices()[0];
+            utterance.rate = 1.0;
+            utterance.pitch = 1.1;
+            
+            utterance.onstart = () => {
+                updateAvatarState('speaking');
+            };
+            
+            utterance.onend = () => {
+                updateAvatarState('active');
+            };
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function downloadChat() {
+            const chatContent = conversationHistory.map(msg => 
+                `[${msg.timestamp}] ${msg.sender === 'user' ? 'You' : 'Eva'}: ${msg.text}`
+            ).join('\n\n');
+            
+            const blob = new Blob([chatContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `eva-chat-${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+        }
+
+        function updateProgress(type, value) {
+            const progressElement = document.getElementById(`${type}Progress`);
+            const progressBar = document.getElementById(`${type}ProgressBar`);
+            
+            if (progressElement && progressBar) {
+                progressElement.textContent = `${value}%`;
+                progressBar.style.width = `${value}%`;
+            }
+        }
+
+        function simulateProgress() {
+            // Simulate implementation progress
+            let dataProgress = 0;
+            let configProgress = 0;
+            let trainingProgress = 0;
+            
+            setInterval(() => {
+                if (dataProgress < 75) {
+                    dataProgress += Math.random() * 2;
+                    updateProgress('data', Math.min(75, Math.round(dataProgress)));
+                }
+                if (configProgress < 60) {
+                    configProgress += Math.random() * 1.5;
+                    updateProgress('config', Math.min(60, Math.round(configProgress)));
+                }
+                if (trainingProgress < 30) {
+                    trainingProgress += Math.random() * 1;
+                    updateProgress('training', Math.min(30, Math.round(trainingProgress)));
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

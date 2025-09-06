@@ -415,7 +415,8 @@
                 
                 try {
                     console.log('Fetching factory floor data...');
-                    const factoryResponse = await fetch('/api/factory-floor-ai-dashboard');
+                    // Always use full URL to avoid CORS issues
+                    const factoryResponse = await fetch('http://localhost:5006/api/factory-floor-ai-dashboard');
                     if (factoryResponse.ok) {
                         factoryData = await factoryResponse.json();
                         console.log('Factory data loaded:', factoryData.work_center_groups?.length, 'work centers');
@@ -424,19 +425,20 @@
                     }
                 } catch (e) {
                     console.error('Factory API fetch error:', e);
-                    // Try direct server
+                    // Fallback to relative URL if on same server
                     try {
-                        const factoryResponse = await fetch('http://localhost:5006/api/factory-floor-ai-dashboard');
+                        const factoryResponse = await fetch('/api/factory-floor-ai-dashboard');
                         factoryData = await factoryResponse.json();
-                        console.log('Factory data loaded from direct server');
+                        console.log('Factory data loaded from relative URL');
                     } catch (e2) {
-                        console.error('Direct server also failed:', e2);
+                        console.error('Relative URL also failed:', e2);
                     }
                 }
                 
                 try {
                     console.log('Fetching knit orders...');
-                    const knitOrdersResponse = await fetch('/api/knit-orders');
+                    // Always use full URL to avoid CORS issues
+                    const knitOrdersResponse = await fetch('http://localhost:5006/api/knit-orders');
                     if (knitOrdersResponse.ok) {
                         knitOrdersData = await knitOrdersResponse.json();
                         const orders = knitOrdersData.orders || knitOrdersData.knit_orders || [];
@@ -445,7 +447,7 @@
                 } catch (e) {
                     console.error('Orders API fetch error:', e);
                     try {
-                        const knitOrdersResponse = await fetch('http://localhost:5006/api/knit-orders');
+                        const knitOrdersResponse = await fetch('/api/knit-orders');
                         knitOrdersData = await knitOrdersResponse.json();
                         console.log('Orders loaded from direct server');
                     } catch (e2) {
@@ -455,7 +457,7 @@
                 
                 try {
                     console.log('Fetching production planning...');
-                    const planningResponse = await fetch('/api/production-planning');
+                    const planningResponse = await fetch('http://localhost:5006/api/production-planning');
                     if (planningResponse.ok) {
                         planningData = await planningResponse.json();
                         console.log('Planning data loaded');
@@ -463,16 +465,16 @@
                 } catch (e) {
                     console.error('Planning API fetch error:', e);
                     try {
-                        const planningResponse = await fetch('http://localhost:5006/api/production-planning');
+                        const planningResponse = await fetch('/api/production-planning');
                         planningData = await planningResponse.json();
                     } catch (e2) {
-                        console.error('Direct server planning failed:', e2);
+                        console.error('Relative URL planning failed:', e2);
                     }
                 }
                 
                 try {
                     console.log('Fetching forecast data...');
-                    const forecastResponse = await fetch('/api/ml-forecast-detailed');
+                    const forecastResponse = await fetch('http://localhost:5006/api/ml-forecast-detailed');
                     if (forecastResponse.ok) {
                         forecastResponse_data = await forecastResponse.json();
                         console.log('Forecast data loaded');
@@ -480,10 +482,10 @@
                 } catch (e) {
                     console.error('Forecast API fetch error:', e);
                     try {
-                        const forecastResponse = await fetch('http://localhost:5006/api/ml-forecast-detailed');
+                        const forecastResponse = await fetch('/api/ml-forecast-detailed');
                         forecastResponse_data = await forecastResponse.json();
                     } catch (e2) {
-                        console.error('Direct server forecast failed:', e2);
+                        console.error('Relative URL forecast failed:', e2);
                     }
                 }
 
@@ -665,22 +667,44 @@
             
             // Add knit orders that might not be in schedule
             knitOrders.forEach(ko => {
-                if (!allOrders.find(o => o.order_id === ko['Order #'])) {
+                if (!allOrders.find(o => o.order_id === ko.order_id)) {
+                    // Determine priority based on days until due
+                    let priority = 'Normal';
+                    if (ko.days_until_due !== null && ko.days_until_due < 0) {
+                        priority = 'Urgent';
+                    } else if (ko.days_until_due !== null && ko.days_until_due < 7) {
+                        priority = 'High';
+                    }
+                    
+                    // Calculate end date if not provided
+                    let endDate = ko.due_date;
+                    if (!endDate && ko.start_date && ko.days_of_work) {
+                        const start = new Date(ko.start_date);
+                        start.setDate(start.getDate() + ko.days_of_work || 7);
+                        endDate = start.toISOString().split('T')[0];
+                    }
+                    
                     allOrders.push({
-                        order_id: ko['Order #'],
-                        style: ko['Style#'] || ko['Style'],
-                        machine: ko['Machine'],
-                        quantity_lbs: parseFloat(ko['Qty Ordered (lbs)']) || parseFloat(ko['Qty_Ordered_Lbs']) || 0,
-                        start_date: ko['Start Date'] || ko['Start_Date'],
-                        end_date: ko['Quoted Date'] || ko['Due_Date'],
-                        status: ko['Machine'] ? 'Assigned' : 'Unassigned',
-                        priority: ko['Priority'] || 'Normal',
-                        customer: ko['Customer'] || 'Unknown'
+                        order_id: ko.order_id || ko.ko_id,
+                        style: ko.style,
+                        machine: ko.machine,
+                        quantity_lbs: parseFloat(ko.quantity_lbs) || parseFloat(ko.qty_ordered_lbs) || 0,
+                        start_date: ko.start_date,
+                        end_date: endDate,
+                        due_date: ko.due_date,
+                        status: ko.machine ? 'Assigned' : 'Unassigned',
+                        priority: priority,
+                        customer: ko.customer || 'Unknown',
+                        completion_percentage: ko.completion_percentage || 0,
+                        days_until_due: ko.days_until_due,
+                        in_production: ko.in_production || false,
+                        balance_lbs: ko.balance_lbs || 0
                     });
                 }
             });
             
             console.log('Total orders processed:', allOrders.length);
+            console.log('Sample orders:', allOrders.slice(0, 3).map(o => ({ id: o.order_id, style: o.style, machine: o.machine, qty: o.quantity_lbs })));
             
             // Store forecast data
             forecastData = forecast;
@@ -723,9 +747,12 @@
             
             // Group orders by machine
             const machineOrderMap = {};
+            
             allOrders.forEach(order => {
-                const machineId = order.machine || 'Unassigned';
-                if (machineId !== 'Unassigned') {
+                const machineId = order.machine;
+                
+                // Only assign orders that have a valid machine assignment
+                if (machineId && machineId !== 'Unassigned' && machineId !== null && machineId !== '') {
                     if (!machineOrderMap[machineId]) {
                         machineOrderMap[machineId] = [];
                     }
@@ -733,9 +760,16 @@
                 }
             });
             
+            const assignedMachines = Object.keys(machineOrderMap).length;
+            const totalAssignedOrders = Object.values(machineOrderMap).reduce((sum, orders) => sum + orders.length, 0);
+            console.log(`Successfully mapped ${totalAssignedOrders} orders to ${assignedMachines} machines`);
+            
             // Render all machines (even empty ones)
             allMachines.forEach(machine => {
                 const orders = machineOrderMap[machine.id] || [];
+                if (orders.length > 0) {
+                    console.log(`Machine ${machine.id} has ${orders.length} orders`);
+                }
                 const row = createMachineRow(machine, orders);
                 grid.appendChild(row);
             });
@@ -824,12 +858,18 @@
 
             // Schedule timeline
             const timeline = document.createElement('div');
-            timeline.className = 'flex-1 relative h-12 bg-gray-800 rounded timeline-grid';
+            timeline.className = 'flex-1 relative bg-gray-800 rounded timeline-grid';
+            timeline.style.minWidth = '600px';  // Ensure minimum width for timeline
+            timeline.style.height = '48px';  // Explicit height for timeline
+            timeline.style.position = 'relative';  // Ensure relative positioning
             
             // Add order bars
             orders.forEach((order, index) => {
                 const bar = createOrderBar(order, index);
-                timeline.appendChild(bar);
+                if (bar) {
+                    timeline.appendChild(bar);
+                    console.log(`Added order ${order.order_id} to machine ${machine.id}`);
+                }
             });
 
             row.appendChild(timeline);
@@ -838,42 +878,79 @@
 
         // Create order bar
         function createOrderBar(order, index = 0) {
+            // Debug: Log order details
+            console.log(`Creating bar for order ${order.order_id}:`, {
+                machine: order.machine,
+                start: order.start_date,
+                end: order.end_date || order.due_date,
+                qty: order.quantity_lbs
+            });
             const bar = document.createElement('div');
             
-            // Calculate position
+            // Calculate position with better date handling
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
-            const startDate = order.start_date ? new Date(order.start_date) : new Date();
-            const endDate = order.end_date ? new Date(order.end_date) : new Date(startDate.getTime() + 86400000 * 3);
+            // Parse start date safely
+            let startDate;
+            if (order.start_date) {
+                startDate = new Date(order.start_date);
+                // If date is invalid, use today
+                if (isNaN(startDate.getTime())) {
+                    startDate = new Date();
+                }
+            } else {
+                startDate = new Date();
+            }
+            
+            // Parse end date safely
+            let endDate;
+            if (order.end_date || order.due_date) {
+                endDate = new Date(order.end_date || order.due_date);
+                // If date is invalid, calculate from start + estimated duration
+                if (isNaN(endDate.getTime())) {
+                    endDate = new Date(startDate.getTime() + 86400000 * 7); // Default 7 days
+                }
+            } else {
+                // Calculate end date based on quantity and estimated production rate
+                const estimatedDays = Math.max(1, Math.ceil((order.quantity_lbs || 100) / 500)); // ~500 lbs per day estimate
+                endDate = new Date(startDate.getTime() + 86400000 * estimatedDays);
+            }
             
             const daysDiff = Math.floor((startDate - today) / 86400000);
-            const duration = Math.ceil((endDate - startDate) / 86400000) || 1;
+            const duration = Math.max(1, Math.ceil((endDate - startDate) / 86400000));
             
-            // Position and width
+            // Position and width calculation
             const left = Math.max(0, Math.min(95, (daysDiff / viewDays) * 100));
-            const width = Math.max(2, Math.min(100 - left, (duration / viewDays) * 100));
+            const width = Math.max(5, Math.min(100 - left, (duration / viewDays) * 100));
             
-            // Determine color
+            console.log(`Order ${order.order_id}: daysDiff=${daysDiff}, duration=${duration}, left=${left}%, width=${width}%`);
+            
+            // Determine color based on status and priority
             let bgColor = 'var(--color-planned)';
-            if (daysDiff < 0) {
+            
+            // Priority-based coloring
+            if (order.priority === 'Urgent' || (order.days_until_due !== null && order.days_until_due < 0)) {
                 bgColor = 'var(--color-urgent)';
-            } else if (order.priority === 'High' || order.priority === 'Urgent') {
+            } else if (order.priority === 'High' || (order.days_until_due !== null && order.days_until_due < 7)) {
                 bgColor = 'var(--color-high)';
-            } else if (order.status === 'In Progress') {
+            } else if (order.in_production || order.status === 'In Progress' || (order.completion_percentage && order.completion_percentage > 0)) {
                 bgColor = 'var(--color-scheduled)';
-            } else if (order.priority === 'Normal') {
+            } else if (order.status === 'Active' || order.status === 'Assigned') {
                 bgColor = 'var(--color-normal)';
             }
             
             bar.className = 'absolute rounded-sm schedule-bar cursor-pointer overflow-hidden';
             bar.style.left = `${left}%`;
             bar.style.width = `${width}%`;
-            bar.style.top = `${25 + (index % 2) * 25}%`;
+            bar.style.top = `${10 + (index % 2) * 20}%`;
             bar.style.height = '20px';
-            bar.style.minWidth = '30px';
+            bar.style.minWidth = '40px';
+            bar.style.zIndex = '10';  // Ensure bars are above timeline grid
             bar.style.backgroundColor = bgColor;
-            bar.style.border = '1px solid rgba(255,255,255,0.1)';
+            bar.style.border = '1px solid rgba(255,255,255,0.3)';
+            bar.style.opacity = '1';
+            bar.style.display = 'block';
             
             // Add content
             bar.innerHTML = `
@@ -896,15 +973,23 @@
 
         // Format order tooltip
         function formatOrderTooltip(order) {
+            const startDateStr = order.start_date ? new Date(order.start_date).toLocaleDateString() : 'TBD';
+            const endDateStr = (order.end_date || order.due_date) ? new Date(order.end_date || order.due_date).toLocaleDateString() : 'TBD';
+            const completion = order.completion_percentage ? `${Math.round(order.completion_percentage)}%` : '0%';
+            const daysUntilDue = order.days_until_due !== null ? `${order.days_until_due} days` : 'N/A';
+            
             return `
 Order: ${order.order_id || 'N/A'}
 Style: ${order.style || 'N/A'}
 Quantity: ${(order.quantity_lbs || 0).toLocaleString()} lbs
+Balance: ${(order.balance_lbs || 0).toLocaleString()} lbs
 Priority: ${order.priority || 'Normal'}
-Status: ${order.status || 'Planned'}
-Start: ${order.start_date ? new Date(order.start_date).toLocaleDateString() : 'TBD'}
-End: ${order.end_date ? new Date(order.end_date).toLocaleDateString() : 'TBD'}
-Customer: ${order.customer || 'Unknown'}
+Status: ${order.status || 'Active'}
+Progress: ${completion}
+Due in: ${daysUntilDue}
+Start: ${startDateStr}
+End: ${endDateStr}
+In Production: ${order.in_production ? 'Yes' : 'No'}
             `.trim();
         }
 
@@ -949,8 +1034,40 @@ Customer: ${order.customer || 'Unknown'}
                         <p class="font-bold">${order.start_date ? new Date(order.start_date).toLocaleDateString() : 'TBD'}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500">End Date</p>
-                        <p class="font-bold">${order.end_date ? new Date(order.end_date).toLocaleDateString() : 'TBD'}</p>
+                        <p class="text-sm text-gray-500">Due Date</p>
+                        <p class="font-bold">${(order.end_date || order.due_date) ? new Date(order.end_date || order.due_date).toLocaleDateString() : 'TBD'}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Progress</p>
+                        <div class="flex items-center">
+                            <div class="bg-gray-200 rounded-full h-2 flex-1 mr-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${order.completion_percentage || 0}%"></div>
+                            </div>
+                            <span class="text-sm font-bold">${Math.round(order.completion_percentage || 0)}%</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Balance Remaining</p>
+                        <p class="font-bold text-lg">${(order.balance_lbs || 0).toLocaleString()} lbs</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Days Until Due</p>
+                        <p class="font-bold ${order.days_until_due !== null && order.days_until_due < 0 ? 'text-red-600' : order.days_until_due !== null && order.days_until_due < 7 ? 'text-orange-600' : 'text-green-600'}">
+                            ${order.days_until_due !== null ? `${order.days_until_due} days` : 'N/A'}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">In Production</p>
+                            <p class="font-bold ${order.in_production ? 'text-green-600' : 'text-gray-600'}">${order.in_production ? 'Yes' : 'No'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">PO Number</p>
+                            <p class="font-bold">${order.po_number || 'N/A'}</p>
+                        </div>
                     </div>
                 </div>
                 

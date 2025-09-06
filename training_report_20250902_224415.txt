@@ -1,0 +1,49 @@
+AI AGENT TRAINING REPORT
+==================================================
+
+Total Simulations: 5
+Success Rate: 80.0%
+Failed Implementations: 1
+
+AGENT PERFORMANCE
+------------------------------
+orchestrator:
+  Success Rate: 75.0%
+  Avg Confidence: 0.72
+  Total Tasks: 20
+project_manager:
+  Success Rate: 80.0%
+  Avg Confidence: 0.71
+  Total Tasks: 20
+data_migration:
+  Success Rate: 82.9%
+  Avg Confidence: 0.72
+  Total Tasks: 35
+industry_expert:
+  Success Rate: 57.5%
+  Avg Confidence: 0.69
+  Total Tasks: 40
+configuration:
+  Success Rate: 60.0%
+  Avg Confidence: 0.66
+  Total Tasks: 50
+performance:
+  Success Rate: 80.0%
+  Avg Confidence: 0.75
+  Total Tasks: 5
+
+TOP ISSUES
+------------------------------
+- Performance bottleneck: 14 occurrences
+- User requirement change: 11 occurrences
+- Business logic conflict: 9 occurrences
+- Missing dependencies: 9 occurrences
+- Integration failure: 9 occurrences
+
+RECOMMENDATIONS
+------------------------------
+- Agent 'industry_expert' requires additional training (current success rate: 57.5%)
+- Agent 'configuration' requires additional training (current success rate: 60.0%)
+- injection_molding implementations need improvement (success rate: 50.0%)
+- Focus on high-complexity scenarios - current performance inadequate
+- Address recurring issue: 'Performance bottleneck' (occurred 14 times)

@@ -82,6 +82,19 @@ except ImportError:
     CACHE_MANAGER_AVAILABLE = False
     print("Cache Manager not available, using basic caching")
 
+# Import Data Consistency Manager for unified data handling
+try:
+    from data_consistency.consistency_manager import DataConsistencyManager
+    DATA_CONSISTENCY_AVAILABLE = True
+except ImportError:
+    try:
+        from src.data_consistency.consistency_manager import DataConsistencyManager
+        DATA_CONSISTENCY_AVAILABLE = True
+    except ImportError:
+        DATA_CONSISTENCY_AVAILABLE = False
+        print("DataConsistencyManager not available, using legacy column handling")
+        DataConsistencyManager = None
+
 # Configure logging for ML error tracking
 logging.basicConfig(level=logging.INFO)
 ml_logger = logging.getLogger('ML_ERROR')
@@ -603,8 +616,31 @@ if PLANNING_API_AVAILABLE and 'planning_api' in locals():
             ml_logger.info("Planning API loaded but no blueprint to register")
     except Exception as e:
         ml_logger.warning(f"Could not register planning APIs: {e}")
-else:
-    ml_logger.warning("Planning APIs not available")
+
+# Register Data Consistency API
+if DATA_CONSISTENCY_AVAILABLE:
+    try:
+        from api.data_consistency_api import data_consistency_bp
+        app.register_blueprint(data_consistency_bp, url_prefix='/api')
+        ml_logger.info("Data Consistency APIs registered successfully")
+    except Exception as e:
+        ml_logger.warning(f"Could not register Data Consistency APIs: {e}")
+
+# Register Eva Avatar Blueprint
+try:
+    from api.blueprints.eva_bp import eva_bp
+    app.register_blueprint(eva_bp)
+    print('[EVA] Eva Avatar API registered successfully')
+except ImportError as e:
+    print(f'[EVA] Eva Avatar API not available: {e}')
+
+# Register eFab Integration Blueprint
+try:
+    from api.blueprints.efab_integration_bp import efab_bp
+    app.register_blueprint(efab_bp)
+    print('[eFab] eFab API integration registered successfully')
+except ImportError as e:
+    print(f'[eFab] eFab integration not available: {e}')
 # Detect if running on Windows or WSL/Linux
 import platform
 
@@ -617,8 +653,8 @@ if env_path.exists():
     load_dotenv(env_path)
 
 # Get data path from environment variable with correct default
-# Primary data location is now in /mnt/d/
-DATA_PATH = Path(os.environ.get('DATA_PATH', '/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data'))
+# Primary data location is now in /mnt/c/finalee/beverly_knits_erp_v2/data/
+DATA_PATH = Path(os.environ.get('DATA_PATH', '/mnt/c/finalee/beverly_knits_erp_v2/data'))
 
 # Ensure the path exists and has complete data (including yarn inventory)
 def has_complete_data(path):
@@ -3759,58 +3795,81 @@ class ManufacturingSupplyChainAI:
         Initialize time-phased PO delivery schedules and planning
         Integrates Expected_Yarn_Report.xlsx with existing yarn data
         """
+        self.last_time_phased_error = None  # Store last error for debugging
         try:
             # Import time-phased components
             from src.data_loaders.po_delivery_loader import PODeliveryLoader
             from src.production.time_phased_planning import TimePhasedPlanning
             
+            print("[TIME-PHASED] Initializing time-phased PO delivery system...")
+            
             # Initialize loaders
             po_loader = PODeliveryLoader()
             time_planner = TimePhasedPlanning()
+            self.time_planner = time_planner  # Store for later use
             
-            # Find Expected_Yarn_Report file
+            # Find Expected_Yarn_Report file - try multiple locations
             expected_yarn_paths = [
-                self.data_path / "production" / "5" / "ERP Data" / "8-28-2025" / "Expected_Yarn_Report.xlsx",
                 self.data_path / "production" / "5" / "ERP Data" / "8-28-2025" / "Expected_Yarn_Report.csv",
-                self.data_path / "production" / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx",
+                self.data_path / "production" / "5" / "ERP Data" / "8-28-2025" / "Expected_Yarn_Report.xlsx",
+                self.data_path / "production" / "5" / "ERP Data" / "9-2-2025" / "Expected_Yarn_Report.xlsx",
                 self.data_path / "production" / "5" / "ERP Data" / "Expected_Yarn_Report.csv",
-                self.data_path / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx",
-                self.data_path / "5" / "ERP Data" / "Expected_Yarn_Report.csv"
+                self.data_path / "production" / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx",
+                self.data_path / "5" / "ERP Data" / "8-28-2025" / "Expected_Yarn_Report.csv",
+                self.data_path / "5" / "ERP Data" / "Expected_Yarn_Report.csv",
+                self.data_path / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx"
             ]
             
             po_file = None
+            print(f"[TIME-PHASED] Searching for Expected_Yarn_Report file...")
             for path in expected_yarn_paths:
                 if path.exists():
                     po_file = path
+                    print(f"[TIME-PHASED] Found file at: {path}")
                     break
             
             if po_file:
                 # Load PO delivery data
+                print(f"[TIME-PHASED] Loading PO delivery data...")
                 po_data = po_loader.load_po_deliveries(str(po_file))
                 self.po_delivery_data = po_data
+                print(f"[TIME-PHASED] Loaded {len(po_data) if po_data is not None and hasattr(po_data, '__len__') else 0} PO records")
                 
                 # Map to weekly buckets
+                print(f"[TIME-PHASED] Mapping to weekly buckets...")
                 weekly_data = po_loader.map_to_weekly_buckets(po_data)
                 
                 # Aggregate by yarn
+                print(f"[TIME-PHASED] Aggregating by yarn...")
                 self.yarn_weekly_receipts = po_loader.aggregate_by_yarn(weekly_data)
                 
                 # Enable time-phased features
                 self.time_phased_enabled = True
                 
-                print(f"[TIME-PHASED] Loaded PO deliveries for {len(self.yarn_weekly_receipts)} yarns from {po_file}")
-                print(f"[TIME-PHASED] Time-phased planning enabled")
+                print(f"[TIME-PHASED] ✓ Successfully loaded PO deliveries for {len(self.yarn_weekly_receipts)} yarns")
+                print(f"[TIME-PHASED] ✓ Time-phased planning is now ENABLED")
                 
             else:
-                print("[TIME-PHASED] Expected_Yarn_Report not found, time-phased planning disabled")
+                print("[TIME-PHASED] Expected_Yarn_Report not found in any of these locations:")
+                for path in expected_yarn_paths[:3]:  # Show first 3 paths tried
+                    print(f"  - {path}")
                 self.time_phased_enabled = False
+                self.yarn_weekly_receipts = {}
                 
         except ImportError as e:
+            self.last_time_phased_error = f"Import error: {str(e)}"
             print(f"[TIME-PHASED] Time-phased modules not available: {e}")
+            import traceback
+            traceback.print_exc()
             self.time_phased_enabled = False
+            self.yarn_weekly_receipts = {}
         except Exception as e:
+            self.last_time_phased_error = f"General error: {str(e)}"
             print(f"[TIME-PHASED] Error initializing time-phased data: {e}")
+            import traceback
+            traceback.print_exc()
             self.time_phased_enabled = False
+            self.yarn_weekly_receipts = {}
     
     def get_yarn_time_phased_data(self, yarn_id: str) -> dict:
         """
@@ -8357,6 +8416,7 @@ if AI_OPTIMIZATION_AVAILABLE:
         AI_OPTIMIZATION_AVAILABLE = False
 
 @app.route("/")
+@app.route("/consolidated")
 def comprehensive_dashboard():
     # Serve the single consolidated dashboard
     dashboard_file = "consolidated_dashboard.html"
@@ -8381,7 +8441,46 @@ def comprehensive_dashboard():
         "path": str(dashboard_path)
     }), 404
 
+@app.route("/machine-schedule")
+def machine_schedule_board():
+    """Serve the machine schedule board dashboard"""
+    dashboard_file = "machine_schedule_board.html"
+    # Look for dashboard in web directory (two levels up from src/core)
+    dashboard_path = Path(__file__).parent.parent.parent / "web" / dashboard_file
+    
+    if dashboard_path.exists():
+        print(f"Serving machine schedule board: {dashboard_file}")
+        from flask import Response
+        with open(dashboard_path, 'r', encoding='utf-8') as f:
+            response = Response(f.read(), mimetype='text/html')
+            # Add cache-busting headers to prevent browser caching
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            return response
+    
+    # If dashboard not found, return error
+    return jsonify({
+        "error": "Machine schedule board file not found",
+        "file": dashboard_file,
+        "path": str(dashboard_path)
+    }), 404
+
 # Removed embedded dashboard HTML - using external files instead
+
+@app.route("/eva")
+def eva_avatar():
+    """Serve Eva Avatar interface"""
+    try:
+        avatar_path = Path("web/eva_avatar.html")
+        if avatar_path.exists():
+            with open(avatar_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        else:
+            return "Eva Avatar interface not found", 404
+    except Exception as e:
+        print(f"Error loading Eva Avatar: {e}")
+        return f"Error loading Eva Avatar: {str(e)}", 500
 
 @app.route("/consolidated")
 def consolidated_dashboard():
@@ -11940,6 +12039,7 @@ def get_yarn_intelligence():
     include_forecast = request.args.get('forecast', 'false').lower() == 'true'
     yarn_id = request.args.get('yarn_id')
     ai_enhanced = request.args.get('ai', 'false').lower() == 'true'
+    include_timing = request.args.get('include_timing', 'false').lower() == 'true'  # Include time-phased data
     
     try:
         # Try to get from cache first if cache manager is available
@@ -11976,48 +12076,85 @@ def get_yarn_intelligence():
             # Use pandas operations for speed
             df = analyzer.raw_materials_data.copy()
             
-            # Use existing Planning Balance if available, otherwise calculate it
-            # Check for both standardized and original column names
-            if 'planning_balance' in df.columns:
-                df['Calculated_Planning_Balance'] = df['planning_balance'].fillna(0)
-            elif 'Planning Balance' in df.columns:
-                df['Calculated_Planning_Balance'] = df['Planning Balance'].fillna(0)
-            elif ('theoretical_balance' in df.columns and 'allocated' in df.columns and 'on_order' in df.columns):
-                # Use standardized column names
-                df['theoretical_balance'] = df['theoretical_balance'].fillna(0)
-                df['allocated'] = df['allocated'].fillna(0)
-                df['on_order'] = df['on_order'].fillna(0)
-                df['Calculated_Planning_Balance'] = df['theoretical_balance'] + df['allocated'] + df['on_order']
-            elif ('Theoretical Balance' in df.columns and 'Allocated' in df.columns and 'On Order' in df.columns):
-                # Use original column names
-                df['Theoretical Balance'] = df['Theoretical Balance'].fillna(0)
-                df['Allocated'] = df['Allocated'].fillna(0)
-                df['On Order'] = df['On Order'].fillna(0)
-                df['Calculated_Planning_Balance'] = df['Theoretical Balance'] + df['Allocated'] + df['On Order']
+            # Use centralized consistency manager for standardized column handling
+            if DATA_CONSISTENCY_AVAILABLE:
+                # Standardize columns for consistent access
+                df = DataConsistencyManager.standardize_columns(df, inplace=True)
+                
+                # Get yarns with shortages using consistent logic
+                all_critical_yarns = []
+                for _, yarn_row in df.iterrows():
+                    shortage_info = DataConsistencyManager.calculate_yarn_shortage(yarn_row)
+                    if shortage_info['has_shortage']:
+                        all_critical_yarns.append({
+                            'yarn_data': yarn_row,
+                            'shortage_info': shortage_info
+                        })
+                
+                # Sort by shortage amount and limit
+                all_critical_yarns = sorted(all_critical_yarns, 
+                                          key=lambda x: x['shortage_info']['shortage_amount'], 
+                                          reverse=True)[:100]
             else:
-                # No planning balance available
-                df['Calculated_Planning_Balance'] = 0
+                # Fallback to legacy logic
+                # Use existing Planning Balance if available, otherwise calculate it
+                # Check for both standardized and original column names
+                if 'planning_balance' in df.columns:
+                    df['Calculated_Planning_Balance'] = df['planning_balance'].fillna(0)
+                elif 'Planning Balance' in df.columns:
+                    df['Calculated_Planning_Balance'] = df['Planning Balance'].fillna(0)
+                elif ('theoretical_balance' in df.columns and 'allocated' in df.columns and 'on_order' in df.columns):
+                    # Use standardized column names
+                    df['theoretical_balance'] = df['theoretical_balance'].fillna(0)
+                    df['allocated'] = df['allocated'].fillna(0)
+                    df['on_order'] = df['on_order'].fillna(0)
+                    df['Calculated_Planning_Balance'] = df['theoretical_balance'] + df['allocated'] + df['on_order']
+                elif ('Theoretical Balance' in df.columns and 'Allocated' in df.columns and 'On Order' in df.columns):
+                    # Use original column names
+                    df['Theoretical Balance'] = df['Theoretical Balance'].fillna(0)
+                    df['Allocated'] = df['Allocated'].fillna(0)
+                    df['On Order'] = df['On Order'].fillna(0)
+                    df['Calculated_Planning_Balance'] = df['Theoretical Balance'] + df['Allocated'] + df['On Order']
+                else:
+                    # No planning balance available
+                    df['Calculated_Planning_Balance'] = 0
+                
+                # Get theoretical balance column
+                theoretical_col = None
+                if 'theoretical_balance' in df.columns:
+                    theoretical_col = 'theoretical_balance'
+                elif 'Theoretical Balance' in df.columns:
+                    theoretical_col = 'Theoretical Balance'
+                
+                # Get yarns with negative theoretical OR planning balance (shortages)
+                if theoretical_col and theoretical_col in df.columns:
+                    shortage_condition = (df['Calculated_Planning_Balance'] < 0) | (df[theoretical_col] < 0)
+                else:
+                    shortage_condition = (df['Calculated_Planning_Balance'] < 0)
+                all_critical_yarns_df = df[shortage_condition].sort_values('Calculated_Planning_Balance').head(100)
+                
+                # Convert to consistent format
+                all_critical_yarns = []
+                for _, yarn_row in all_critical_yarns_df.iterrows():
+                    all_critical_yarns.append({
+                        'yarn_data': yarn_row,
+                        'shortage_info': {
+                            'has_shortage': True,
+                            'shortage_amount': abs(yarn_row.get('Calculated_Planning_Balance', 0)),
+                            'planning_balance': yarn_row.get('Calculated_Planning_Balance', 0)
+                        }
+                    })
             
-            # Get theoretical balance column
-            theoretical_col = None
-            if 'theoretical_balance' in df.columns:
-                theoretical_col = 'theoretical_balance'
-            elif 'Theoretical Balance' in df.columns:
-                theoretical_col = 'Theoretical Balance'
-            
-            # Get yarns with negative theoretical OR planning balance (shortages)
-            # A yarn has a shortage if either theoretical or planning balance is negative
-            if theoretical_col and theoretical_col in df.columns:
-                shortage_condition = (df['Calculated_Planning_Balance'] < 0) | (df[theoretical_col] < 0)
-            else:
-                # If no theoretical balance column exists, just use planning balance
-                shortage_condition = (df['Calculated_Planning_Balance'] < 0)
-            all_critical_yarns = df[shortage_condition].sort_values('Calculated_Planning_Balance').head(100)  # Limit to 100 for performance
-            
-            for idx, yarn in all_critical_yarns.iterrows():
-                # Get yarn ID for checking production orders - try multiple possible column names
-                # First try standard ID columns - Desc# is the primary yarn ID field
-                current_yarn_id = yarn.get('Desc#') or yarn.get('desc_num') or yarn.get('YarnID') or yarn.get('Yarn_ID') or yarn.get('ID') or yarn.get('yarn_id')
+            for yarn_entry in all_critical_yarns:
+                yarn = yarn_entry['yarn_data']
+                shortage_info = yarn_entry['shortage_info']
+                
+                # Get yarn ID using consistent logic
+                if DATA_CONSISTENCY_AVAILABLE:
+                    current_yarn_id = shortage_info['yarn_id']
+                else:
+                    # Fallback to legacy ID extraction
+                    current_yarn_id = yarn.get('Desc#') or yarn.get('desc_num') or yarn.get('YarnID') or yarn.get('Yarn_ID') or yarn.get('ID') or yarn.get('yarn_id')
                 
                 # Convert to string and handle NaN/None values
                 if current_yarn_id is not None and str(current_yarn_id).lower() not in ['nan', 'none', '']:
@@ -12080,57 +12217,87 @@ def get_yarn_intelligence():
                 # Include all yarns with shortages, regardless of production orders
                 # This ensures we see ALL shortage situations
                 if True:  # Changed from: if affected_orders_count > 0:
-                    # Extract actual values from data - handle both original and standardized column names
-                    # Check multiple possible column names for theoretical balance
-                    theoretical_bal = float(yarn.get('theoretical_balance', 
-                                         yarn.get('Theoretical Balance', 
-                                         yarn.get('Beginning Balance',
-                                         yarn.get('beginning_balance', 0)))))
-                    allocated = float(yarn.get('allocated', yarn.get('Allocated', 0)))
-                    on_order = float(yarn.get('on_order', yarn.get('On Order', 0)))
-                    # Consumed is negative in file (amount used), make it positive for calculations
-                    consumed = abs(float(yarn.get('consumed', yarn.get('Consumed', 0))))
-                    
-                    # Use the pre-calculated planning balance
-                    planning_bal = float(yarn.get('Calculated_Planning_Balance', 0))
-                    
-                    # Calculate weekly demand from consumed data
-                    # Consumed is typically monthly, so divide by 4.3 weeks per month
-                    # If no consumption data, calculate from allocated amount / typical order duration (8 weeks)
-                    if consumed > 0:
-                        weekly_demand = consumed / 4.3  # Monthly consumption / 4.3 weeks per month
-                    elif allocated != 0:
-                        # Estimate based on allocated amount spread over typical 8-week production cycle
-                        weekly_demand = abs(allocated) / 8
+                    if DATA_CONSISTENCY_AVAILABLE:
+                        # Use centralized shortage info with additional order context
+                        yarn_shortage_data = {
+                            'yarn_id': shortage_info['yarn_id'],
+                            'description': shortage_info['description'][:50],
+                            'supplier': str(yarn.get('supplier', yarn.get('Supplier', '')))[:30],
+                            'theoretical_balance': shortage_info['theoretical_balance'],
+                            'allocated': shortage_info['allocated'],
+                            'on_order': shortage_info['on_order'],
+                            'affected_orders': affected_orders_count,
+                            'affected_orders_list': affected_orders_list,
+                            'planning_balance': shortage_info['planning_balance'],
+                            'balance': shortage_info['planning_balance'],  # Compatibility
+                            'shortage': shortage_info['shortage_amount'],
+                            'has_shortage': shortage_info['has_shortage'],
+                            'risk_level': shortage_info['risk_level'],
+                            'urgency_score': shortage_info['urgency_score']
+                        }
+                        
+                        # Add calculated fields for compatibility
+                        consumed = abs(float(yarn.get('consumed', yarn.get('Consumed', 0))))
+                        if consumed > 0:
+                            weekly_demand = consumed / 4.3
+                        elif yarn_shortage_data['allocated'] != 0:
+                            weekly_demand = abs(yarn_shortage_data['allocated']) / 8
+                        else:
+                            weekly_demand = 10
+                        
+                        weeks_of_supply = yarn_shortage_data['theoretical_balance'] / weekly_demand if weekly_demand > 0 and yarn_shortage_data['theoretical_balance'] > 0 else 0
+                        
+                        yarn_shortage_data.update({
+                            'weekly_demand': float(weekly_demand),
+                            'weeks_of_supply': float(weeks_of_supply),
+                            'criticality_score': yarn_shortage_data['urgency_score']  # Use consistent score
+                        })
+                        
                     else:
-                        # No data available, use minimal default
-                        weekly_demand = 10  # Much lower default
+                        # Fallback to legacy logic
+                        # Extract actual values from data - handle both original and standardized column names
+                        theoretical_bal = float(yarn.get('theoretical_balance', 
+                                             yarn.get('Theoretical Balance', 
+                                             yarn.get('Beginning Balance',
+                                             yarn.get('beginning_balance', 0)))))
+                        allocated = float(yarn.get('allocated', yarn.get('Allocated', 0)))
+                        on_order = float(yarn.get('on_order', yarn.get('On Order', 0)))
+                        consumed = abs(float(yarn.get('consumed', yarn.get('Consumed', 0))))
+                        
+                        # Use the pre-calculated planning balance
+                        planning_bal = float(yarn.get('Calculated_Planning_Balance', 0))
+                        
+                        # Calculate weekly demand from consumed data
+                        if consumed > 0:
+                            weekly_demand = consumed / 4.3
+                        elif allocated != 0:
+                            weekly_demand = abs(allocated) / 8
+                        else:
+                            weekly_demand = 10
+                        
+                        weeks_of_supply = theoretical_bal / weekly_demand if weekly_demand > 0 and theoretical_bal > 0 else 0
+                        shortage_amount = abs(planning_bal) if planning_bal < 0 else 0
+                        
+                        yarn_shortage_data = {
+                            'yarn_id': current_yarn_id,
+                            'description': str(yarn.get('description', yarn.get('Description', '')))[:50],
+                            'supplier': str(yarn.get('supplier', yarn.get('Supplier', '')))[:30],
+                            'theoretical_balance': float(theoretical_bal),
+                            'allocated': float(allocated),
+                            'on_order': float(on_order),
+                            'affected_orders': affected_orders_count,
+                            'affected_orders_list': affected_orders_list,
+                            'planning_balance': float(planning_bal),
+                            'balance': float(planning_bal),  # Compatibility
+                            'shortage': float(shortage_amount),
+                            'has_shortage': planning_bal < 0,
+                            'weekly_demand': float(weekly_demand),
+                            'weeks_of_supply': float(weeks_of_supply),
+                            'criticality_score': min(100, abs(float(planning_bal)) / 100) if planning_bal < 0 else 0,
+                            'risk_level': 'CRITICAL' if planning_bal < -1000 else 'HIGH' if planning_bal < -100 else 'MEDIUM' if planning_bal < 0 else 'LOW'
+                        }
                     
-                    # Calculate weeks of supply based on theoretical balance (actual stock on hand)
-                    # Use theoretical balance for actual supply calculation, not planning balance
-                    weeks_of_supply = theoretical_bal / weekly_demand if weekly_demand > 0 and theoretical_bal > 0 else 0
-                    
-                    # Shortage only exists if planning balance is negative
-                    shortage_amount = abs(planning_bal) if planning_bal < 0 else 0
-                    
-                    shortage_data.append({
-                        'yarn_id': current_yarn_id,
-                        'description': str(yarn.get('description', yarn.get('Description', '')))[:50],
-                        'supplier': str(yarn.get('supplier', yarn.get('Supplier', '')))[:30],
-                        'theoretical_balance': float(theoretical_bal),
-                        'allocated': float(allocated),
-                        'on_order': float(on_order),
-                        'affected_orders': affected_orders_count,
-                        'affected_orders_list': affected_orders_list,
-                        'planning_balance': float(planning_bal),
-                        'balance': float(planning_bal),  # Compatibility
-                        'shortage': float(shortage_amount),
-                        'has_shortage': planning_bal < 0,
-                        'weekly_demand': float(weekly_demand),
-                        'weeks_of_supply': float(weeks_of_supply),
-                        'criticality_score': min(100, abs(float(planning_bal)) / 100) if planning_bal < 0 else 0,
-                        'risk_level': 'CRITICAL' if planning_bal < -1000 else 'HIGH' if planning_bal < -100 else 'MEDIUM' if planning_bal < 0 else 'LOW'
-                    })
+                    shortage_data.append(yarn_shortage_data)
         except Exception as e:
             print(f"Error processing yarn data: {e}")
             # Continue with empty data rather than failing
@@ -12176,12 +12343,70 @@ def get_yarn_intelligence():
         
         # Add analysis-specific data
         if analysis_type == 'shortage':
-            # Focus on shortage analysis
+            # Get request parameters for shortage analysis
+            limit = int(request.args.get('limit', 20))  # Default to top 20
+            sort_by = request.args.get('sort', 'urgency')  # urgency, shortage, impact
+            
+            # Focus on shortage analysis with enhanced prioritization
             shortage_yarns = [y for y in intelligence.get('criticality_analysis', {}).get('yarns', []) 
-                             if y.get('shortage_pounds', 0) > 0]
+                             if y.get('shortage_pounds', 0) > 0 or y.get('shortage', 0) < 0]
+            
+            # Enhanced urgency scoring for yarn shortages
+            for yarn in shortage_yarns:
+                shortage_lbs = abs(yarn.get('shortage', 0)) if yarn.get('shortage', 0) < 0 else yarn.get('shortage_pounds', 0)
+                
+                # Base urgency from shortage amount
+                urgency = min(shortage_lbs / 10, 50)  # Max 50 points for quantity
+                
+                # Add risk level multiplier
+                if yarn.get('risk_level') == 'CRITICAL':
+                    urgency += 30
+                elif yarn.get('risk_level') == 'HIGH':
+                    urgency += 20
+                elif yarn.get('risk_level') == 'MEDIUM':
+                    urgency += 10
+                
+                # Add financial impact (estimated)
+                estimated_cost_per_lb = 8.50  # Average yarn cost
+                financial_impact = shortage_lbs * estimated_cost_per_lb
+                urgency += min(financial_impact / 1000, 20)  # Max 20 points for cost
+                
+                # Add production impact (if we have BOM data)
+                production_impact = yarn.get('total_production_lbs', 0)
+                if production_impact > 0:
+                    urgency += min(production_impact / 1000, 10)  # Max 10 points for production impact
+                
+                yarn['urgency_score'] = round(urgency, 1)
+                yarn['financial_impact'] = round(financial_impact, 2)
+                yarn['estimated_cost'] = f"${financial_impact:,.2f}"
+                yarn['severity'] = yarn.get('risk_level', 'MEDIUM')
+                yarn['color'] = {
+                    'CRITICAL': 'red',
+                    'HIGH': 'orange', 
+                    'MEDIUM': 'yellow',
+                    'LOW': 'green'
+                }.get(yarn.get('risk_level', 'MEDIUM'), 'yellow')
+            
+            # Sort by specified criteria
+            if sort_by == 'urgency':
+                shortage_yarns.sort(key=lambda x: x.get('urgency_score', 0), reverse=True)
+            elif sort_by == 'shortage':
+                shortage_yarns.sort(key=lambda x: abs(x.get('shortage', 0)), reverse=True)
+            elif sort_by == 'impact':
+                shortage_yarns.sort(key=lambda x: x.get('financial_impact', 0), reverse=True)
+            
+            # Get top N shortages
+            top_shortages = shortage_yarns[:limit]
+            
             intelligence['shortage_analysis'] = {
-                'critical_shortages': shortage_yarns[:10],
-                'total_shortage_pounds': sum(y.get('shortage_pounds', 0) for y in shortage_yarns),
+                'critical_shortages': top_shortages,
+                'total_shortage_pounds': sum(abs(y.get('shortage', 0)) if y.get('shortage', 0) < 0 else y.get('shortage_pounds', 0) for y in shortage_yarns),
+                'total_financial_impact': sum(y.get('financial_impact', 0) for y in shortage_yarns),
+                'critical_count': len([y for y in shortage_yarns if y.get('risk_level') == 'CRITICAL']),
+                'high_count': len([y for y in shortage_yarns if y.get('risk_level') == 'HIGH']),
+                'showing': len(top_shortages),
+                'total_identified': len(shortage_yarns),
+                'avg_urgency_score': round(sum(y.get('urgency_score', 0) for y in shortage_yarns) / len(shortage_yarns), 1) if shortage_yarns else 0,
                 'yarns_with_shortage': len(shortage_yarns)
             }
         elif analysis_type == 'requirements':
@@ -12333,7 +12558,7 @@ def clean_for_json(obj):
     import numpy as np
     import pandas as pd
     
-    if isinstance(obj, (np.bool_, np.bool8)):
+    if isinstance(obj, np.bool_):
         return bool(obj)
     elif isinstance(obj, np.integer):
         return int(obj)
@@ -12485,6 +12710,137 @@ def po_delivery_schedule():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route("/api/time-phased-yarn-po", methods=['GET'])
+def time_phased_yarn_po():
+    """
+    Time-phased yarn PO schedule for inventory tab display
+    Returns weekly PO receipts and shortage timeline for all yarns
+    """
+    global new_api_count
+    new_api_count += 1
+    
+    try:
+        # Auto-initialize if not enabled but file exists
+        if not analyzer.time_phased_enabled:
+            # Try to initialize time-phased data
+            print("[API] Time-phased not enabled, attempting auto-initialization...")
+            analyzer.initialize_time_phased_data()
+            
+            # If still not enabled after initialization attempt, return empty structure
+            if not analyzer.time_phased_enabled:
+                return jsonify({
+                    'yarns': {},
+                    'summary': {
+                        'total_yarns': 0,
+                        'yarns_with_pos': 0,
+                        'next_week_receipts': 0,
+                        'expedite_needed': 0,
+                        'message': 'Time-phased planning not available - Expected_Yarn_Report.csv not found'
+                    },
+                    'timestamp': datetime.now().isoformat()
+                }), 200
+        
+        result = {'yarns': {}, 'summary': {}, 'timestamp': datetime.now().isoformat()}
+        
+        # First, analyze all yarns to find the most critical ones
+        all_yarn_analysis = []
+        
+        for yarn_id in analyzer.yarn_weekly_receipts.keys():
+            yarn_analysis = analyzer.get_yarn_time_phased_data(yarn_id)
+            if 'error' not in yarn_analysis:
+                # Add yarn description from inventory data if available
+                try:
+                    if hasattr(analyzer, 'yarn_data') and not analyzer.yarn_data.empty:
+                        yarn_row = analyzer.yarn_data[analyzer.yarn_data['Desc#'] == yarn_id]
+                        if not yarn_row.empty:
+                            yarn_analysis['description'] = yarn_row.iloc[0].get('Description', '')
+                            yarn_analysis['yarn_id'] = yarn_id
+                            
+                            # Add current balance from inventory data
+                            yarn_analysis['current_balance'] = float(yarn_row.iloc[0].get('Theoretical Balance', 0))
+                            yarn_analysis['planning_balance'] = float(yarn_row.iloc[0].get('Planning Balance', 0))
+                except:
+                    yarn_analysis['yarn_id'] = yarn_id
+                
+                # Calculate criticality score for sorting
+                criticality_score = 0
+                
+                # Highest priority: Has shortage
+                if yarn_analysis.get('has_shortage'):
+                    criticality_score += 1000
+                    
+                    # Add urgency based on when shortage occurs
+                    first_shortage = yarn_analysis.get('first_shortage_week', '')
+                    if 'Week 36' in str(first_shortage) or 'W36' in str(first_shortage):
+                        criticality_score += 500  # This week
+                    elif 'Week 37' in str(first_shortage) or 'W37' in str(first_shortage):
+                        criticality_score += 400  # Next week
+                    elif 'Week 38' in str(first_shortage) or 'W38' in str(first_shortage):
+                        criticality_score += 300  # Week after
+                
+                # Second priority: Needs expediting
+                if yarn_analysis.get('expedite_recommendations'):
+                    criticality_score += 100 * len(yarn_analysis['expedite_recommendations'])
+                
+                # Third priority: Negative current balance
+                current_bal = yarn_analysis.get('current_balance', 0)
+                if current_bal < 0:
+                    criticality_score += abs(current_bal) / 1000  # Scale down to not overpower
+                
+                # Fourth priority: Has PO scheduled
+                if yarn_analysis.get('next_receipt_week'):
+                    criticality_score += 10
+                
+                yarn_analysis['criticality_score'] = criticality_score
+                all_yarn_analysis.append(yarn_analysis)
+        
+        # Sort by criticality score (highest first) and take top 20
+        all_yarn_analysis.sort(key=lambda x: x.get('criticality_score', 0), reverse=True)
+        top_yarns = all_yarn_analysis[:20]  # Only top 20 most critical
+        
+        # Process top yarns for response
+        processed_count = 0
+        total_pos_scheduled = 0
+        next_week_total = 0
+        expedite_count = 0
+        total_yarn_count = len(all_yarn_analysis)
+        yarns_with_shortage = sum(1 for y in all_yarn_analysis if y.get('has_shortage'))
+        
+        for yarn_analysis in top_yarns:
+            yarn_id = yarn_analysis.get('yarn_id')
+            if yarn_id:
+                # Clean NaN values for JSON serialization
+                result['yarns'][yarn_id] = clean_for_json(yarn_analysis)
+                processed_count += 1
+                
+                # Update summary metrics
+                if yarn_analysis.get('next_receipt_week'):
+                    total_pos_scheduled += 1
+                
+                # Sum week 36 receipts
+                if yarn_analysis.get('weekly_receipts', {}).get('week_36', 0) > 0:
+                    next_week_total += yarn_analysis['weekly_receipts']['week_36']
+                
+                # Count expedite needs
+                if yarn_analysis.get('expedite_recommendations'):
+                    expedite_count += len(yarn_analysis['expedite_recommendations'])
+        
+        result['summary'] = {
+            'yarns_processed': processed_count,
+            'total_yarns_analyzed': total_yarn_count,
+            'yarns_with_shortage': yarns_with_shortage,
+            'total_pos_scheduled': total_pos_scheduled,
+            'next_week_receipts': next_week_total,
+            'expedite_needed': expedite_count,
+            'time_phased_enabled': True,
+            'display_note': f'Showing top {processed_count} most critical yarns'
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route("/api/time-phased-planning")
 def time_phased_planning():
     """
@@ -12616,7 +12972,8 @@ def debug_time_phased_init():
             'status': 'initialization_attempted',
             'time_phased_enabled': analyzer.time_phased_enabled,
             'yarn_weekly_receipts_count': len(analyzer.yarn_weekly_receipts),
-            'result': str(result)
+            'result': str(result),
+            'last_error': getattr(analyzer, 'last_time_phased_error', None)
         })
     except Exception as e:
         return jsonify({
@@ -12649,9 +13006,10 @@ def get_inventory_intelligence_enhanced():
         
         # Get parameters
         view = request.args.get('view', 'full')
-        analysis = request.args.get('analysis', 'standard')
+        analysis = request.args.get('analysis', 'standard')  # standard, alerts, shortage
         realtime = request.args.get('realtime', 'false').lower() == 'true'
         ai_enhanced = request.args.get('ai', 'false').lower() == 'true'
+        limit = int(request.args.get('limit', 20))  # For alerts view
         
         # Try to get from cache first if cache manager is available (unless realtime requested)
         cache_key = f"inventory_intelligence_{view}_{analysis}_{ai_enhanced}"
@@ -12793,6 +13151,110 @@ def get_inventory_intelligence_enhanced():
                 'total_shortages': summary_stats['yarns_with_shortage'],
                 'shortage_value': summary_stats['total_shortage_lbs'],
                 'critical_shortages': summary_stats['critical_count']
+            }
+        elif analysis == 'alerts':
+            # Generate top 20 inventory alerts
+            alerts = []
+            
+            if hasattr(analyzer, 'raw_materials_data') and analyzer.raw_materials_data is not None:
+                df = analyzer.raw_materials_data.copy()
+                
+                # Ensure Planning_Balance is available
+                if 'Planning_Balance' not in df.columns:
+                    if 'planning_balance' in df.columns:
+                        df['Planning_Balance'] = df['planning_balance'].fillna(0)
+                    elif 'Planning Balance' in df.columns:
+                        df['Planning_Balance'] = df['Planning Balance'].fillna(0)
+                    else:
+                        df['Planning_Balance'] = 0
+                
+                # 1. Critical Shortages (Planning Balance < -1000)
+                critical_shortages = df[df['Planning_Balance'] < -1000].copy()
+                for _, yarn in critical_shortages.iterrows():
+                    shortage = abs(yarn['Planning_Balance'])
+                    urgency = min(90 + (shortage / 100), 100)  # Cap at 100
+                    estimated_cost = shortage * 8.50  # Yarn cost per lb
+                    
+                    alerts.append({
+                        'type': 'critical_shortage',
+                        'title': f"Critical Shortage: {yarn.get('Desc#', 'Unknown')}",
+                        'description': f"Short {shortage:,.0f} lbs - Critical production risk",
+                        'urgency_score': round(urgency, 1),
+                        'severity': 'CRITICAL',
+                        'color': 'red',
+                        'yarn_id': yarn.get('Desc#', ''),
+                        'shortage_lbs': shortage,
+                        'estimated_cost': f"${estimated_cost:,.2f}",
+                        'financial_impact': estimated_cost,
+                        'suggested_action': 'Place urgent order',
+                        'coverage_days': 0,
+                        'category': 'Yarn Shortage'
+                    })
+                
+                # 2. High Risk Shortages (-1000 to -100)
+                high_risk = df[(df['Planning_Balance'] >= -1000) & (df['Planning_Balance'] < -100)].copy()
+                for _, yarn in high_risk.iterrows():
+                    shortage = abs(yarn['Planning_Balance'])
+                    urgency = 70 + (shortage / 50)  # Scale based on shortage
+                    estimated_cost = shortage * 8.50
+                    
+                    alerts.append({
+                        'type': 'high_risk_shortage',
+                        'title': f"High Risk: {yarn.get('Desc#', 'Unknown')}",
+                        'description': f"Short {shortage:,.0f} lbs - Plan orders soon",
+                        'urgency_score': round(urgency, 1),
+                        'severity': 'HIGH',
+                        'color': 'orange',
+                        'yarn_id': yarn.get('Desc#', ''),
+                        'shortage_lbs': shortage,
+                        'estimated_cost': f"${estimated_cost:,.2f}",
+                        'financial_impact': estimated_cost,
+                        'suggested_action': 'Schedule order placement',
+                        'coverage_days': max(0, shortage / 100),  # Rough estimate
+                        'category': 'Yarn Shortage'
+                    })
+                
+                # 3. Low Stock Warnings (0 to 100 lbs)
+                low_stock = df[(df['Planning_Balance'] >= 0) & (df['Planning_Balance'] < 100)].copy()
+                for _, yarn in low_stock.iterrows():
+                    stock = yarn['Planning_Balance']
+                    urgency = 50 - (stock / 2)  # Lower stock = higher urgency
+                    
+                    alerts.append({
+                        'type': 'low_stock_warning',
+                        'title': f"Low Stock: {yarn.get('Desc#', 'Unknown')}",
+                        'description': f"Only {stock:,.0f} lbs remaining",
+                        'urgency_score': round(urgency, 1),
+                        'severity': 'MEDIUM',
+                        'color': 'yellow',
+                        'yarn_id': yarn.get('Desc#', ''),
+                        'stock_lbs': stock,
+                        'estimated_cost': f"${stock * 8.50:,.2f}",
+                        'financial_impact': 0,  # No immediate loss
+                        'suggested_action': 'Monitor and plan reorder',
+                        'coverage_days': max(1, stock / 10),  # Rough estimate
+                        'category': 'Low Stock'
+                    })
+            
+            # Sort by urgency score (highest first) and limit to top N
+            alerts.sort(key=lambda x: x['urgency_score'], reverse=True)
+            top_alerts = alerts[:limit]
+            
+            response_data['inventory_alerts'] = {
+                'alerts': top_alerts,
+                'summary': {
+                    'total_alerts': len(alerts),
+                    'critical_alerts': len([a for a in alerts if a['severity'] == 'CRITICAL']),
+                    'high_priority_alerts': len([a for a in alerts if a['severity'] == 'HIGH']),
+                    'total_financial_impact': sum(a.get('financial_impact', 0) for a in alerts),
+                    'avg_urgency_score': round(sum(a['urgency_score'] for a in alerts) / len(alerts), 1) if alerts else 0,
+                    'categories': {
+                        'yarn_shortage': len([a for a in alerts if 'shortage' in a['type']]),
+                        'low_stock': len([a for a in alerts if a['type'] == 'low_stock_warning'])
+                    }
+                },
+                'showing': len(top_alerts),
+                'total_identified': len(alerts)
             }
         elif analysis == 'optimization':
             response_data['optimization_suggestions'] = [
@@ -16024,6 +16486,10 @@ def po_risk_analysis():
                 print(f"Warning: Could not find column for {key}")
                 actual_columns[key] = possible_names[0]  # Use default
         
+        # Get request parameters for filtering
+        limit = int(request.args.get('limit', 20))  # Default to top 20
+        category = request.args.get('category', 'all')  # critical, high, overdue, not_started, all
+        
         # Calculate risk factors
         current_date = pd.Timestamp.now()
         
@@ -16149,19 +16615,34 @@ def po_risk_analysis():
                     risk_factors.append("No BOM mapping")
             risk_score += material_risk
             
+            # Calculate financial impact (estimated)
+            estimated_value = float(balance) * 12.50  # Assume $12.50 per lb average
+            potential_loss = 0
+            if days_until < -7:  # Late orders risk customer loss
+                potential_loss = estimated_value * 0.15  # 15% penalty/loss risk
+            elif days_until < 0:
+                potential_loss = estimated_value * 0.05  # 5% delay cost
+            
+            # Calculate urgency score (combines risk and financial impact)
+            urgency_score = risk_score + (potential_loss / 1000)  # Add $1000 = 1 point
+            
             # Determine risk level
             if risk_score >= 70:
                 risk_level = "CRITICAL"
                 risk_color = "red"
+                priority = 1
             elif risk_score >= 50:
                 risk_level = "HIGH"
-                risk_color = "orange"
+                risk_color = "orange" 
+                priority = 2
             elif risk_score >= 30:
                 risk_level = "MEDIUM"
                 risk_color = "yellow"
+                priority = 3
             else:
                 risk_level = "LOW"
                 risk_color = "green"
+                priority = 4
             
             # Clean HTML from order ID
             order_id = clean_html_from_string(order.get('Order #', ''))
@@ -16175,25 +16656,49 @@ def po_risk_analysis():
                 "g00_lbs": float(g00_status) if not pd.isna(g00_status) else 0,
                 "shipped_lbs": float(shipped_lbs) if not pd.isna(shipped_lbs) else 0,
                 "risk_score": round(risk_score, 1),
+                "urgency_score": round(urgency_score, 1),
+                "estimated_value": round(estimated_value, 2),
+                "potential_loss": round(potential_loss, 2),
                 "risk_level": risk_level,
                 "risk_color": risk_color,
+                "priority": priority,
                 "risk_factors": risk_factors,
                 "start_date": order['Start Date'].strftime('%Y-%m-%d') if pd.notna(order['Start Date']) else '',
                 "quoted_date": order['Quoted Date'].strftime('%Y-%m-%d') if pd.notna(order['Quoted Date']) else ''
             })
         
-        # Sort by risk score (highest first)
-        risk_analysis.sort(key=lambda x: x['risk_score'], reverse=True)
+        # Sort by urgency score (highest first) - combines risk and financial impact
+        risk_analysis.sort(key=lambda x: x['urgency_score'], reverse=True)
         
-        # Summary statistics
+        # Apply category filtering
+        filtered_analysis = risk_analysis
+        if category == 'critical':
+            filtered_analysis = [r for r in risk_analysis if r['risk_level'] == 'CRITICAL']
+        elif category == 'high':
+            filtered_analysis = [r for r in risk_analysis if r['risk_level'] == 'HIGH']
+        elif category == 'overdue':
+            filtered_analysis = [r for r in risk_analysis if r['days_until_start'] < 0]
+        elif category == 'not_started':
+            filtered_analysis = [r for r in risk_analysis if r['g00_lbs'] == 0 and r['shipped_lbs'] == 0 and r['balance_lbs'] >= 25]
+        
+        # Summary statistics (with enhanced metrics)
+        total_value_at_risk = sum(r['potential_loss'] for r in risk_analysis)
+        critical_orders = [r for r in risk_analysis if r['risk_level'] == 'CRITICAL']
+        
         summary = {
             "total_orders": len(risk_analysis),
-            "critical_orders": len([r for r in risk_analysis if r['risk_level'] == 'CRITICAL']),
+            "critical_orders": len(critical_orders),
             "high_risk_orders": len([r for r in risk_analysis if r['risk_level'] == 'HIGH']),
             "overdue_orders": len([r for r in risk_analysis if r['days_until_start'] < 0]),
             "not_started_orders": len([r for r in risk_analysis if r['g00_lbs'] == 0 and r['shipped_lbs'] == 0 and r['balance_lbs'] >= 25]),
-            "complete_orders": len([r for r in risk_analysis if r['balance_lbs'] < 25])
+            "complete_orders": len([r for r in risk_analysis if r['balance_lbs'] < 25]),
+            "total_value_at_risk": round(total_value_at_risk, 2),
+            "critical_value_at_risk": round(sum(r['potential_loss'] for r in critical_orders), 2),
+            "avg_urgency_score": round(sum(r['urgency_score'] for r in risk_analysis) / len(risk_analysis), 1) if risk_analysis else 0
         }
+        
+        # Get top N orders based on limit parameter  
+        top_orders = filtered_analysis[:limit]
         
         # Also include some complete orders for visibility
         complete_orders = [r for r in risk_analysis if r['balance_lbs'] < 25][:5]
@@ -16201,8 +16706,11 @@ def po_risk_analysis():
         return jsonify({
             "status": "success",
             "summary": summary,
-            "risk_analysis": risk_analysis[:50],  # Return top 50 highest risk orders
-            "complete_orders": complete_orders  # Also include some complete orders
+            "risk_analysis": top_orders,  # Return top N highest urgency orders
+            "complete_orders": complete_orders,  # Also include some complete orders
+            "total_filtered": len(filtered_analysis),
+            "showing": len(top_orders),
+            "category_filter": category
         })
         
     except Exception as e:
@@ -16751,6 +17259,149 @@ def get_machine_assignment_suggestions():
         
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/capacity-bottlenecks")
+def get_capacity_bottlenecks():
+    """Get top 20 capacity bottlenecks and machine assignment issues"""
+    try:
+        # Get request parameters
+        limit = int(request.args.get('limit', 20))
+        category = request.args.get('category', 'all')  # unassigned, overloaded, underutilized, all
+        
+        bottlenecks = []
+        
+        # Get machine capacity data
+        from production.production_capacity_manager import get_capacity_manager
+        capacity_mgr = get_capacity_manager()
+        machine_status = capacity_mgr.get_machine_level_status()
+        
+        # Load knit orders for workload analysis
+        import pandas as pd
+        from pathlib import Path
+        
+        ko_path = Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/8-28-2025/eFab_Knit_Orders.csv")
+        if ko_path.exists():
+            ko_df = pd.read_csv(ko_path)
+        else:
+            ko_df = pd.DataFrame()
+        
+        # 1. Unassigned Orders (High Priority)
+        if not ko_df.empty:
+            unassigned = ko_df[ko_df['Machine'].isna()].copy()
+            if not unassigned.empty:
+                def clean_balance(x):
+                    if pd.isna(x): return 0
+                    if isinstance(x, str): return float(x.replace(',', ''))
+                    return float(x)
+                
+                unassigned['clean_balance'] = unassigned['Balance (lbs)'].apply(clean_balance)
+                unassigned = unassigned.sort_values('clean_balance', ascending=False)
+                
+                for _, order in unassigned.head(limit).iterrows():
+                    urgency = 90 + (order['clean_balance'] / 1000)  # Base 90 + size factor
+                    bottlenecks.append({
+                        "type": "unassigned_order",
+                        "title": f"Order {order.get('Order #', '')} Unassigned",
+                        "description": f"Style {order.get('Style#', '')} - {order['clean_balance']:.0f} lbs",
+                        "urgency_score": round(urgency, 1),
+                        "severity": "CRITICAL",
+                        "color": "red",
+                        "estimated_impact": f"${order['clean_balance'] * 12.50:,.2f}",
+                        "days_waiting": 0,  # Could calculate if we had assignment dates
+                        "suggested_action": "Assign to available machine",
+                        "order_id": order.get('Order #', ''),
+                        "style": order.get('Style#', ''),
+                        "balance_lbs": order['clean_balance']
+                    })
+        
+        # 2. Overloaded Machines (High Priority)
+        for machine in machine_status.get('machine_status', []):
+            if machine['utilization'] > 95:
+                urgency = 80 + (machine['utilization'] - 95) * 2  # Scale by over-utilization
+                bottlenecks.append({
+                    "type": "overloaded_machine",
+                    "title": f"Machine {machine['machine_id']} Overloaded",
+                    "description": f"{machine['utilization']:.1f}% utilization - {machine.get('workload_lbs', 0):.0f} lbs",
+                    "urgency_score": round(urgency, 1),
+                    "severity": "HIGH",
+                    "color": "orange",
+                    "estimated_impact": "Production delays",
+                    "machine_id": machine['machine_id'],
+                    "work_center": machine['work_center'],
+                    "utilization": machine['utilization'],
+                    "workload_lbs": machine.get('workload_lbs', 0),
+                    "suggested_action": "Redistribute workload or add capacity"
+                })
+        
+        # 3. Underutilized Machines (Medium Priority)
+        for machine in machine_status.get('machine_status', []):
+            if machine['utilization'] < 30 and machine['status'] == 'active':
+                urgency = 40 - machine['utilization']  # Lower utilization = higher urgency to fix
+                bottlenecks.append({
+                    "type": "underutilized_machine", 
+                    "title": f"Machine {machine['machine_id']} Underutilized",
+                    "description": f"{machine['utilization']:.1f}% utilization - {machine.get('workload_lbs', 0):.0f} lbs",
+                    "urgency_score": round(urgency, 1),
+                    "severity": "MEDIUM",
+                    "color": "yellow",
+                    "estimated_impact": "Lost productivity opportunity",
+                    "machine_id": machine['machine_id'],
+                    "work_center": machine['work_center'],
+                    "utilization": machine['utilization'],
+                    "workload_lbs": machine.get('workload_lbs', 0),
+                    "suggested_action": "Assign additional orders or maintenance"
+                })
+        
+        # Sort by urgency score (highest first)
+        bottlenecks.sort(key=lambda x: x['urgency_score'], reverse=True)
+        
+        # Apply category filtering
+        if category == 'unassigned':
+            bottlenecks = [b for b in bottlenecks if b['type'] == 'unassigned_order']
+        elif category == 'overloaded':
+            bottlenecks = [b for b in bottlenecks if b['type'] == 'overloaded_machine']
+        elif category == 'underutilized':
+            bottlenecks = [b for b in bottlenecks if b['type'] == 'underutilized_machine']
+        
+        # Get top N bottlenecks
+        top_bottlenecks = bottlenecks[:limit]
+        
+        # Summary statistics
+        summary = {
+            "total_bottlenecks": len(bottlenecks),
+            "critical_bottlenecks": len([b for b in bottlenecks if b['severity'] == 'CRITICAL']),
+            "high_priority_bottlenecks": len([b for b in bottlenecks if b['severity'] == 'HIGH']),
+            "unassigned_orders": len([b for b in bottlenecks if b['type'] == 'unassigned_order']),
+            "overloaded_machines": len([b for b in bottlenecks if b['type'] == 'overloaded_machine']),
+            "underutilized_machines": len([b for b in bottlenecks if b['type'] == 'underutilized_machine']),
+            "avg_urgency_score": round(sum(b['urgency_score'] for b in bottlenecks) / len(bottlenecks), 1) if bottlenecks else 0
+        }
+        
+        return jsonify({
+            "status": "success",
+            "summary": summary,
+            "bottlenecks": top_bottlenecks,
+            "total_identified": len(bottlenecks),
+            "showing": len(top_bottlenecks),
+            "category_filter": category
+        })
+        
+    except Exception as e:
+        print(f"Capacity bottlenecks error: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "bottlenecks": [],
+            "summary": {
+                "total_bottlenecks": 0,
+                "critical_bottlenecks": 0,
+                "high_priority_bottlenecks": 0,
+                "unassigned_orders": 0,
+                "overloaded_machines": 0,
+                "underutilized_machines": 0,
+                "avg_urgency_score": 0
+            }
+        }), 500
 
 @app.route("/api/factory-floor-ai-dashboard")
 def get_factory_floor_ai_dashboard():

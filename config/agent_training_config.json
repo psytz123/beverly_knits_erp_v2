@@ -1,0 +1,434 @@
+{
+  "training_configuration": {
+    "version": "1.0.0",
+    "created_at": "2025-01-03",
+    "description": "Agent training configuration for Beverly Knits ERP v2"
+  },
+  
+  "global_settings": {
+    "enable_parallel_training": true,
+    "max_parallel_agents": 3,
+    "default_epochs": 100,
+    "default_batch_size": 32,
+    "default_learning_rate": 0.001,
+    "validation_split": 0.2,
+    "test_split": 0.1,
+    "random_seed": 42,
+    "save_checkpoints": true,
+    "checkpoint_frequency": 10,
+    "early_stopping_patience": 10,
+    "verbose_logging": true
+  },
+  
+  "training_phases": {
+    "knowledge_acquisition": {
+      "duration_days": 3,
+      "objectives": [
+        "Load domain knowledge",
+        "Parse business rules",
+        "Understand data structures",
+        "Learn API endpoints"
+      ],
+      "success_criteria": {
+        "knowledge_items_loaded": 100,
+        "business_rules_parsed": 50,
+        "api_endpoints_mapped": 20
+      }
+    },
+    
+    "skill_development": {
+      "duration_days": 7,
+      "objectives": [
+        "Train on historical data",
+        "Learn decision patterns",
+        "Practice scenarios",
+        "Optimize performance"
+      ],
+      "success_criteria": {
+        "training_accuracy": 0.85,
+        "scenario_completion": 0.90,
+        "response_time_ms": 200
+      }
+    },
+    
+    "integration_testing": {
+      "duration_days": 3,
+      "objectives": [
+        "Test API integration",
+        "Validate data flow",
+        "Check error handling",
+        "Measure performance"
+      ],
+      "success_criteria": {
+        "api_success_rate": 0.95,
+        "data_validation_rate": 0.98,
+        "error_recovery_rate": 0.90
+      }
+    },
+    
+    "certification": {
+      "duration_days": 1,
+      "objectives": [
+        "Pass certification tests",
+        "Meet performance benchmarks",
+        "Validate safety measures",
+        "Document capabilities"
+      ],
+      "success_criteria": {
+        "test_pass_rate": 0.90,
+        "accuracy_threshold": 0.85,
+        "response_time_threshold": 200,
+        "error_rate_threshold": 0.05
+      }
+    }
+  },
+  
+  "agent_configurations": {
+    "inventory_intelligence": {
+      "enabled": true,
+      "priority": 1,
+      "specific_settings": {
+        "epochs": 150,
+        "batch_size": 64,
+        "learning_rate": 0.0005,
+        "min_accuracy": 0.95,
+        "max_response_time_ms": 100,
+        "training_data_sources": [
+          "yarn_inventory.xlsx",
+          "BOM_updated.csv",
+          "historical_consumption.csv"
+        ],
+        "specialized_models": [
+          "planning_balance_calculator",
+          "shortage_detector",
+          "reorder_optimizer"
+        ]
+      },
+      "training_schedule": {
+        "initial_training": "comprehensive",
+        "retraining_frequency": "weekly",
+        "incremental_learning": true
+      }
+    },
+    
+    "forecast_intelligence": {
+      "enabled": true,
+      "priority": 2,
+      "specific_settings": {
+        "epochs": 200,
+        "batch_size": 32,
+        "learning_rate": 0.001,
+        "min_accuracy": 0.85,
+        "max_response_time_ms": 200,
+        "training_data_sources": [
+          "Sales Activity Report.csv",
+          "historical_demand.csv",
+          "seasonal_patterns.json"
+        ],
+        "specialized_models": [
+          "arima",
+          "prophet",
+          "lstm",
+          "xgboost",
+          "ensemble"
+        ]
+      },
+      "training_schedule": {
+        "initial_training": "comprehensive",
+        "retraining_frequency": "daily",
+        "incremental_learning": true
+      }
+    },
+    
+    "production_planning": {
+      "enabled": true,
+      "priority": 3,
+      "specific_settings": {
+        "epochs": 120,
+        "batch_size": 48,
+        "learning_rate": 0.0008,
+        "min_accuracy": 0.90,
+        "max_response_time_ms": 200,
+        "training_data_sources": [
+          "eFab_Knit_Orders.csv",
+          "Machine Report fin1.csv",
+          "QuadS_greigeFabricList.xlsx"
+        ],
+        "specialized_models": [
+          "schedule_optimizer",
+          "capacity_planner",
+          "machine_assigner"
+        ]
+      },
+      "training_schedule": {
+        "initial_training": "comprehensive",
+        "retraining_frequency": "weekly",
+        "incremental_learning": false
+      }
+    },
+    
+    "yarn_substitution": {
+      "enabled": true,
+      "priority": 4,
+      "specific_settings": {
+        "epochs": 100,
+        "batch_size": 32,
+        "learning_rate": 0.001,
+        "min_accuracy": 0.90,
+        "max_response_time_ms": 100,
+        "training_data_sources": [
+          "Yarn_ID_Master.csv",
+          "substitution_history.csv",
+          "quality_specifications.json"
+        ],
+        "specialized_models": [
+          "compatibility_analyzer",
+          "quality_impact_assessor",
+          "cost_optimizer"
+        ]
+      },
+      "training_schedule": {
+        "initial_training": "comprehensive",
+        "retraining_frequency": "monthly",
+        "incremental_learning": true
+      }
+    },
+    
+    "quality_assurance": {
+      "enabled": true,
+      "priority": 5,
+      "specific_settings": {
+        "epochs": 80,
+        "batch_size": 64,
+        "learning_rate": 0.0005,
+        "min_accuracy": 0.99,
+        "max_response_time_ms": 50,
+        "training_data_sources": [
+          "system_logs.csv",
+          "data_quality_metrics.json",
+          "anomaly_patterns.csv"
+        ],
+        "specialized_models": [
+          "data_validator",
+          "anomaly_detector",
+          "performance_monitor"
+        ]
+      },
+      "training_schedule": {
+        "initial_training": "comprehensive",
+        "retraining_frequency": "daily",
+        "incremental_learning": true
+      }
+    }
+  },
+  
+  "training_data": {
+    "historical_data_window": "6_months",
+    "synthetic_data_ratio": 0.3,
+    "augmentation_enabled": true,
+    "augmentation_techniques": [
+      "noise_injection",
+      "time_shifting",
+      "interpolation",
+      "scenario_generation"
+    ],
+    "data_quality_checks": {
+      "completeness_threshold": 0.95,
+      "consistency_threshold": 0.98,
+      "accuracy_threshold": 0.99
+    }
+  },
+  
+  "scenario_distributions": {
+    "normal_operations": 0.70,
+    "crisis_scenarios": 0.20,
+    "edge_cases": 0.10,
+    "scenario_types": {
+      "normal": [
+        "regular_ordering",
+        "standard_production",
+        "typical_demand"
+      ],
+      "crisis": [
+        "stockout",
+        "rush_order",
+        "machine_failure",
+        "supplier_delay",
+        "quality_issue"
+      ],
+      "edge": [
+        "unusual_yarn_combination",
+        "seasonal_spike",
+        "new_product_launch",
+        "system_outage",
+        "data_corruption"
+      ]
+    }
+  },
+  
+  "evaluation_metrics": {
+    "primary_metrics": {
+      "accuracy": {
+        "weight": 0.30,
+        "threshold": 0.85
+      },
+      "response_time": {
+        "weight": 0.25,
+        "threshold": 200
+      },
+      "reliability": {
+        "weight": 0.25,
+        "threshold": 0.95
+      },
+      "efficiency": {
+        "weight": 0.20,
+        "threshold": 0.80
+      }
+    },
+    
+    "agent_specific_metrics": {
+      "inventory_intelligence": {
+        "planning_balance_accuracy": 0.995,
+        "shortage_detection_rate": 0.95,
+        "false_positive_rate": 0.05
+      },
+      "forecast_intelligence": {
+        "mape_30_day": 0.15,
+        "mape_90_day": 0.20,
+        "forecast_bias": 0.05
+      },
+      "production_planning": {
+        "on_time_delivery": 0.95,
+        "machine_utilization": 0.85,
+        "schedule_adherence": 0.90
+      },
+      "yarn_substitution": {
+        "substitution_success": 0.90,
+        "quality_maintenance": 0.95,
+        "cost_optimization": 0.15
+      },
+      "quality_assurance": {
+        "data_accuracy": 0.99,
+        "anomaly_detection": 0.85,
+        "false_alarm_rate": 0.10
+      }
+    }
+  },
+  
+  "deployment_strategy": {
+    "phases": [
+      {
+        "name": "shadow_mode",
+        "duration_weeks": 2,
+        "description": "Run parallel to existing systems",
+        "permissions": ["read"],
+        "monitoring": "intensive"
+      },
+      {
+        "name": "advisory_mode",
+        "duration_weeks": 2,
+        "description": "Provide recommendations for human approval",
+        "permissions": ["read", "recommend"],
+        "monitoring": "moderate"
+      },
+      {
+        "name": "supervised_autonomy",
+        "duration_weeks": 2,
+        "description": "Execute low-risk decisions autonomously",
+        "permissions": ["read", "recommend", "execute_low_risk"],
+        "monitoring": "standard"
+      },
+      {
+        "name": "full_autonomy",
+        "duration_weeks": "ongoing",
+        "description": "Full autonomous operation within boundaries",
+        "permissions": ["read", "recommend", "execute", "optimize"],
+        "monitoring": "periodic"
+      }
+    ],
+    
+    "rollback_triggers": {
+      "accuracy_drop": 0.10,
+      "error_rate_increase": 0.05,
+      "response_time_increase": 2.0,
+      "critical_failure_count": 3
+    }
+  },
+  
+  "monitoring_and_alerting": {
+    "performance_tracking": {
+      "metrics_collection_interval": 60,
+      "aggregation_window": 3600,
+      "retention_days": 90
+    },
+    
+    "alert_thresholds": {
+      "critical": {
+        "accuracy_below": 0.80,
+        "error_rate_above": 0.10,
+        "response_time_above": 500
+      },
+      "warning": {
+        "accuracy_below": 0.85,
+        "error_rate_above": 0.05,
+        "response_time_above": 300
+      },
+      "info": {
+        "model_staleness_days": 7,
+        "training_due": true,
+        "performance_degradation": 0.05
+      }
+    },
+    
+    "notification_channels": [
+      "dashboard",
+      "log_file",
+      "email",
+      "slack"
+    ]
+  },
+  
+  "continuous_learning": {
+    "enabled": true,
+    "feedback_collection": {
+      "user_feedback": true,
+      "performance_metrics": true,
+      "error_analysis": true
+    },
+    
+    "improvement_cycle": {
+      "analysis_frequency": "weekly",
+      "pattern_identification": true,
+      "model_updates": "incremental",
+      "knowledge_base_updates": true
+    },
+    
+    "learning_triggers": {
+      "new_pattern_detected": true,
+      "performance_degradation": true,
+      "user_correction": true,
+      "scheduled_retraining": true
+    }
+  },
+  
+  "resource_allocation": {
+    "compute_resources": {
+      "cpu_cores": 4,
+      "memory_gb": 16,
+      "gpu_enabled": false,
+      "storage_gb": 100
+    },
+    
+    "time_allocation": {
+      "training_hours_per_day": 4,
+      "evaluation_hours_per_week": 8,
+      "maintenance_hours_per_week": 2
+    },
+    
+    "priority_scheduling": {
+      "critical_agents_first": true,
+      "parallel_training_limit": 3,
+      "resource_sharing": true
+    }
+  }
+}

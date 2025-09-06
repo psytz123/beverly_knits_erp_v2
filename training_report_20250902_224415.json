@@ -1,0 +1,126 @@
+{
+  "summary": {
+    "total_simulations": 5,
+    "success_rate": 80.0,
+    "failed_implementations": 1
+  },
+  "agent_performance": {
+    "orchestrator": {
+      "success_rate": 75.0,
+      "avg_confidence": 0.7189264157670328,
+      "total_tasks": 20
+    },
+    "project_manager": {
+      "success_rate": 80.0,
+      "avg_confidence": 0.7111480744014778,
+      "total_tasks": 20
+    },
+    "data_migration": {
+      "success_rate": 82.85714285714286,
+      "avg_confidence": 0.7229441214855026,
+      "total_tasks": 35
+    },
+    "industry_expert": {
+      "success_rate": 57.49999999999999,
+      "avg_confidence": 0.6890017832643924,
+      "total_tasks": 40
+    },
+    "configuration": {
+      "success_rate": 60.0,
+      "avg_confidence": 0.6564564006396092,
+      "total_tasks": 50
+    },
+    "performance": {
+      "success_rate": 80.0,
+      "avg_confidence": 0.7537435099512922,
+      "total_tasks": 5
+    }
+  },
+  "industry_analysis": {
+    "textile_manufacturing": {
+      "success_rate": 100.0,
+      "simulations": 1
+    },
+    "injection_molding": {
+      "success_rate": 50.0,
+      "simulations": 2
+    },
+    "automotive_parts": {
+      "success_rate": 100.0,
+      "simulations": 1
+    },
+    "electrical_equipment": {
+      "success_rate": 100.0,
+      "simulations": 1
+    }
+  },
+  "complexity_analysis": {
+    "LOW": {
+      "success_rate": 100.0,
+      "simulations": 2
+    },
+    "MEDIUM": {
+      "success_rate": 100.0,
+      "simulations": 2
+    },
+    "VERY_HIGH": {
+      "success_rate": 0.0,
+      "simulations": 1
+    }
+  },
+  "top_issues": [
+    {
+      "issue": "Performance bottleneck",
+      "count": 14
+    },
+    {
+      "issue": "User requirement change",
+      "count": 11
+    },
+    {
+      "issue": "Business logic conflict",
+      "count": 9
+    },
+    {
+      "issue": "Missing dependencies",
+      "count": 9
+    },
+    {
+      "issue": "Integration failure",
+      "count": 9
+    },
+    {
+      "issue": "Data format mismatch",
+      "count": 8
+    }
+  ],
+  "key_learnings": [
+    "Agent 'project_manager' needs improvement (success rate: 50.0%)",
+    "Agent 'data_migration' needs improvement (success rate: 71.4%)",
+    "Agent 'industry_expert' shows low confidence (avg: 0.47)",
+    "Agent 'orchestrator' needs improvement (success rate: 75.0%)",
+    "Agent 'project_manager' shows low confidence (avg: 0.59)",
+    "Recurring issue detected: 'Integration failure' (5 occurrences)",
+    "Agent 'project_manager' needs improvement (success rate: 75.0%)",
+    "Recurring issue detected: 'User requirement change' (7 occurrences)",
+    "Agent 'data_migration' shows low confidence (avg: 0.65)",
+    "Recurring issue detected: 'Performance bottleneck' (8 occurrences)",
+    "Agent 'data_migration' shows low confidence (avg: 0.60)",
+    "Agent 'configuration' shows low confidence (avg: 0.70)",
+    "Focus on mold management and cycle time optimization training",
+    "Agent 'orchestrator' needs improvement (success rate: 50.0%)",
+    "Agent 'configuration' needs improvement (success rate: 22.2%)",
+    "Recurring issue detected: 'Missing dependencies' (8 occurrences)",
+    "Recurring issue detected: 'Performance bottleneck' (3 occurrences)",
+    "Agent 'configuration' shows low confidence (avg: 0.64)",
+    "Agent 'performance' needs improvement (success rate: 0.0%)",
+    "Agent 'data_migration' needs improvement (success rate: 42.9%)"
+  ],
+  "recommendations": [
+    "Agent 'industry_expert' requires additional training (current success rate: 57.5%)",
+    "Agent 'configuration' requires additional training (current success rate: 60.0%)",
+    "injection_molding implementations need improvement (success rate: 50.0%)",
+    "Focus on high-complexity scenarios - current performance inadequate",
+    "Address recurring issue: 'Performance bottleneck' (occurred 14 times)"
+  ]
+}

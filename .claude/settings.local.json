@@ -9,7 +9,14 @@
       "Bash(pkill:*)",
       "Bash(pip install:*)",
       "Bash(pip3 install:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Read(/mnt/c/Users/psytz/OneDrive/Pictures/Screenshots 1/**)",
+      "Read(/mnt/c/Users/psytz/OneDrive/Pictures/Screenshots 1/**)",
+      "WebSearch",
+      "Read(/mnt/c/Users/psytz/Downloads/**)",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__read_multiple_files"
     ],
     "deny": [],
     "ask": []

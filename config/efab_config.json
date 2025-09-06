@@ -1,0 +1,10 @@
+{
+    "base_url": "https://efab.bklapps.com",
+    "session_cookie": "aLfHTrRrtWWy4FPgLnxdEPC7ohA37dlR",
+    "session_cookie_request": "aLfHKsnTZgRvW0rb1GKVTmzjyU1rvnPN",
+    "session_cookie_response": "aLfHTrRrtWWy4FPgLnxdEPC7ohA37dlR",
+    "warehouses": ["F01", "G00", "G02", "I01"],
+    "sync_interval_minutes": 15,
+    "retry_attempts": 3,
+    "timeout_seconds": 30
+}

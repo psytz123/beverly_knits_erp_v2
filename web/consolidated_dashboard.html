@@ -964,6 +964,22 @@ const dataSafetyMonitor = {
                 display: none;
             }
         }
+        
+        /* Priority Dashboard Styles */
+        .priority-tab {
+            transition: all 0.3s ease;
+        }
+        .priority-tab.active {
+            border-bottom-color: #3B82F6 !important;
+            color: #3B82F6 !important;
+        }
+        .priority-content {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body style="background-color: var(--light-gray);">
@@ -1250,12 +1266,12 @@ const dataSafetyMonitor = {
             </div>
 
 
-            <!-- PO Risk Analysis Section with Enhanced UI -->
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-6" id="po-risk-analysis">
+            <!-- Priority Issues Dashboard with 4 Categories -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6" id="priority-issues-dashboard">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-gray-800">
-                        <i class="fas fa-shield-alt mr-3 text-amber-600"></i>
-                        Production Order Risk Assessment
+                        <i class="fas fa-exclamation-triangle mr-3 text-red-600"></i>
+                        Top Priority Issues Dashboard
                     </h2>
                     <div class="flex items-center space-x-4">
                         <div class="flex items-center space-x-2">
@@ -1277,70 +1293,173 @@ const dataSafetyMonitor = {
                     </div>
                 </div>
                 
-                <!-- Risk Summary Cards -->
-                <div id="poRiskSummary" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                    <!-- Summary cards will be populated dynamically -->
+                <!-- Category Tabs Navigation -->
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button id="productionRisksTab" class="priority-tab px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 transition-colors active" onclick="switchPriorityCategory('productionRisks')">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        Production Risks
+                        <span id="productionRisksCount" class="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">0</span>
+                    </button>
+                    <button id="materialShortagesTab" class="priority-tab px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 transition-colors" onclick="switchPriorityCategory('materialShortages')">
+                        <i class="fas fa-boxes mr-2"></i>
+                        Material Shortages
+                        <span id="materialShortagesCount" class="ml-2 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">0</span>
+                    </button>
+                    <button id="capacityBottlenecksTab" class="priority-tab px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 transition-colors" onclick="switchPriorityCategory('capacityBottlenecks')">
+                        <i class="fas fa-cogs mr-2"></i>
+                        Capacity Issues
+                        <span id="capacityBottlenecksCount" class="ml-2 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">0</span>
+                    </button>
+                    <button id="inventoryAlertsTab" class="priority-tab px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 transition-colors" onclick="switchPriorityCategory('inventoryAlerts')">
+                        <i class="fas fa-warehouse mr-2"></i>
+                        Inventory Alerts
+                        <span id="inventoryAlertsCount" class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">0</span>
+                    </button>
                 </div>
                 
-                <!-- PO Risk Table -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full" id="poRiskTable">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance (lbs)</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Days Until Start</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Production Status</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material Status</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Level</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Factors</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200" id="poRiskTableBody">
-                            <tr>
-                                <td colspan="9" class="px-4 py-8 text-center text-gray-500">
-                                    <i class="fas fa-spinner fa-spin mr-2"></i>Loading risk analysis...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Pagination for PO Risk Table -->
-                <div id="poRiskPagination" class="flex flex-wrap justify-between items-center mt-4 bg-gray-50 p-4 rounded-lg">
-                    <div class="flex items-center gap-4 mb-2 sm:mb-0">
-                        <label class="text-sm text-gray-600">Show:</label>
-                        <select id="poRiskPageSize" class="px-3 py-1 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                onchange="changePORiskPageSize()">
-                            <option value="10">10</option>
-                            <option value="25" selected>25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                            <option value="all">All</option>
-                        </select>
-                        <span class="text-sm text-gray-600">entries</span>
-                    </div>
+                <!-- Category Content Sections -->
+                <div id="priorityCategoryContent">
                     
-                    <div class="flex items-center gap-2">
-                        <button id="poRiskPrevBtn" onclick="changePORiskPage('prev')" 
-                                class="px-3 py-1 bg-white border rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled>
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <div id="poRiskPaginationNumbers" class="flex gap-1">
-                            <!-- Page numbers will be dynamically inserted here -->
+                    <!-- Production Risks Content -->
+                    <div id="productionRisksContent" class="priority-content">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Top 20 Production Order Risks</h3>
+                            <p class="text-sm text-gray-600">Critical production orders requiring immediate attention</p>
                         </div>
-                        <button id="poRiskNextBtn" onclick="changePORiskPage('next')" 
-                                class="px-3 py-1 bg-white border rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
+                        
+                        <!-- Production Risk Cards -->
+                        <div id="productionRiskCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <!-- Cards will be populated dynamically -->
+                        </div>
+                        
+                        <!-- Production Risk List -->
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Details</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Impact</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productionRiskTableBody" class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading production risks...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     
-                    <div class="text-sm text-gray-600">
-                        Showing <span id="poRiskShowingFrom">0</span> to <span id="poRiskShowingTo">0</span> of <span id="poRiskTotalEntries">0</span> entries
+                    <!-- Material Shortages Content -->
+                    <div id="materialShortagesContent" class="priority-content hidden">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Top 20 Material Shortages</h3>
+                            <p class="text-sm text-gray-600">Critical yarn and material shortages affecting production</p>
+                        </div>
+                        
+                        <!-- Material Shortage Cards -->
+                        <div id="materialShortageCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <!-- Cards will be populated dynamically -->
+                        </div>
+                        
+                        <!-- Material Shortage List -->
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Shortage</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Impact</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="materialShortageTableBody" class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading material shortages...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                    
+                    <!-- Capacity Bottlenecks Content -->
+                    <div id="capacityBottlenecksContent" class="priority-content hidden">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Top 20 Capacity Issues</h3>
+                            <p class="text-sm text-gray-600">Machine assignment and capacity utilization problems</p>
+                        </div>
+                        
+                        <!-- Capacity Bottleneck Cards -->
+                        <div id="capacityBottleneckCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <!-- Cards will be populated dynamically -->
+                        </div>
+                        
+                        <!-- Capacity Bottleneck List -->
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Machine/Order</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Impact</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="capacityBottleneckTableBody" class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading capacity issues...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Inventory Alerts Content -->
+                    <div id="inventoryAlertsContent" class="priority-content hidden">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Top 20 Inventory Alerts</h3>
+                            <p class="text-sm text-gray-600">Critical inventory levels and stock management issues</p>
+                        </div>
+                        
+                        <!-- Inventory Alert Cards -->
+                        <div id="inventoryAlertCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <!-- Cards will be populated dynamically -->
+                        </div>
+                        
+                        <!-- Inventory Alert List -->
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Level</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Coverage</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryAlertTableBody" class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading inventory alerts...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
                 </div>
                 
                 <!-- Enhanced Fabric Forecast Netting -->
@@ -1694,10 +1813,6 @@ const dataSafetyMonitor = {
 
         <!-- Inventory Tab -->
         <div id="inventory-tab" class="tab-content">
-            <!-- All cards removed from Inventory tab -->
-
-
-
             <!-- Current Yarn Shortages Affecting Active Orders -->
             <div class="bg-white rounded-xl shadow-md p-6 mb-6">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">
@@ -1737,12 +1852,14 @@ const dataSafetyMonitor = {
                                 <th class="sortable" onclick="sortTable('shortages', 5, 'runRate')">Run Rate/Week</th>
                                 <th class="sortable" onclick="sortTable('shortages', 6, 'affected')">Affected Orders</th>
                                 <th class="sortable" onclick="sortTable('shortages', 7, 'stockout')">Days Until Stockout</th>
-                                <th class="sortable" onclick="sortTable('shortages', 8, 'urgency')">Urgency</th>
+                                <th class="sortable" onclick="sortTable('shortages', 8, 'nextPO')">Next PO Week</th>
+                                <th class="sortable" onclick="sortTable('shortages', 9, 'shortageWeek')">Shortage Week</th>
+                                <th class="sortable" onclick="sortTable('shortages', 10, 'urgency')">Urgency</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="10" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading current shortage data...</td></tr>
+                            <tr><td colspan="12" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading current shortage data...</td></tr>
                         </tbody>
                     </table>
                     </div>
@@ -1750,6 +1867,109 @@ const dataSafetyMonitor = {
                 
                 <!-- Pagination for Current Shortages -->
                 <div id="shortagesPagination"></div>
+            </div>
+
+            <!-- Time-Phased Yarn PO Schedule -->
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-calendar-alt mr-3 text-blue-600"></i>
+                    Time-Phased Yarn Purchase Orders
+                    <button onclick="loadTimePhasedPO()" class="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                    </button>
+                </h2>
+                
+                <!-- Time-Phased Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-lg">
+                        <div class="text-2xl font-bold" id="totalPOsScheduled">0</div>
+                        <div class="text-sm opacity-90">POs Scheduled</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-lg">
+                        <div class="text-2xl font-bold" id="nextWeekReceipts">0 lbs</div>
+                        <div class="text-sm opacity-90">Next Week Receipts</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 rounded-lg">
+                        <div class="text-2xl font-bold" id="expediteNeeded">0</div>
+                        <div class="text-sm opacity-90">POs Need Expediting</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-lg">
+                        <div class="text-2xl font-bold" id="coverageWeeks">0</div>
+                        <div class="text-sm opacity-90">Avg Coverage Weeks</div>
+                    </div>
+                </div>
+
+                <!-- Search and Filter Bar -->
+                <div class="search-filter-bar mb-4">
+                    <input 
+                        type="text" 
+                        id="timePhasedSearch" 
+                        class="search-input" 
+                        placeholder="Search by Yarn ID or description..."
+                        onkeyup="searchTable('timePhased', this.value)"
+                    >
+                    <button class="filter-button" onclick="filterTimePhasedByShortage(true)">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        With Shortages
+                    </button>
+                    <button class="filter-button" onclick="filterTimePhasedByShortage(false)">
+                        <i class="fas fa-check-circle"></i>
+                        No Shortages
+                    </button>
+                    <button class="filter-button" onclick="filterTimePhasedByShortage(null)">
+                        <i class="fas fa-list"></i>
+                        Show All
+                    </button>
+                </div>
+                
+                <!-- Time-Phased PO Table -->
+                <div class="table-container">
+                    <div class="table-scroll-wrapper">
+                        <table class="data-table" id="timePhasedTable">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 0)">Yarn ID</th>
+                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 1)">Description</th>
+                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 2)">Current Balance</th>
+                                    <th colspan="9" class="text-center">Weekly PO Receipts (lbs)</th>
+                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 12)">Total On Order</th>
+                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 13)">First Shortage</th>
+                                    <th rowspan="2">Action</th>
+                                </tr>
+                                <tr>
+                                    <th class="text-center">W36</th>
+                                    <th class="text-center">W37</th>
+                                    <th class="text-center">W38</th>
+                                    <th class="text-center">W39</th>
+                                    <th class="text-center">W40</th>
+                                    <th class="text-center">W41</th>
+                                    <th class="text-center">W42</th>
+                                    <th class="text-center">W43</th>
+                                    <th class="text-center">W44+</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="15" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading time-phased PO data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Pagination for Time-Phased -->
+                <div id="timePhasedPagination"></div>
+
+                <!-- Expedite Recommendations -->
+                <div class="mt-6" id="expediteRecommendations" style="display: none;">
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+                        <div class="flex items-center">
+                            <i class="fas fa-shipping-fast text-yellow-500 mr-3"></i>
+                            <div>
+                                <h3 class="text-yellow-800 font-bold">Expedite Recommendations</h3>
+                                <div id="expediteList" class="text-yellow-700 text-sm mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Forecasted Yarn Shortages Based on ML Forecasting -->
@@ -3257,6 +3477,38 @@ const dataSafetyMonitor = {
         });
         
         // ========== CRITICAL FUNCTIONS (MUST BE DEFINED FIRST) ==========
+        
+        // Switch Priority Category function - MUST be global for onclick handlers
+        function switchPriorityCategory(category) {
+            console.log('Switching to priority category:', category);
+            
+            // Hide all content sections
+            document.querySelectorAll('.priority-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.priority-tab').forEach(tab => {
+                tab.classList.remove('active', 'text-gray-700', 'border-blue-500');
+                tab.classList.add('text-gray-500', 'border-transparent');
+            });
+            
+            // Show selected content
+            const selectedContent = document.getElementById(category + 'Content');
+            if (selectedContent) {
+                selectedContent.style.display = 'block';
+            }
+            
+            // Add active class to selected tab
+            const selectedTab = document.getElementById(category + 'Tab');
+            if (selectedTab) {
+                selectedTab.classList.remove('text-gray-500', 'border-transparent');
+                selectedTab.classList.add('active', 'text-gray-700', 'border-blue-500');
+            }
+            
+            // Always load the priority dashboard to update all categories
+            loadPriorityDashboard();
+        }
         
         // Fetch API wrapper with error handling
         async function fetchAPI(endpoint, options = {}) {
@@ -6439,6 +6691,9 @@ const dataSafetyMonitor = {
                 // Load current yarn shortages (replaces detailed risk analysis) - wait for this
                 await loadCurrentYarnShortages();
                 
+                // Load time-phased PO data
+                loadTimePhasedPO();
+                
                 // Load forecasted yarn shortages (replaces BOM explosion)
                 loadForecastedShortages();
                 
@@ -7420,8 +7675,8 @@ const dataSafetyMonitor = {
             }
         }
         
-        // New ML Forecasting Functions
-        async function runMLForecast() {
+        // New ML Forecasting Functions - Make them global
+        window.runMLForecast = async function() {
             const horizon = document.getElementById('forecastHorizon').value;
             const model = document.getElementById('forecastModel').value;
             
@@ -8586,7 +8841,7 @@ const dataSafetyMonitor = {
             document.getElementById('businessImpact').innerHTML = impactHtml;
         }
 
-        async function retrainML() {
+        window.retrainML = async function() {
             const button = document.getElementById('retrainButton');
             const originalText = button.innerHTML;
             
@@ -8823,7 +9078,8 @@ const dataSafetyMonitor = {
         // Yarn Intelligence Functions
         async function loadYarnIntelligence() {
             try {
-                const data = await fetchAPI('/api/yarn-intelligence');
+                // Request yarn intelligence with time-phased data
+                const data = await fetchAPI('/api/yarn-intelligence?include_timing=true');
                 
                 if (data.error) {
                     console.error('Yarn intelligence error:', data.error);
@@ -8833,7 +9089,8 @@ const dataSafetyMonitor = {
                 // Update metrics
                 if (data.criticality_analysis) {
                     updateYarnMetrics(data.criticality_analysis.summary);
-                    displayCriticalYarns(data.criticality_analysis.yarns);
+                    // Commenting out displayCriticalYarns as yarnCriticalList element doesn't exist
+                    // displayCriticalYarns(data.criticality_analysis.yarns);
                 }
                 
                 // Update weekly demand chart
@@ -8898,7 +9155,7 @@ const dataSafetyMonitor = {
             
             // Add null check for container
             if (!container) {
-                console.warn('yarnCriticalList element not found');
+                // Element not present in current dashboard layout - skip silently
                 return;
             }
             
@@ -10837,22 +11094,286 @@ const dataSafetyMonitor = {
             }
         }
         
-        // Load PO Risk Analysis data
+        // Load Priority Dashboard function
+        async function loadPriorityDashboard() {
+            console.log('Loading Priority Dashboard...');
+            try {
+                // Load data from multiple APIs
+                const [poRiskData, yarnData, inventoryData, knitOrdersData] = await Promise.all([
+                    fetchAPI('po-risk-analysis').catch(() => null),
+                    fetchAPI('yarn-intelligence').catch(() => null),
+                    fetchAPI('inventory-intelligence-enhanced?realtime=true').catch(() => null),
+                    fetchAPI('knit-orders').catch(() => null)
+                ]);
+
+                // Update Production Risks section
+                const productionRisksContent = document.getElementById('productionRisksContent');
+                if (productionRisksContent && poRiskData && poRiskData.risk_analysis) {
+                    const risks = poRiskData.risk_analysis
+                        .filter(risk => risk.risk_score >= 30) // Only show meaningful risks
+                        .slice(0, 20); // Top 20 risks
+                    document.getElementById('productionRisksCount').textContent = risks.length;
+                    
+                    let tableHtml = `
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Top Production Order Risks</h3>
+                            <p class="text-sm text-gray-600">Critical production orders requiring immediate attention</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance (lbs)</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">`;
+                    
+                    risks.forEach(risk => {
+                        const priorityColor = risk.risk_score >= 70 ? 'red' : risk.risk_score >= 50 ? 'orange' : risk.risk_score >= 40 ? 'yellow' : 'green';
+                        const priorityLabel = risk.risk_score >= 70 ? 'CRITICAL' : risk.risk_score >= 50 ? 'HIGH' : risk.risk_score >= 40 ? 'MEDIUM' : 'LOW';
+                        const balance = risk.balance_lbs || 0;
+                        
+                        tableHtml += `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${priorityColor}-100 text-${priorityColor}-800">
+                                        ${priorityLabel} (${Math.round(risk.risk_score)}%)
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-medium text-gray-900">${risk.order_id || risk.order_number || 'N/A'}</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="text-sm text-gray-600">${risk.style || 'N/A'}</div>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    ${balance.toFixed(0)}
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    ${risk.risk_factors && risk.risk_factors[0] ? risk.risk_factors[0] : 'In Progress'}
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    ${risk.days_until_start !== undefined ? 
+                                        (risk.days_until_start < 0 ? 
+                                            `<span class="text-red-600 font-semibold">-${Math.abs(risk.days_until_start)}</span>` : 
+                                            `<span class="text-green-600">+${risk.days_until_start}</span>`) 
+                                        : 'N/A'}
+                                </td>
+                            </tr>`;
+                    });
+                    
+                    tableHtml += `</tbody></table></div>`;
+                    productionRisksContent.innerHTML = tableHtml;
+                } else {
+                    if (productionRisksContent) {
+                        productionRisksContent.innerHTML = `
+                            <div class="text-center py-8">
+                                <p class="text-gray-500">No production risks found</p>
+                            </div>`;
+                    }
+                }
+
+                // Update Material Shortages section
+                const materialShortagesContent = document.getElementById('materialShortagesContent');
+                if (materialShortagesContent && yarnData && yarnData.shortage_analysis) {
+                    const shortages = yarnData.shortage_analysis.critical_shortages || [];
+                    const limitedShortages = shortages.slice(0, 20);
+                    document.getElementById('materialShortagesCount').textContent = shortages.length;
+                    
+                    let shortageHtml = `
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Critical Material Shortages</h3>
+                            <p class="text-sm text-gray-600">Yarns with negative planning balance requiring immediate attention</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yarn ID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shortage</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">On Order</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">`;
+                    
+                    limitedShortages.forEach(shortage => {
+                        const shortageAmt = Math.abs(shortage.shortage || 0);
+                        const severityColor = shortageAmt > 1000 ? 'red' : shortageAmt > 500 ? 'orange' : 'yellow';
+                        const severityLabel = shortageAmt > 1000 ? 'CRITICAL' : shortageAmt > 500 ? 'HIGH' : 'MEDIUM';
+                        
+                        shortageHtml += `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${severityColor}-100 text-${severityColor}-800">
+                                        ${severityLabel}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-medium text-gray-900">${shortage.yarn_id || 'N/A'}</div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="text-sm text-gray-600">${shortage.description || 'N/A'}</div>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-red-600 font-semibold">
+                                    -${shortageAmt.toFixed(0)} lbs
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    ${(shortage.on_order || 0).toFixed(0)} lbs
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    <button class="text-blue-600 hover:text-blue-800">Order</button>
+                                </td>
+                            </tr>`;
+                    });
+                    
+                    shortageHtml += `</tbody></table></div>`;
+                    materialShortagesContent.innerHTML = shortageHtml;
+                }
+
+                // Update Capacity Issues section
+                const capacityContent = document.getElementById('capacityBottlenecksContent');
+                if (capacityContent && knitOrdersData && knitOrdersData.summary) {
+                    const unassignedOrders = knitOrdersData.summary.unassigned_orders || 0;
+                    const totalMachines = knitOrdersData.summary.total_machines || 0;
+                    document.getElementById('capacityBottlenecksCount').textContent = unassignedOrders;
+                    
+                    let capacityHtml = `
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Capacity & Machine Assignment Issues</h3>
+                            <p class="text-sm text-gray-600">Orders awaiting machine assignment and capacity bottlenecks</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="bg-red-50 rounded-lg p-4">
+                                <p class="text-sm text-gray-600">Unassigned Orders</p>
+                                <p class="text-2xl font-bold text-red-600">${unassignedOrders}</p>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <p class="text-sm text-gray-600">Active Machines</p>
+                                <p class="text-2xl font-bold text-blue-600">${totalMachines}</p>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <p class="text-sm text-gray-600">Utilization</p>
+                                <p class="text-2xl font-bold text-green-600">${Math.round((1 - unassignedOrders / Math.max(knitOrdersData.summary.total_orders, 1)) * 100)}%</p>
+                            </div>
+                        </div>`;
+                    
+                    if (knitOrdersData.orders) {
+                        const unassigned = knitOrdersData.orders.filter(o => !o.Machine || o.Machine === '').slice(0, 10);
+                        if (unassigned.length > 0) {
+                            capacityHtml += `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">`;
+                            
+                            unassigned.forEach(order => {
+                                capacityHtml += `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 text-sm font-medium text-gray-900">${order['Order #'] || 'N/A'}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">${order['Style#'] || 'N/A'}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">${order['Qty Ordered (lbs)'] || 0} lbs</td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">${order['Quoted Date'] || 'N/A'}</td>
+                                        <td class="px-4 py-3 text-sm">
+                                            <button class="text-blue-600 hover:text-blue-800">Assign</button>
+                                        </td>
+                                    </tr>`;
+                            });
+                            
+                            capacityHtml += `</tbody></table></div>`;
+                        }
+                    }
+                    
+                    capacityContent.innerHTML = capacityHtml;
+                }
+
+                // Update Inventory Alerts section
+                const inventoryAlertsContent = document.getElementById('inventoryAlertsContent');
+                if (inventoryAlertsContent && inventoryData) {
+                    const alerts = inventoryData.alerts || [];
+                    const criticalAlerts = alerts.filter(a => a.severity === 'critical').slice(0, 20);
+                    document.getElementById('inventoryAlertsCount').textContent = alerts.length;
+                    
+                    let alertsHtml = `
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Critical Inventory Alerts</h3>
+                            <p class="text-sm text-gray-600">Low stock levels and inventory management issues</p>
+                        </div>`;
+                    
+                    if (criticalAlerts.length > 0) {
+                        alertsHtml += `
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+                        
+                        criticalAlerts.forEach(alert => {
+                            alertsHtml += `
+                                <div class="bg-white border border-red-200 rounded-lg p-4">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-sm font-semibold text-red-600">CRITICAL</span>
+                                        <i class="fas fa-exclamation-triangle text-red-400"></i>
+                                    </div>
+                                    <p class="text-sm font-medium text-gray-900 mb-1">${alert.item || 'Item'}</p>
+                                    <p class="text-xs text-gray-600">${alert.message || 'Low inventory level'}</p>
+                                    <div class="mt-3">
+                                        <button class="text-xs text-blue-600 hover:text-blue-800">View Details</button>
+                                    </div>
+                                </div>`;
+                        });
+                        
+                        alertsHtml += `</div>`;
+                    } else {
+                        alertsHtml += `<p class="text-gray-500 text-center py-8">No critical alerts at this time</p>`;
+                    }
+                    
+                    inventoryAlertsContent.innerHTML = alertsHtml;
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Error loading priority dashboard:', error);
+                return false;
+            }
+        }
+        
+        // Load PO Risk Analysis data - redirect to new priority dashboard
         async function loadPORiskAnalysis() {
-            console.log('Loading PO Risk Analysis...');
+            console.log('Loading Priority Dashboard (replaces PO Risk Analysis)...');
+            // Call the new priority dashboard function
+            if (typeof loadPriorityDashboard === 'function') {
+                return loadPriorityDashboard();
+            }
+            // Fallback if new function not available
             try {
                 const data = await fetchAPI('po-risk-analysis');
                 
                 if (!data || data.status === 'error') {
                     console.error('Error loading PO Risk Analysis:', data?.message || 'Unknown error');
-                    document.getElementById('poRiskTableBody').innerHTML = `
-                        <tr>
-                            <td colspan="9" class="px-4 py-8 text-center text-red-500">
-                                <i class="fas fa-exclamation-triangle mr-2"></i>
-                                Error loading risk analysis data
-                            </td>
-                        </tr>
-                    `;
+                    // Check if old element exists before trying to update it
+                    const oldTableBody = document.getElementById('poRiskTableBody');
+                    if (oldTableBody) {
+                        oldTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="9" class="px-4 py-8 text-center text-red-500">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                    Error loading risk analysis data
+                                </td>
+                            </tr>
+                        `;
+                    }
                     return;
                 }
                 
@@ -10905,7 +11426,10 @@ const dataSafetyMonitor = {
                             </div>
                         </div>
                     `;
-                    document.getElementById('poRiskSummary').innerHTML = summaryHtml;
+                    const summaryElement = document.getElementById('poRiskSummary');
+                    if (summaryElement) {
+                        summaryElement.innerHTML = summaryHtml;
+                    }
                 }
                 
                 // Update risk analysis table with pagination
@@ -10924,27 +11448,33 @@ const dataSafetyMonitor = {
                     displayPORiskPage();
                     updatePORiskPaginationControls();
                 } else {
-                    document.getElementById('poRiskTableBody').innerHTML = `
-                        <tr>
-                            <td colspan="9" class="px-4 py-8 text-center text-gray-500">
-                                No risk analysis data available
-                            </td>
-                        </tr>
-                    `;
+                    const tableBody = document.getElementById('poRiskTableBody');
+                    if (tableBody) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                                    No risk analysis data available
+                                </td>
+                            </tr>
+                        `;
+                    }
                 }
                 
                 console.log('PO Risk Analysis loaded successfully');
                 
             } catch (error) {
                 console.error('Error loading PO Risk Analysis:', error);
-                document.getElementById('poRiskTableBody').innerHTML = `
-                    <tr>
-                        <td colspan="9" class="px-4 py-8 text-center text-red-500">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            Error: ${error.message}
-                        </td>
-                    </tr>
-                `;
+                const tableBody = document.getElementById('poRiskTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="px-4 py-8 text-center text-red-500">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Error: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                }
             }
         }
         
@@ -11917,10 +12447,11 @@ const dataSafetyMonitor = {
             }
             
             // Show loading state
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading shortage data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading shortage data...</td></tr>';
             
             try {
-                const data = await fetchAPI('/api/yarn-intelligence');
+                // Request yarn intelligence with time-phased data for shortage analysis
+                const data = await fetchAPI('/api/yarn-intelligence?include_timing=true');
                 
                 console.log('Yarn intelligence response:', data);
                 console.log('Has criticality_analysis:', !!data.criticality_analysis);
@@ -12012,6 +12543,34 @@ const dataSafetyMonitor = {
                                                urgency === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
                                                'bg-green-100 text-green-800';
                             
+                            // Extract time-phased data if available
+                            let nextPOWeek = '-';
+                            let shortageWeek = '-';
+                            
+                            if (yarn.time_phased_enabled) {
+                                // Get next PO receipt week
+                                if (yarn.next_receipt_week) {
+                                    if (yarn.next_receipt_week === 'later') {
+                                        nextPOWeek = 'Later';
+                                    } else if (yarn.next_receipt_week.startsWith('week_')) {
+                                        nextPOWeek = 'Week ' + yarn.next_receipt_week.split('_')[1];
+                                    } else {
+                                        nextPOWeek = yarn.next_receipt_week;
+                                    }
+                                }
+                                
+                                // Get first shortage week
+                                if (yarn.first_shortage_week) {
+                                    if (yarn.first_shortage_week.startsWith('week_')) {
+                                        shortageWeek = 'Week ' + yarn.first_shortage_week.split('_')[1];
+                                    } else {
+                                        shortageWeek = yarn.first_shortage_week;
+                                    }
+                                } else if (!yarn.has_timing_shortage) {
+                                    shortageWeek = 'None';
+                                }
+                            }
+                            
                             // Calculate affected orders
                             let affectedOrders = yarn.affected_orders || 0;
                             
@@ -12081,6 +12640,8 @@ const dataSafetyMonitor = {
                                 <td class="px-4 py-2 text-right ${runRateClass}">${runRate > 0 ? runRate.toFixed(1) : '-'}</td>
                                 <td class="px-4 py-2 text-center">${affectedOrders > 0 ? affectedOrders : '-'}</td>
                                 <td class="px-4 py-2 text-center ${daysUntilStockout === 'Out of stock' || daysUntilStockout === 'Critical' ? 'text-red-600 font-medium' : daysUntilStockout.includes('day') ? 'text-orange-600' : ''}">${daysUntilStockout}</td>
+                                <td class="px-4 py-2 text-center ${nextPOWeek !== '-' && nextPOWeek.includes('43') ? 'text-blue-600' : ''}">${nextPOWeek}</td>
+                                <td class="px-4 py-2 text-center ${shortageWeek !== '-' && shortageWeek !== 'None' ? 'text-red-600 font-medium' : 'text-green-600'}">${shortageWeek}</td>
                                 <td class="px-4 py-2 text-center">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full ${urgencyClass}">${urgency}</span>
                                 </td>
@@ -12096,17 +12657,17 @@ const dataSafetyMonitor = {
                         console.log(`Successfully added ${sortedYarns.length} shortage rows to table`);
                     } else {
                         console.log('No order-affecting shortages found - displaying no shortages message');
-                        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-green-600 py-4"><i class="fas fa-check-circle mr-2"></i>No yarn shortages affecting active orders - Production can proceed as planned</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="12" class="text-center text-green-600 py-4"><i class="fas fa-check-circle mr-2"></i>No yarn shortages affecting active orders - Production can proceed as planned</td></tr>';
                     }
                 } else {
                     console.log('No data available - displaying no data message');
-                    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500 py-4">No shortage data available</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-gray-500 py-4">No shortage data available</td></tr>';
                 }
             } catch (error) {
                 console.error('Error loading current yarn shortages:', error);
                 const tbody = document.querySelector('#currentShortagesTable tbody');
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500 py-4"><i class="fas fa-exclamation-triangle mr-2"></i>Error loading shortage data</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="12" class="text-center text-red-500 py-4"><i class="fas fa-exclamation-triangle mr-2"></i>Error loading shortage data</td></tr>';
                 }
             }
         }
@@ -12214,6 +12775,244 @@ const dataSafetyMonitor = {
                     }
                 }
             });
+        }
+
+        // Load Time-Phased Yarn PO Schedule
+        async function loadTimePhasedPO() {
+            console.log('=== Loading Time-Phased PO Data ===');
+            const tbody = document.querySelector('#timePhasedTable tbody');
+            if (!tbody) {
+                console.error('ERROR: Cannot find #timePhasedTable tbody');
+                return;
+            }
+            
+            // Show loading state
+            tbody.innerHTML = '<tr><td colspan="15" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading time-phased PO data...</td></tr>';
+            
+            try {
+                // Request time-phased yarn PO data
+                const response = await fetchAPI('/api/time-phased-yarn-po');
+                
+                console.log('Time-phased PO response:', response);
+                
+                tbody.innerHTML = '';
+                
+                // Initialize summary counters
+                let totalPOsScheduled = 0;
+                let nextWeekReceipts = 0;
+                let expediteNeeded = 0;
+                let totalCoverageWeeks = 0;
+                let yarnCount = 0;
+                let expediteRecommendations = [];
+                
+                if (response.yarns && Object.keys(response.yarns).length > 0) {
+                    const yarns = Object.entries(response.yarns);
+                    
+                    yarns.forEach(([yarnId, yarnData]) => {
+                        if (!yarnData || yarnData.error) return;
+                        
+                        yarnCount++;
+                        
+                        // Count POs scheduled
+                        if (yarnData.next_receipt_week) totalPOsScheduled++;
+                        
+                        // Sum next week receipts (week 36)
+                        const week36Receipts = yarnData.weekly_balances?.week_36 || 0;
+                        if (week36Receipts > 0) nextWeekReceipts += week36Receipts;
+                        
+                        // Count expedite needs
+                        if (yarnData.expedite_recommendations && yarnData.expedite_recommendations.length > 0) {
+                            expediteNeeded++;
+                            expediteRecommendations = expediteRecommendations.concat(yarnData.expedite_recommendations);
+                        }
+                        
+                        // Sum coverage weeks
+                        if (yarnData.coverage_weeks) {
+                            totalCoverageWeeks += yarnData.coverage_weeks;
+                        }
+                        
+                        // Create table row
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-gray-50 transition-colors';
+                        
+                        // Get weekly receipts from the data
+                        const weeklyReceipts = yarnData.weekly_receipts || {};
+                        const weeklyBalances = yarnData.weekly_balances || {};
+                        
+                        // Determine row highlighting based on criticality and shortage
+                        let rowClass = '';
+                        let urgencyIcon = '';
+                        const criticality = yarnData.criticality_score || 0;
+                        
+                        if (yarnData.has_shortage) {
+                            if (yarnData.first_shortage_week && yarnData.first_shortage_week.includes('36')) {
+                                rowClass = 'bg-red-50 border-l-4 border-red-500'; // Critical - shortage this week
+                                urgencyIcon = '<i class="fas fa-exclamation-circle text-red-600" title="Critical: Shortage this week"></i>';
+                            } else if (yarnData.first_shortage_week && yarnData.first_shortage_week.includes('37')) {
+                                rowClass = 'bg-orange-50 border-l-4 border-orange-500'; // High - shortage next week
+                                urgencyIcon = '<i class="fas fa-exclamation-triangle text-orange-600" title="High: Shortage next week"></i>';
+                            } else {
+                                rowClass = 'bg-yellow-50 border-l-4 border-yellow-500'; // Medium - shortage later
+                                urgencyIcon = '<i class="fas fa-exclamation text-yellow-600" title="Medium: Future shortage"></i>';
+                            }
+                        } else if (yarnData.current_balance && yarnData.current_balance < 0) {
+                            rowClass = 'bg-purple-50 border-l-4 border-purple-500'; // Negative balance
+                            urgencyIcon = '<i class="fas fa-minus-circle text-purple-600" title="Negative balance"></i>';
+                        } else if (yarnData.expedite_recommendations && yarnData.expedite_recommendations.length > 0) {
+                            rowClass = 'bg-blue-50 border-l-4 border-blue-500'; // Needs expediting
+                            urgencyIcon = '<i class="fas fa-shipping-fast text-blue-600" title="Expedite recommended"></i>';
+                        }
+                        
+                        row.className += ' ' + rowClass;
+                        
+                        // Format weekly receipt cells with color coding
+                        const formatWeekCell = (week, balance) => {
+                            const receipt = weeklyReceipts[week] || 0;
+                            const projectedBalance = weeklyBalances[week] || balance;
+                            
+                            let cellClass = '';
+                            let cellContent = '';
+                            
+                            if (receipt > 0) {
+                                cellClass = 'text-green-600 font-medium';
+                                cellContent = receipt.toFixed(0);
+                            } else if (projectedBalance < 0) {
+                                cellClass = 'text-red-600 font-medium';
+                                cellContent = `(${Math.abs(projectedBalance).toFixed(0)})`;
+                            } else {
+                                cellClass = 'text-gray-400';
+                                cellContent = '-';
+                            }
+                            
+                            return `<td class="px-2 py-2 text-center ${cellClass}">${cellContent}</td>`;
+                        };
+                        
+                        // Calculate total on order
+                        const totalOnOrder = Object.values(weeklyReceipts).reduce((sum, val) => sum + (val || 0), 0);
+                        
+                        // Format current balance with color
+                        const currentBalance = yarnData.current_balance || yarnData.theoretical_balance || 0;
+                        const balanceClass = currentBalance < 0 ? 'text-red-600 font-bold' : currentBalance < 1000 ? 'text-orange-600' : 'text-gray-700';
+                        
+                        row.innerHTML = `
+                            <td class="px-4 py-2 font-medium">
+                                ${urgencyIcon} ${yarnId}
+                            </td>
+                            <td class="px-4 py-2 text-sm" title="${yarnData.description || ''}">${(yarnData.description || '').substring(0, 25)}${(yarnData.description || '').length > 25 ? '...' : ''}</td>
+                            <td class="px-4 py-2 text-right ${balanceClass}">${currentBalance.toFixed(0)}</td>
+                            ${formatWeekCell('week_36', yarnData.theoretical_balance)}
+                            ${formatWeekCell('week_37', yarnData.theoretical_balance)}
+                            ${formatWeekCell('week_38', yarnData.theoretical_balance)}
+                            ${formatWeekCell('week_39', yarnData.theoretical_balance)}
+                            ${formatWeekCell('week_40', yarnData.theoretical_balance)}
+                            ${formatWeekCell('week_41', yarnData.theoretical_balance)}
+                            ${formatWeekCell('week_42', yarnData.theoretical_balance)}
+                            ${formatWeekCell('week_43', yarnData.theoretical_balance)}
+                            <td class="px-2 py-2 text-center ${weeklyReceipts.later > 0 ? 'text-blue-600' : 'text-gray-400'}">${weeklyReceipts.later > 0 ? weeklyReceipts.later.toFixed(0) : '-'}</td>
+                            <td class="px-4 py-2 text-right ${totalOnOrder > 0 ? 'text-blue-600 font-medium' : ''}">${totalOnOrder.toFixed(0)}</td>
+                            <td class="px-4 py-2 text-center ${yarnData.has_shortage ? 'text-red-600 font-medium' : 'text-green-600'}">${yarnData.first_shortage_week || 'None'}</td>
+                            <td class="px-4 py-2 text-center">
+                                ${yarnData.has_shortage && yarnData.expedite_recommendations?.length > 0 ? 
+                                    `<button onclick="showExpediteDetails('${yarnId}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs">
+                                        <i class="fas fa-shipping-fast mr-1"></i>Expedite
+                                    </button>` : 
+                                    '<span class="text-gray-400">-</span>'}
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Update summary cards with improved metrics from API
+                    if (response.summary) {
+                        document.getElementById('totalPOsScheduled').textContent = response.summary.total_pos_scheduled || totalPOsScheduled;
+                        document.getElementById('nextWeekReceipts').textContent = (response.summary.next_week_receipts || nextWeekReceipts).toFixed(0) + ' lbs';
+                        document.getElementById('expediteNeeded').textContent = response.summary.expedite_needed || expediteNeeded;
+                        
+                        // Show yarns with shortage instead of coverage weeks
+                        const coverageElement = document.getElementById('coverageWeeks');
+                        if (coverageElement) {
+                            const parent = coverageElement.parentElement;
+                            if (parent && parent.previousElementSibling) {
+                                parent.previousElementSibling.textContent = 'Yarns with Shortage';
+                                coverageElement.textContent = response.summary.yarns_with_shortage || '0';
+                            }
+                        }
+                    }
+                    
+                    // Show expedite recommendations if any
+                    if (expediteRecommendations.length > 0) {
+                        const expediteDiv = document.getElementById('expediteRecommendations');
+                        const expediteList = document.getElementById('expediteList');
+                        
+                        if (expediteDiv && expediteList) {
+                            expediteDiv.style.display = 'block';
+                            
+                            let expediteHTML = '<ul class="space-y-1">';
+                            expediteRecommendations.slice(0, 5).forEach(rec => {
+                                expediteHTML += `
+                                    <li>• Expedite ${rec.expedite_amount.toFixed(0)} lbs of Yarn ${rec.yarn_id} from ${rec.expedite_from_week} to ${rec.expedite_to_week}</li>
+                                `;
+                            });
+                            if (expediteRecommendations.length > 5) {
+                                expediteHTML += `<li>• ... and ${expediteRecommendations.length - 5} more recommendations</li>`;
+                            }
+                            expediteHTML += '</ul>';
+                            
+                            expediteList.innerHTML = expediteHTML;
+                        }
+                    }
+                    
+                    // Add a note about showing top 20
+                    if (response.summary && response.summary.display_note) {
+                        const noteRow = document.createElement('tr');
+                        noteRow.innerHTML = `
+                            <td colspan="15" class="text-center bg-gray-100 text-gray-600 py-2 text-sm italic">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                ${response.summary.display_note} 
+                                (${response.summary.total_yarns_analyzed} total yarns analyzed, 
+                                ${response.summary.yarns_with_shortage} with shortages)
+                            </td>
+                        `;
+                        tbody.appendChild(noteRow);
+                    }
+                    
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="15" class="text-center text-gray-500 py-4">No time-phased PO data available. Check if Expected_Yarn_Report.csv is loaded.</td></tr>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading time-phased PO data:', error);
+                tbody.innerHTML = '<tr><td colspan="15" class="text-center text-red-600 py-4">Error loading time-phased PO data</td></tr>';
+            }
+        }
+        
+        // Filter time-phased table by shortage status
+        function filterTimePhasedByShortage(hasShortage) {
+            const tbody = document.querySelector('#timePhasedTable tbody');
+            if (!tbody) return;
+            
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const shortageCell = row.cells[13]; // First Shortage column
+                if (!shortageCell) return;
+                
+                const hasShortageInRow = shortageCell.textContent !== 'None' && shortageCell.textContent !== '-';
+                
+                if (hasShortage === null) {
+                    row.style.display = ''; // Show all
+                } else if (hasShortage) {
+                    row.style.display = hasShortageInRow ? '' : 'none'; // Show only with shortages
+                } else {
+                    row.style.display = hasShortageInRow ? 'none' : ''; // Show only without shortages
+                }
+            });
+        }
+        
+        // Show expedite details for a specific yarn - Make it global
+        window.showExpediteDetails = function(yarnId) {
+            // This could open a modal or expand details
+            alert(`Expedite recommendations for Yarn ${yarnId} - Feature coming soon!`);
         }
 
         // Load Forecasted Yarn Shortages (replaces BOM Explosion)
@@ -13184,11 +13983,17 @@ const dataSafetyMonitor = {
                         fetchAPI('/api/machine-assignment-suggestions')
                     ]);
                     
-                    if (factoryResponse && factoryResponse.status === 'success') {
+                    // Check if response has error flag from fetchAPI wrapper
+                    if (factoryResponse && !factoryResponse.error && (factoryResponse.status === 'success' || factoryResponse.work_center_groups)) {
                         // Store data globally for filtering
                         window.machinePlanningData = mergeMachineData(factoryResponse, suggestionsResponse);
                         updateMachinePlanningDashboard(window.machinePlanningData);
                         updateMachinePlanningLastUpdated(factoryResponse.last_updated);
+                    } else if (factoryResponse && factoryResponse.error) {
+                        console.error('API returned error:', factoryResponse);
+                        // Try to load the enhanced schedule board instead
+                        console.log('Falling back to enhanced schedule board...');
+                        loadScheduleBoardData();
                     } else {
                         console.error('Failed to load machine planning data:', factoryResponse);
                         showMachinePlanningError('Failed to load machine planning data');
@@ -15070,16 +15875,37 @@ Customer: ${order.customer || 'Unknown'}
             machineAllOrders = [];
             
             knitOrders.forEach(ko => {
+                // Determine priority based on days until due
+                let priority = 'Normal';
+                if (ko.days_until_due !== null && ko.days_until_due < 0) {
+                    priority = 'Urgent';
+                } else if (ko.days_until_due !== null && ko.days_until_due < 7) {
+                    priority = 'High';
+                }
+                
+                // Calculate end date if not provided
+                let endDate = ko.due_date;
+                if (!endDate && ko.start_date && ko.days_of_work) {
+                    const start = new Date(ko.start_date);
+                    start.setDate(start.getDate() + (ko.days_of_work || 7));
+                    endDate = start.toISOString().split('T')[0];
+                }
+                
                 machineAllOrders.push({
-                    order_id: ko['Order #'],
-                    style: ko['Style#'] || ko['Style'],
-                    machine: ko['Machine'],
-                    quantity_lbs: parseFloat(ko['Qty Ordered (lbs)']) || 0,
-                    start_date: ko['Start Date'] || ko['Start_Date'],
-                    end_date: ko['Quoted Date'] || ko['Due_Date'],
-                    status: ko['Machine'] ? 'Assigned' : 'Unassigned',
-                    priority: ko['Priority'] || 'Normal',
-                    customer: ko['Customer'] || 'Unknown'
+                    order_id: ko.order_id || ko.ko_id,
+                    style: ko.style,
+                    machine: ko.machine,
+                    quantity_lbs: parseFloat(ko.quantity_lbs) || parseFloat(ko.qty_ordered_lbs) || 0,
+                    start_date: ko.start_date,
+                    end_date: endDate,
+                    due_date: ko.due_date,
+                    status: ko.machine ? 'Assigned' : 'Unassigned',
+                    priority: priority,
+                    customer: ko.customer || 'Unknown',
+                    completion_percentage: ko.completion_percentage || 0,
+                    days_until_due: ko.days_until_due,
+                    in_production: ko.in_production || false,
+                    balance_lbs: ko.balance_lbs || 0
                 });
             });
             

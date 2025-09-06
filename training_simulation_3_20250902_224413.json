@@ -1,0 +1,187 @@
+{
+  "customer": {
+    "company_name": "Automotive_Parts Corp",
+    "industry": "automotive_parts",
+    "employees": 106,
+    "revenue": 18276547.957886096,
+    "locations": 4,
+    "complexity_score": 5,
+    "data_quality": 0.9422532954324991,
+    "existing_systems": [
+      "Google Sheets",
+      "Sage",
+      "Dynamics 365"
+    ],
+    "custom_requirements": [
+      "Customer management",
+      "Inventory management",
+      "Financial reporting"
+    ],
+    "timeline_weeks": 9,
+    "challenges": []
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 11.538461538461538
+    },
+    {
+      "week": 2,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 23.076923076923077
+    },
+    {
+      "week": 3,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 34.61538461538461
+    },
+    {
+      "week": 4,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "issues": [
+        "Integration failure",
+        "Data format mismatch",
+        "Performance bottleneck",
+        "Integration failure"
+      ],
+      "agent_performance": {},
+      "overall_progress": 38.46153846153847
+    },
+    {
+      "week": 5,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "issues": [
+        "Integration failure",
+        "Business logic conflict",
+        "Performance bottleneck",
+        "Data format mismatch"
+      ],
+      "agent_performance": {},
+      "overall_progress": 42.30769230769231
+    },
+    {
+      "week": 6,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 53.84615384615385
+    },
+    {
+      "week": 7,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 65.38461538461539
+    },
+    {
+      "week": 8,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 76.92307692307693
+    },
+    {
+      "week": 9,
+      "tasks_completed": 0,
+      "tasks_failed": 2,
+      "issues": [
+        "Business logic conflict",
+        "Performance bottleneck",
+        "Data format mismatch",
+        "User requirement change",
+        "Business logic conflict"
+      ],
+      "agent_performance": {},
+      "overall_progress": 76.92307692307693
+    }
+  ],
+  "final_score": 70,
+  "total_issues": [
+    "Integration failure",
+    "Data format mismatch",
+    "Performance bottleneck",
+    "Integration failure",
+    "Integration failure",
+    "Business logic conflict",
+    "Performance bottleneck",
+    "Data format mismatch",
+    "Business logic conflict",
+    "Performance bottleneck",
+    "Data format mismatch",
+    "User requirement change",
+    "Business logic conflict"
+  ],
+  "agent_performance_summary": {
+    "orchestrator": {
+      "tasks": 4,
+      "successes": 2,
+      "avg_confidence": 0.5507835650376427,
+      "total_time": 53.44422338160484,
+      "success_rate": 50.0
+    },
+    "project_manager": {
+      "tasks": 4,
+      "successes": 3,
+      "avg_confidence": 0.7021386255540776,
+      "total_time": 74.29566895270668,
+      "success_rate": 75.0
+    },
+    "data_migration": {
+      "tasks": 7,
+      "successes": 7,
+      "avg_confidence": 0.7845879670326967,
+      "total_time": 111.7939850127807,
+      "success_rate": 100.0
+    },
+    "industry_expert": {
+      "tasks": 13,
+      "successes": 9,
+      "avg_confidence": 0.6590352722546177,
+      "total_time": 194.80872321345373,
+      "success_rate": 69.23076923076923
+    },
+    "configuration": {
+      "tasks": 15,
+      "successes": 11,
+      "avg_confidence": 0.6547023586692517,
+      "total_time": 208.81820624187853,
+      "success_rate": 73.33333333333333
+    },
+    "performance": {
+      "tasks": 1,
+      "successes": 1,
+      "avg_confidence": 0.7985499654844238,
+      "total_time": 12.184768433551682,
+      "success_rate": 100.0
+    }
+  },
+  "recommendations": [
+    "Agent 'orchestrator' needs improvement (success rate: 50.0%)",
+    "Agent 'orchestrator' shows low confidence (avg: 0.55)",
+    "Agent 'project_manager' needs improvement (success rate: 75.0%)",
+    "Agent 'industry_expert' needs improvement (success rate: 69.2%)",
+    "Agent 'industry_expert' shows low confidence (avg: 0.66)",
+    "Agent 'configuration' needs improvement (success rate: 73.3%)",
+    "Agent 'configuration' shows low confidence (avg: 0.65)",
+    "Recurring issue detected: 'Integration failure' (3 occurrences)",
+    "Recurring issue detected: 'Data format mismatch' (3 occurrences)",
+    "Recurring issue detected: 'Performance bottleneck' (3 occurrences)",
+    "Recurring issue detected: 'Business logic conflict' (3 occurrences)"
+  ],
+  "success": true
+}

@@ -1,0 +1,108 @@
+{
+  "timestamp": "2025-09-02T23:26:11.262649",
+  "total_tests": 11,
+  "passed_tests": 0,
+  "failed_tests": 11,
+  "test_results": [
+    {
+      "test_name": "Core Agent Import Validation",
+      "status": "FAILED",
+      "message": "Core import validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.262937"
+    },
+    {
+      "test_name": "Agent Base Functionality",
+      "status": "FAILED",
+      "message": "BaseAgent validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263028"
+    },
+    {
+      "test_name": "System State Management",
+      "status": "FAILED",
+      "message": "SystemState validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263073"
+    },
+    {
+      "test_name": "Message Router Integration",
+      "status": "FAILED",
+      "message": "MessageRouter validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263106"
+    },
+    {
+      "test_name": "Agent Factory Functionality",
+      "status": "FAILED",
+      "message": "AgentFactory validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263169"
+    },
+    {
+      "test_name": "Customer Interface Agents",
+      "status": "FAILED",
+      "message": "Interface agents validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263256"
+    },
+    {
+      "test_name": "Implementation Agents",
+      "status": "FAILED",
+      "message": "Implementation agents validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263341"
+    },
+    {
+      "test_name": "Industry-Specific Agents",
+      "status": "FAILED",
+      "message": "Industry agents validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263424"
+    },
+    {
+      "test_name": "Monitoring and Optimization",
+      "status": "FAILED",
+      "message": "Monitoring/optimization agents validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263504"
+    },
+    {
+      "test_name": "Integration Workflows",
+      "status": "FAILED",
+      "message": "Integration workflows validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263598"
+    },
+    {
+      "test_name": "Error Handling and Recovery",
+      "status": "FAILED",
+      "message": "Error handling validation failed: attempted relative import with no known parent package",
+      "details": {
+        "error": "attempted relative import with no known parent package"
+      },
+      "timestamp": "2025-09-02T23:26:11.263682"
+    }
+  ],
+  "overall_status": "FAILED"
+}

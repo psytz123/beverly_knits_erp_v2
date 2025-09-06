@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  erp-wrapper:
+    build: .
+    container_name: efab-erp-wrapper
+    ports:
+      - "8000:8000"
+    environment:
+      - ERP_BASE_URL=https://efab.bklapps.com
+      - ERP_LOGIN_URL=https://efab.bklapps.com/login
+      - ERP_API_PREFIX=/api
+      - ERP_USERNAME=psytz
+      - ERP_PASSWORD=big$$cat  # Double $$ for docker-compose
+      - SESSION_COOKIE_NAME=dancer.session
+      - SESSION_STATE_PATH=/tmp/erp_session.json
+      - VERIFY_SSL=True
+      - REQUEST_TIMEOUT=60
+    volumes:
+      - session-data:/tmp
+    restart: unless-stopped
+    networks:
+      - erp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  session-data:
+    driver: local
+
+networks:
+  erp-network:
+    driver: bridge
