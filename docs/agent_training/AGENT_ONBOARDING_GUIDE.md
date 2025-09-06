@@ -112,7 +112,7 @@ Beverly Knits ERP v2 is a production-ready textile manufacturing ERP system that
 # Load domain knowledge
 agent.load_knowledge_base([
     'CLAUDE.md',
-    'COMPREHENSIVE_DOCUMENTATION.md',
+    'PRESERVED_CONTENT.md',
     'API_MAPPING_DOCUMENTATION.md'
 ])
 
@@ -339,8 +339,8 @@ All agent actions must be logged with:
 
 ### Documentation
 - Technical: `/docs/technical/`
-- API Reference: `/docs/API_OVERVIEW.md`
-- Business Logic: `/docs/COMPREHENSIVE_DOCUMENTATION.md`
+- Data Mapping: `/docs/technical/DATA_MAPPING_REFERENCE.md`
+- Technical Archive: `/docs/technical/PRESERVED_CONTENT.md`
 
 ### Training Materials
 - Scenarios: `/data/agent_training/scenarios/`

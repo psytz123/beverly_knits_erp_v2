@@ -10243,9 +10243,11 @@ def get_knit_orders():
             # Try all possible column variations for Style
             style_value = None
             for style_col in ['Style #', 'Style#', 'style#', 'style', 'Style']:
-                if style_col in ko.index and pd.notna(ko[style_col]):
-                    style_value = ko[style_col]
-                    break
+                if style_col in ko.index:
+                    val = ko.get(style_col)
+                    if pd.notna(val) and str(val).strip() != '':
+                        style_value = str(val).strip()
+                        break
             if style_value is None or style_value == '':
                 style_value = 'N/A'
                 
@@ -12180,8 +12182,23 @@ def get_yarn_intelligence():
                 affected_orders_count = 0
                 affected_orders_list = []
                 
-                # Check BOM for styles using this yarn
-                if hasattr(analyzer, 'bom_data') and analyzer.bom_data is not None:
+                # Import the BOM mapping fix
+                try:
+                    import sys
+                    sys.path.insert(0, '/mnt/c/finalee/beverly_knits_erp_v2/src')
+                    from fix_bom_mapping import get_yarn_bom_mapping
+                    
+                    # Get affected orders using the fix module
+                    bom_mapping = get_yarn_bom_mapping(current_yarn_id)
+                    affected_orders_count = bom_mapping.get('affected_orders', 0)
+                    affected_orders_list = bom_mapping.get('affected_orders_list', [])
+                except Exception as e:
+                    print(f"[DEBUG] Failed to use BOM mapping fix: {e}")
+                    # Fall back to original logic
+                    pass
+                
+                # Original BOM checking logic as fallback
+                if affected_orders_count == 0 and hasattr(analyzer, 'bom_data') and analyzer.bom_data is not None:
                     bom_df = analyzer.bom_data
                     if not bom_df.empty:
                         # Check for Desc# column match
@@ -12198,14 +12215,44 @@ def get_yarn_intelligence():
                                 affected_styles = list(style_matches['Style#'].unique())
                                 
                                 # Now check if these styles have active knit orders
-                                if hasattr(analyzer, 'knit_orders_data') and analyzer.knit_orders_data is not None:
+                                # First try knit_orders_data, then knit_orders, then load from file
+                                knit_df = None
+                                if hasattr(analyzer, 'knit_orders_data') and analyzer.knit_orders_data is not None and not analyzer.knit_orders_data.empty:
                                     knit_df = analyzer.knit_orders_data
-                                    if not knit_df.empty and 'Style#' in knit_df.columns:
+                                elif hasattr(analyzer, 'knit_orders') and analyzer.knit_orders is not None and not analyzer.knit_orders.empty:
+                                    knit_df = analyzer.knit_orders
+                                else:
+                                    # Try to load knit orders directly from file as fallback
+                                    try:
+                                        import pandas as pd
+                                        from pathlib import Path
+                                        # Try multiple possible paths for knit orders
+                                        ko_paths = [
+                                            Path("/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/8-28-2025/eFab_Knit_Orders.csv"),
+                                            Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/8-28-2025/eFab_Knit_Orders.csv"),
+                                            analyzer.data_path / "8-28-2025" / "eFab_Knit_Orders.csv" if hasattr(analyzer, 'data_path') else None
+                                        ]
+                                        for ko_path in ko_paths:
+                                            if ko_path and ko_path.exists():
+                                                knit_df = pd.read_csv(ko_path)
+                                                print(f"[DEBUG] Loaded knit orders from fallback: {ko_path}")
+                                                break
+                                    except Exception as e:
+                                        print(f"[DEBUG] Failed to load knit orders from fallback: {e}")
+                                        pass
+                                
+                                if knit_df is not None and not knit_df.empty:
+                                    # Check for both 'Style#' and 'Style #' column names
+                                    style_col = 'Style#' if 'Style#' in knit_df.columns else 'Style #' if 'Style #' in knit_df.columns else None
+                                    if style_col:
                                         # Find knit orders for these styles
-                                        active_orders = knit_df[knit_df['Style#'].isin(affected_styles)]
+                                        active_orders = knit_df[knit_df[style_col].isin(affected_styles)]
                                         affected_orders_count = len(active_orders)
+                                        # Check for various order column names
                                         if 'Order#' in active_orders.columns:
                                             affected_orders_list = list(active_orders['Order#'].unique())[:5]
+                                        elif 'Order #' in active_orders.columns:
+                                            affected_orders_list = list(active_orders['Order #'].unique())[:5]
                                         elif 'Knit Order' in active_orders.columns:
                                             affected_orders_list = list(active_orders['Knit Order'].unique())[:5]
                                 else:

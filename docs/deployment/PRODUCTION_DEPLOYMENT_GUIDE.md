@@ -1,19 +1,36 @@
-# Beverly Knits ERP - Production Deployment Guide
+# Beverly Knits ERP - Comprehensive Production Deployment Guide
+
+**Last Updated**: September 6, 2025
+**System Version**: Beverly Knits ERP v2
 
 ## Table of Contents
 1. [Quick Start](#quick-start)
-2. [Internet Access (ngrok)](#internet-access-ngrok)
-3. [Cloud Deployment](#cloud-deployment)
-4. [Security Configuration](#security-configuration)
-5. [Monitoring & Maintenance](#monitoring--maintenance)
+2. [Docker Container Management](#docker-container-management)
+3. [Internet Access (ngrok)](#internet-access-ngrok)
+4. [Cloud Deployment Options](#cloud-deployment-options)
+5. [Security Configuration](#security-configuration)
+6. [Monitoring & Maintenance](#monitoring--maintenance)
+7. [Performance Optimization](#performance-optimization)
+8. [Troubleshooting](#troubleshooting)
 
 ## Quick Start
 
-### Current Setup Status
-Your Beverly Knits ERP is running in Docker on your local machine:
-- **Local Access**: http://localhost:5005/consolidated
-- **Network Access**: http://[YOUR-IP]:5005/consolidated
+### ⚠️ Important Port Information
+**Current Server Port**: **5006** (NOT 5005 as shown in older documentation)
+- **Local Access**: http://localhost:5006/consolidated
+- **Network Access**: http://[YOUR-IP]:5006/consolidated
 - **Container**: `bki-erp-minimal`
+
+### System Status Check
+```bash
+echo "=== Beverly Knits ERP Status ==="
+echo "Container: $(docker ps | grep bki-erp-minimal | awk '{print $7}')"
+echo "API: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:5006/api/comprehensive-kpis)"
+echo "Dashboard: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:5006/consolidated)"
+echo "Logs: $(docker logs bki-erp-minimal --tail 1 2>&1 | cut -c1-50)..."
+```
+
+## Docker Container Management
 
 ### Basic Docker Commands
 ```bash
@@ -26,8 +43,52 @@ docker-compose -f docker-compose.minimal.yml down
 # Restart application
 docker-compose -f docker-compose.minimal.yml restart
 
-# Rebuild after changes
+# Update and rebuild
+git pull
 docker-compose -f docker-compose.minimal.yml up -d --build
+```
+
+### Health Monitoring Commands
+```bash
+# Check API status
+curl http://localhost:5006/api/comprehensive-kpis
+
+# Monitor container resources
+docker stats bki-erp-minimal
+
+# View recent activity
+docker logs bki-erp-minimal --tail 100
+
+# Check ports in use
+netstat -tuln | grep 5006
+```
+
+### Configuration Files Reference
+| File | Purpose |
+|------|---------|
+| `.env.docker` | Environment variables |
+| `docker-compose.minimal.yml` | Minimal deployment (current) |
+| `docker-compose.yml` | Full deployment with database |
+| `docker-compose.prod.yml` | Production with all services |
+| `Dockerfile.minimal` | Lightweight image (current) |
+| `Dockerfile.optimized` | Full ML features |
+
+### Container Troubleshooting
+```bash
+# Container won't start - Check logs
+docker logs bki-erp-minimal
+
+# Data not loading - Clear cache
+docker exec bki-erp-minimal rm -rf /app/cache/*
+
+# Force data reload
+curl http://localhost:5006/api/reload-data
+
+# High memory usage - Limit memory
+docker update --memory="2g" bki-erp-minimal
+
+# Use production config with limits
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ## Internet Access (ngrok)
@@ -47,7 +108,7 @@ https://ngrok.com/signup
 ngrok authtoken YOUR_TOKEN
 
 # Start tunnel
-ngrok http 5005
+ngrok http 5006
 
 # Share the generated URL (e.g., https://abc123.ngrok.io)
 ```
@@ -55,7 +116,7 @@ ngrok http 5005
 ### Option 2: Custom Domain (Paid)
 ```bash
 # Reserve custom domain
-ngrok http 5005 --domain=erp.yourcompany.com
+ngrok http 5006 --domain=erp.yourcompany.com
 ```
 
 ## Cloud Deployment
@@ -114,7 +175,7 @@ server {
     server_name erp.yourdomain.com;
     
     location / {
-        proxy_pass http://localhost:5005;
+        proxy_pass http://localhost:5006;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -142,7 +203,7 @@ certbot --nginx -d erp.yourdomain.com
 # Instance type: t3.medium (2 vCPU, 4GB RAM)
 # AMI: Amazon Linux 2023
 # Storage: 30GB gp3
-# Security Group: Allow 80, 443, 22, 5005
+# Security Group: Allow 80, 443, 22, 5006
 ```
 
 2. **Install Dependencies**
@@ -200,7 +261,7 @@ az container create \
   --name bki-erp \
   --image beverlyknitsacr.azurecr.io/bki-erp:latest \
   --cpu 2 --memory 4 \
-  --ports 5005 \
+  --ports 5006 \
   --dns-name-label beverly-knits-erp
 ```
 
@@ -250,7 +311,7 @@ API_RATE_LIMIT=100/minute
 # Create health check script
 cat > /opt/bki/health_check.sh << 'EOF'
 #!/bin/bash
-response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5005/api/comprehensive-kpis)
+response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5006/api/comprehensive-kpis)
 if [ $response -eq 200 ]; then
     echo "Health check passed"
 else
@@ -318,7 +379,7 @@ df -h
 du -sh /var/lib/docker/
 
 # Monitor network
-netstat -tuln | grep 5005
+netstat -tuln | grep 5006
 ```
 
 ## Scaling Considerations
@@ -362,7 +423,7 @@ docker logs bki-erp-minimal
 # Check disk space
 df -h
 # Verify ports
-netstat -tuln | grep 5005
+netstat -tuln | grep 5006
 ```
 
 2. **Data not loading**
@@ -402,7 +463,7 @@ docker logs -f bki-erp-minimal
 docker exec -it bki-erp-minimal bash
 
 # Check API health
-curl http://localhost:5005/api/comprehensive-kpis
+curl http://localhost:5006/api/comprehensive-kpis
 
 # Restart application
 docker-compose -f docker-compose.minimal.yml restart
@@ -418,13 +479,73 @@ docker exec bki-postgres pg_dump -U bki_admin beverly_knits_erp > backup.sql
 docker exec -i bki-postgres psql -U bki_admin beverly_knits_erp < backup.sql
 ```
 
+## Performance Optimization
+
+### 1. Enable Redis Caching
+```bash
+# Use full stack with Redis
+docker-compose up -d  # Uses full stack with Redis
+```
+
+### 2. Use Production Build
+```bash
+# Production configuration with resource limits
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### 3. Scale Horizontally
+```bash
+# Run multiple instances
+docker-compose up -d --scale erp-app=3
+```
+
+## Deployment Platform Comparison
+
+| Platform | Difficulty | Cost/Month | Best For |
+|----------|------------|------------|----------|
+| **ngrok** | Easy | Free/$8 | Testing & demos |
+| **Railway** | Very Easy | $5+ | Quick deployment |
+| **Render** | Easy | Free/$7+ | Small teams |
+| **DigitalOcean** | Medium | $24+ | Growing business |
+| **AWS EC2** | Hard | $30+ | Enterprise |
+| **Azure** | Hard | $40+ | Microsoft stack |
+
+### Recommended Production Path
+1. **Now**: Test thoroughly with ngrok
+2. **This Week**: Deploy to Railway/Render  
+3. **This Month**: Set up monitoring & backups
+4. **Next Quarter**: Scale to DigitalOcean/AWS
+
+## Security Checklist
+
+**Essential Pre-Production Steps:**
+- [ ] Change default passwords in `.env.docker`
+- [ ] Generate new SECRET_KEY: `openssl rand -hex 32`
+- [ ] Enable HTTPS (use nginx proxy or cloud provider)
+- [ ] Configure firewall rules
+- [ ] Set up regular backups
+- [ ] Enable monitoring alerts
+- [ ] Configure API rate limiting
+- [ ] Review database access permissions
+
 ## Next Steps
 
-1. **Immediate**: Test application thoroughly
+1. **Immediate**: Test application thoroughly with port 5006
 2. **Short-term**: Set up monitoring and backups
 3. **Medium-term**: Configure SSL and domain
 4. **Long-term**: Implement auto-scaling and load balancing
 
+## Support & Documentation
+
+- **Main Documentation**: `CLAUDE.md` and `README.md`
+- **Application Logs**: `/app/logs/`
+- **Data Path**: `/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/`
+- **Cache Directory**: `/app/cache/`
+- **Configuration**: `.env` file
+- **Dashboard Access**: http://localhost:5006/consolidated
+
 ---
+
+**Important**: Always use port 5006 for current deployments. References to port 5005 in other documentation are outdated.
 
 For additional support or questions, refer to the main documentation or contact the development team.

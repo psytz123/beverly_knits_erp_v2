@@ -154,10 +154,10 @@ make lint
 
 ## 📖 Documentation
 
-- [Quick Start Guide](docs/QUICK_START.md)
-- [API Documentation](docs/technical/API_DOCUMENTATION.md)
+- [System Instructions](CLAUDE.md) - Primary project documentation
 - [Deployment Guide](docs/deployment/PRODUCTION_DEPLOYMENT_GUIDE.md)
-- [Data Management](docs/data/DATA_MANAGEMENT_GUIDE.md)
+- [Data Mapping Reference](docs/technical/DATA_MAPPING_REFERENCE.md)
+- [Technical Content Archive](docs/technical/PRESERVED_CONTENT.md)
 
 ## 🔒 Security
 
@@ -199,14 +199,14 @@ Proprietary - Beverly Knits © 2025
 ## 🤝 Support
 
 For issues or questions:
-- Check [Troubleshooting Guide](docs/guides/TROUBLESHOOTING.md)
+- Check [CLAUDE.md](CLAUDE.md) for system instructions and common issues
 - Review [Technical Documentation](docs/technical/)
-- Contact: erp-support@beverlyknits.com
+- Check [Emergency Fixes](scripts/README.md) for Day 0 fixes
 
 ---
 
 **Version**: 2.0.0  
-**Status**: Production Ready  
-**Last Updated**: 2025-08-23
+**Status**: In Development (75-80% Complete)  
+**Last Updated**: 2025-09-06
 
 *Transformed from monolith to microservices with 50% faster delivery than planned*
