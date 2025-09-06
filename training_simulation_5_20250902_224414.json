@@ -1,0 +1,118 @@
+{
+  "customer": {
+    "company_name": "Global Electric",
+    "industry": "electrical_equipment",
+    "employees": 40,
+    "revenue": 6442333.102417065,
+    "locations": 1,
+    "complexity_score": 1,
+    "data_quality": 0.8059100742475582,
+    "existing_systems": [
+      "Google Sheets",
+      "Excel"
+    ],
+    "custom_requirements": [
+      "Financial reporting",
+      "Compliance management"
+    ],
+    "timeline_weeks": 4,
+    "challenges": [
+      "Data quality issues (67% dirty data)",
+      "Regulatory compliance tracking"
+    ]
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 21.428571428571427
+    },
+    {
+      "week": 2,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 42.857142857142854
+    },
+    {
+      "week": 3,
+      "tasks_completed": 5,
+      "tasks_failed": 1,
+      "issues": [
+        "Integration failure",
+        "Performance bottleneck",
+        "User requirement change"
+      ],
+      "agent_performance": {},
+      "overall_progress": 78.57142857142857
+    },
+    {
+      "week": 4,
+      "tasks_completed": 2,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 92.85714285714286
+    }
+  ],
+  "final_score": 95,
+  "total_issues": [
+    "Integration failure",
+    "Performance bottleneck",
+    "User requirement change"
+  ],
+  "agent_performance_summary": {
+    "orchestrator": {
+      "tasks": 4,
+      "successes": 3,
+      "avg_confidence": 0.7451140171839739,
+      "total_time": 54.689866946196965,
+      "success_rate": 75.0
+    },
+    "project_manager": {
+      "tasks": 4,
+      "successes": 4,
+      "avg_confidence": 0.7662537640033672,
+      "total_time": 74.02324652316318,
+      "success_rate": 100.0
+    },
+    "data_migration": {
+      "tasks": 7,
+      "successes": 7,
+      "avg_confidence": 0.8112820308047057,
+      "total_time": 104.2011419816424,
+      "success_rate": 100.0
+    },
+    "industry_expert": {
+      "tasks": 1,
+      "successes": 1,
+      "avg_confidence": 0.7750329511748355,
+      "total_time": 25.624128453709098,
+      "success_rate": 100.0
+    },
+    "configuration": {
+      "tasks": 3,
+      "successes": 2,
+      "avg_confidence": 0.6432939060847332,
+      "total_time": 39.60430533556567,
+      "success_rate": 66.66666666666666
+    },
+    "performance": {
+      "tasks": 1,
+      "successes": 1,
+      "avg_confidence": 0.8001450790293791,
+      "total_time": 12.098461132546934,
+      "success_rate": 100.0
+    }
+  },
+  "recommendations": [
+    "Agent 'orchestrator' needs improvement (success rate: 75.0%)",
+    "Agent 'configuration' needs improvement (success rate: 66.7%)",
+    "Agent 'configuration' shows low confidence (avg: 0.64)"
+  ],
+  "success": true
+}

@@ -1,0 +1,158 @@
+{
+  "customer": {
+    "company_name": "Precision Plastics",
+    "industry": "injection_molding",
+    "employees": 121,
+    "revenue": 20933096.549111485,
+    "locations": 2,
+    "complexity_score": 5,
+    "data_quality": 0.9338714701516544,
+    "existing_systems": [
+      "Sage",
+      "QuickBooks"
+    ],
+    "custom_requirements": [
+      "Production planning",
+      "Customer management",
+      "Quality control",
+      "Cavity tracking",
+      "Material traceability",
+      "Recipe control"
+    ],
+    "timeline_weeks": 7,
+    "challenges": [
+      "Data quality issues (89% dirty data)",
+      "User resistance to change",
+      "Real-time machine monitoring requirements"
+    ]
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 15.0
+    },
+    {
+      "week": 2,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 30.0
+    },
+    {
+      "week": 3,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "issues": [
+        "Data format mismatch",
+        "Performance bottleneck",
+        "Business logic conflict",
+        "User requirement change",
+        "Performance bottleneck"
+      ],
+      "agent_performance": {},
+      "overall_progress": 35.0
+    },
+    {
+      "week": 4,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 50.0
+    },
+    {
+      "week": 5,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 65.0
+    },
+    {
+      "week": 6,
+      "tasks_completed": 2,
+      "tasks_failed": 1,
+      "issues": [
+        "Missing dependencies",
+        "User requirement change"
+      ],
+      "agent_performance": {},
+      "overall_progress": 75.0
+    },
+    {
+      "week": 7,
+      "tasks_completed": 2,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 85.0
+    }
+  ],
+  "final_score": 85,
+  "total_issues": [
+    "Data format mismatch",
+    "Performance bottleneck",
+    "Business logic conflict",
+    "User requirement change",
+    "Performance bottleneck",
+    "Missing dependencies",
+    "User requirement change"
+  ],
+  "agent_performance_summary": {
+    "orchestrator": {
+      "tasks": 4,
+      "successes": 4,
+      "avg_confidence": 0.8611994325224248,
+      "total_time": 57.08552210896494,
+      "success_rate": 100.0
+    },
+    "project_manager": {
+      "tasks": 4,
+      "successes": 3,
+      "avg_confidence": 0.7810113402256365,
+      "total_time": 80.44913527720786,
+      "success_rate": 75.0
+    },
+    "data_migration": {
+      "tasks": 7,
+      "successes": 5,
+      "avg_confidence": 0.6541538322666792,
+      "total_time": 107.7560146611989,
+      "success_rate": 71.42857142857143
+    },
+    "industry_expert": {
+      "tasks": 7,
+      "successes": 7,
+      "avg_confidence": 0.7395704954063312,
+      "total_time": 104.28413074189848,
+      "success_rate": 100.0
+    },
+    "configuration": {
+      "tasks": 9,
+      "successes": 8,
+      "avg_confidence": 0.6999120636355869,
+      "total_time": 121.34328144076787,
+      "success_rate": 88.88888888888889
+    },
+    "performance": {
+      "tasks": 1,
+      "successes": 1,
+      "avg_confidence": 0.9080073856545321,
+      "total_time": 10.525412153291589,
+      "success_rate": 100.0
+    }
+  },
+  "recommendations": [
+    "Agent 'project_manager' needs improvement (success rate: 75.0%)",
+    "Agent 'data_migration' needs improvement (success rate: 71.4%)",
+    "Agent 'data_migration' shows low confidence (avg: 0.65)",
+    "Agent 'configuration' shows low confidence (avg: 0.70)",
+    "Focus on mold management and cycle time optimization training"
+  ],
+  "success": true
+}

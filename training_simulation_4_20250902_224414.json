@@ -1,0 +1,270 @@
+{
+  "customer": {
+    "company_name": "Advanced Molding Systems",
+    "industry": "injection_molding",
+    "employees": 1092,
+    "revenue": 671181178.2778603,
+    "locations": 13,
+    "complexity_score": 10,
+    "data_quality": 0.32405630571356125,
+    "existing_systems": [
+      "NetSuite",
+      "Oracle",
+      "Sage"
+    ],
+    "custom_requirements": [
+      "Quality control",
+      "Customer management",
+      "Production planning",
+      "Financial reporting",
+      "Inventory management",
+      "Mold management",
+      "Material traceability",
+      "Recipe control",
+      "Cavity tracking",
+      "Cycle time optimization"
+    ],
+    "timeline_weeks": 10,
+    "challenges": [
+      "Data quality issues (80% dirty data)",
+      "Performance requirements for high-volume operations",
+      "Real-time machine monitoring requirements"
+    ]
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "issues": [
+        "User requirement change",
+        "Business logic conflict",
+        "Performance bottleneck",
+        "Integration failure"
+      ],
+      "agent_performance": {},
+      "overall_progress": 3.4482758620689653
+    },
+    {
+      "week": 2,
+      "tasks_completed": 2,
+      "tasks_failed": 1,
+      "issues": [
+        "Business logic conflict"
+      ],
+      "agent_performance": {},
+      "overall_progress": 10.344827586206897
+    },
+    {
+      "week": 3,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "issues": [
+        "Integration failure",
+        "Data format mismatch",
+        "Missing dependencies"
+      ],
+      "agent_performance": {},
+      "overall_progress": 13.793103448275861
+    },
+    {
+      "week": 4,
+      "tasks_completed": 0,
+      "tasks_failed": 3,
+      "issues": [
+        "Business logic conflict",
+        "Performance bottleneck",
+        "Business logic conflict",
+        "Data format mismatch",
+        "Missing dependencies",
+        "Performance bottleneck",
+        "User requirement change",
+        "Integration failure"
+      ],
+      "agent_performance": {},
+      "overall_progress": 13.793103448275861
+    },
+    {
+      "week": 5,
+      "tasks_completed": 0,
+      "tasks_failed": 3,
+      "issues": [
+        "Missing dependencies",
+        "Performance bottleneck",
+        "User requirement change",
+        "Integration failure",
+        "User requirement change",
+        "Performance bottleneck"
+      ],
+      "agent_performance": {},
+      "overall_progress": 13.793103448275861
+    },
+    {
+      "week": 6,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "issues": [
+        "Data format mismatch",
+        "Missing dependencies",
+        "User requirement change",
+        "Performance bottleneck"
+      ],
+      "agent_performance": {},
+      "overall_progress": 17.24137931034483
+    },
+    {
+      "week": 7,
+      "tasks_completed": 0,
+      "tasks_failed": 3,
+      "issues": [
+        "Missing dependencies",
+        "Business logic conflict",
+        "Data format mismatch",
+        "Missing dependencies",
+        "User requirement change"
+      ],
+      "agent_performance": {},
+      "overall_progress": 17.24137931034483
+    },
+    {
+      "week": 8,
+      "tasks_completed": 2,
+      "tasks_failed": 1,
+      "issues": [
+        "Missing dependencies"
+      ],
+      "agent_performance": {},
+      "overall_progress": 24.137931034482758
+    },
+    {
+      "week": 9,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "issues": [
+        "Missing dependencies",
+        "Integration failure",
+        "User requirement change",
+        "Performance bottleneck"
+      ],
+      "agent_performance": {},
+      "overall_progress": 27.586206896551722
+    },
+    {
+      "week": 10,
+      "tasks_completed": 1,
+      "tasks_failed": 1,
+      "issues": [
+        "Performance bottleneck"
+      ],
+      "agent_performance": {},
+      "overall_progress": 31.03448275862069
+    }
+  ],
+  "final_score": 0,
+  "total_issues": [
+    "User requirement change",
+    "Business logic conflict",
+    "Performance bottleneck",
+    "Integration failure",
+    "Business logic conflict",
+    "Integration failure",
+    "Data format mismatch",
+    "Missing dependencies",
+    "Business logic conflict",
+    "Performance bottleneck",
+    "Business logic conflict",
+    "Data format mismatch",
+    "Missing dependencies",
+    "Performance bottleneck",
+    "User requirement change",
+    "Integration failure",
+    "Missing dependencies",
+    "Performance bottleneck",
+    "User requirement change",
+    "Integration failure",
+    "User requirement change",
+    "Performance bottleneck",
+    "Data format mismatch",
+    "Missing dependencies",
+    "User requirement change",
+    "Performance bottleneck",
+    "Missing dependencies",
+    "Business logic conflict",
+    "Data format mismatch",
+    "Missing dependencies",
+    "User requirement change",
+    "Missing dependencies",
+    "Missing dependencies",
+    "Integration failure",
+    "User requirement change",
+    "Performance bottleneck",
+    "Performance bottleneck"
+  ],
+  "agent_performance_summary": {
+    "orchestrator": {
+      "tasks": 4,
+      "successes": 2,
+      "avg_confidence": 0.673087388942468,
+      "total_time": 52.213275173786556,
+      "success_rate": 50.0
+    },
+    "project_manager": {
+      "tasks": 4,
+      "successes": 2,
+      "avg_confidence": 0.5916700805437953,
+      "total_time": 82.32415627742529,
+      "success_rate": 50.0
+    },
+    "data_migration": {
+      "tasks": 7,
+      "successes": 3,
+      "avg_confidence": 0.601503906817932,
+      "total_time": 110.00301392882405,
+      "success_rate": 42.857142857142854
+    },
+    "industry_expert": {
+      "tasks": 16,
+      "successes": 3,
+      "avg_confidence": 0.4746383329082376,
+      "total_time": 291.74555688724337,
+      "success_rate": 18.75
+    },
+    "configuration": {
+      "tasks": 18,
+      "successes": 4,
+      "avg_confidence": 0.5034719190266681,
+      "total_time": 299.5441997608243,
+      "success_rate": 22.22222222222222
+    },
+    "performance": {
+      "tasks": 1,
+      "successes": 0,
+      "avg_confidence": 0.46861693602938126,
+      "total_time": 13.588148777737672,
+      "success_rate": 0.0
+    }
+  },
+  "recommendations": [
+    "Additional training required for complex implementations",
+    "Agent 'orchestrator' needs improvement (success rate: 50.0%)",
+    "Agent 'orchestrator' shows low confidence (avg: 0.67)",
+    "Agent 'project_manager' needs improvement (success rate: 50.0%)",
+    "Agent 'project_manager' shows low confidence (avg: 0.59)",
+    "Agent 'data_migration' needs improvement (success rate: 42.9%)",
+    "Agent 'data_migration' shows low confidence (avg: 0.60)",
+    "Agent 'industry_expert' needs improvement (success rate: 18.8%)",
+    "Agent 'industry_expert' shows low confidence (avg: 0.47)",
+    "Agent 'configuration' needs improvement (success rate: 22.2%)",
+    "Agent 'configuration' shows low confidence (avg: 0.50)",
+    "Agent 'performance' needs improvement (success rate: 0.0%)",
+    "Agent 'performance' shows low confidence (avg: 0.47)",
+    "Recurring issue detected: 'User requirement change' (7 occurrences)",
+    "Recurring issue detected: 'Business logic conflict' (5 occurrences)",
+    "Recurring issue detected: 'Performance bottleneck' (8 occurrences)",
+    "Recurring issue detected: 'Integration failure' (5 occurrences)",
+    "Recurring issue detected: 'Data format mismatch' (4 occurrences)",
+    "Recurring issue detected: 'Missing dependencies' (8 occurrences)",
+    "Focus on mold management and cycle time optimization training"
+  ],
+  "success": false
+}

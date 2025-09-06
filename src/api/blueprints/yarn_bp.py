@@ -1,10 +1,22 @@
 """
 Yarn Blueprint - Yarn intelligence, substitution, and shortage analysis
-Uses existing yarn intelligence modules
+Uses existing yarn intelligence modules and centralized consistency manager
 """
 from flask import Blueprint, jsonify, request
 import logging
 import pandas as pd
+
+# Import consistency manager for standardized data handling
+try:
+    from data_consistency.consistency_manager import DataConsistencyManager
+    CONSISTENCY_AVAILABLE = True
+except ImportError:
+    try:
+        from src.data_consistency.consistency_manager import DataConsistencyManager
+        CONSISTENCY_AVAILABLE = True
+    except ImportError:
+        CONSISTENCY_AVAILABLE = False
+        DataConsistencyManager = None
 
 logger = logging.getLogger(__name__)
 
@@ -81,23 +93,46 @@ def yarn_intelligence():
             'recommendations': []
         }
         
-        # Analyze shortages
+        # Analyze shortages using centralized consistency manager
         if analysis_type in ['shortage', 'all']:
             shortage_yarns = []
             if hasattr(yarn_data, 'iterrows'):
-                for _, yarn in yarn_data.iterrows():
-                    planning_balance = yarn.get('Planning Balance', yarn.get('planning_balance', 0))
-                    if planning_balance < 0:
-                        shortage_yarns.append({
-                            'yarn_id': yarn.get('Desc#', yarn.get('yarn_id', '')),
-                            'description': yarn.get('Description', ''),
-                            'shortage_amount': abs(planning_balance),
-                            'on_order': yarn.get('On_Order', yarn.get('on_order', 0)),
-                            'allocated': yarn.get('Allocated', yarn.get('allocated', 0))
-                        })
+                if CONSISTENCY_AVAILABLE:
+                    # Use centralized shortage calculation
+                    yarn_data_standardized = DataConsistencyManager.standardize_columns(yarn_data.copy())
+                    
+                    for _, yarn_row in yarn_data_standardized.iterrows():
+                        shortage_info = DataConsistencyManager.calculate_yarn_shortage(yarn_row)
+                        if shortage_info['has_shortage']:
+                            shortage_yarns.append({
+                                'yarn_id': shortage_info['yarn_id'],
+                                'description': shortage_info['description'],
+                                'shortage_amount': shortage_info['shortage_amount'],
+                                'on_order': shortage_info['on_order'],
+                                'allocated': shortage_info['allocated'],
+                                'risk_level': shortage_info['risk_level'],
+                                'urgency_score': shortage_info['urgency_score']
+                            })
+                else:
+                    # Fallback to legacy logic
+                    for _, yarn in yarn_data.iterrows():
+                        planning_balance = yarn.get('Planning Balance', yarn.get('planning_balance', 0))
+                        if planning_balance < 0:
+                            shortage_yarns.append({
+                                'yarn_id': yarn.get('Desc#', yarn.get('yarn_id', '')),
+                                'description': yarn.get('Description', ''),
+                                'shortage_amount': abs(planning_balance),
+                                'on_order': yarn.get('On_Order', yarn.get('on_order', 0)),
+                                'allocated': yarn.get('Allocated', yarn.get('allocated', 0)),
+                                'risk_level': 'HIGH' if planning_balance < -500 else 'MEDIUM'
+                            })
             
-            # Sort by shortage amount
-            shortage_yarns.sort(key=lambda x: x['shortage_amount'], reverse=True)
+            # Sort by shortage amount (or urgency score if available)
+            if shortage_yarns and 'urgency_score' in shortage_yarns[0]:
+                shortage_yarns.sort(key=lambda x: x['urgency_score'], reverse=True)
+            else:
+                shortage_yarns.sort(key=lambda x: x['shortage_amount'], reverse=True)
+                
             intelligence['shortages'] = shortage_yarns[:20]  # Top 20
             intelligence['analysis']['shortage_count'] = len(shortage_yarns)
             intelligence['analysis']['total_shortage_value'] = sum(y['shortage_amount'] for y in shortage_yarns)
@@ -185,29 +220,61 @@ def yarn_shortage_analysis():
             'action_items': []
         }
         
-        # Categorize shortages
+        # Categorize shortages using centralized logic
         if hasattr(yarn_data, 'iterrows'):
-            for _, yarn in yarn_data.iterrows():
-                planning_balance = yarn.get('Planning Balance', yarn.get('planning_balance', 0))
-                on_order = yarn.get('On_Order', yarn.get('on_order', 0))
-                allocated = abs(yarn.get('Allocated', yarn.get('allocated', 0)))
+            if CONSISTENCY_AVAILABLE:
+                # Use centralized shortage analysis
+                yarn_data_standardized = DataConsistencyManager.standardize_columns(yarn_data.copy())
                 
-                yarn_info = {
-                    'yarn_id': yarn.get('Desc#', ''),
-                    'description': yarn.get('Description', ''),
-                    'planning_balance': planning_balance,
-                    'on_order': on_order,
-                    'allocated': allocated,
-                    'net_position': planning_balance + on_order - allocated
-                }
-                
-                # Categorize by risk level
-                if planning_balance < -1000:
-                    shortage_analysis['critical_shortages'].append(yarn_info)
-                elif planning_balance < -100:
-                    shortage_analysis['high_risk'].append(yarn_info)
-                elif planning_balance < 0:
-                    shortage_analysis['medium_risk'].append(yarn_info)
+                for _, yarn_row in yarn_data_standardized.iterrows():
+                    shortage_info = DataConsistencyManager.calculate_yarn_shortage(yarn_row)
+                    
+                    if shortage_info['has_shortage']:
+                        yarn_info = {
+                            'yarn_id': shortage_info['yarn_id'],
+                            'description': shortage_info['description'],
+                            'planning_balance': shortage_info['planning_balance'],
+                            'on_order': shortage_info['on_order'],
+                            'allocated': shortage_info['allocated'],
+                            'theoretical_balance': shortage_info['theoretical_balance'],
+                            'shortage_amount': shortage_info['shortage_amount'],
+                            'risk_level': shortage_info['risk_level'],
+                            'urgency_score': shortage_info['urgency_score'],
+                            'net_position': shortage_info['effective_balance']
+                        }
+                        
+                        # Categorize by risk level using consistent thresholds
+                        if shortage_info['risk_level'] == 'CRITICAL':
+                            shortage_analysis['critical_shortages'].append(yarn_info)
+                        elif shortage_info['risk_level'] == 'HIGH':
+                            shortage_analysis['high_risk'].append(yarn_info)
+                        else:
+                            shortage_analysis['medium_risk'].append(yarn_info)
+            else:
+                # Fallback to legacy logic
+                for _, yarn in yarn_data.iterrows():
+                    planning_balance = yarn.get('Planning Balance', yarn.get('planning_balance', 0))
+                    on_order = yarn.get('On_Order', yarn.get('on_order', 0))
+                    allocated = abs(yarn.get('Allocated', yarn.get('allocated', 0)))
+                    
+                    if planning_balance < 0:  # Only process if there's a shortage
+                        yarn_info = {
+                            'yarn_id': yarn.get('Desc#', ''),
+                            'description': yarn.get('Description', ''),
+                            'planning_balance': planning_balance,
+                            'on_order': on_order,
+                            'allocated': allocated,
+                            'net_position': planning_balance + on_order - allocated,
+                            'shortage_amount': abs(planning_balance)
+                        }
+                        
+                        # Categorize by risk level
+                        if planning_balance < -1000:
+                            shortage_analysis['critical_shortages'].append(yarn_info)
+                        elif planning_balance < -100:
+                            shortage_analysis['high_risk'].append(yarn_info)
+                        elif planning_balance < 0:
+                            shortage_analysis['medium_risk'].append(yarn_info)
         
         # Calculate statistics
         shortage_analysis['statistics'] = {

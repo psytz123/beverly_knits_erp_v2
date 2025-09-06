@@ -3,6 +3,8 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyc
 *$py.class
 *.so
 .Python
@@ -59,6 +61,9 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
+*.db-journal
 
 # Cache
 .cache/
@@ -86,7 +91,10 @@ data/archive/*/*
 *.bak
 *.backup
 *.old
+*.orig
 ~*
+*~
+nul
 
 # OS files
 Thumbs.db

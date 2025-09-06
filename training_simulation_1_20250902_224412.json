@@ -1,0 +1,120 @@
+{
+  "customer": {
+    "company_name": "Textile_Manufacturing Corp",
+    "industry": "textile_manufacturing",
+    "employees": 46,
+    "revenue": 5269328.30667721,
+    "locations": 1,
+    "complexity_score": 2,
+    "data_quality": 0.5145916083946359,
+    "existing_systems": [
+      "QuickBooks"
+    ],
+    "custom_requirements": [
+      "Inventory management",
+      "Financial reporting"
+    ],
+    "timeline_weeks": 6,
+    "challenges": [
+      "User resistance to change"
+    ]
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 18.75
+    },
+    {
+      "week": 2,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 37.5
+    },
+    {
+      "week": 3,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 56.25
+    },
+    {
+      "week": 4,
+      "tasks_completed": 2,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 68.75
+    },
+    {
+      "week": 5,
+      "tasks_completed": 3,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 87.5
+    },
+    {
+      "week": 6,
+      "tasks_completed": 2,
+      "tasks_failed": 0,
+      "issues": [],
+      "agent_performance": {},
+      "overall_progress": 100.0
+    }
+  ],
+  "final_score": 100,
+  "total_issues": [],
+  "agent_performance_summary": {
+    "orchestrator": {
+      "tasks": 4,
+      "successes": 4,
+      "avg_confidence": 0.7644476751486543,
+      "total_time": 56.22547512520498,
+      "success_rate": 100.0
+    },
+    "project_manager": {
+      "tasks": 4,
+      "successes": 4,
+      "avg_confidence": 0.7146665616805126,
+      "total_time": 72.90765240784947,
+      "success_rate": 100.0
+    },
+    "data_migration": {
+      "tasks": 7,
+      "successes": 7,
+      "avg_confidence": 0.7631928705054991,
+      "total_time": 109.02570630922868,
+      "success_rate": 100.0
+    },
+    "industry_expert": {
+      "tasks": 3,
+      "successes": 3,
+      "avg_confidence": 0.7967318645779397,
+      "total_time": 52.18656926505649,
+      "success_rate": 100.0
+    },
+    "configuration": {
+      "tasks": 5,
+      "successes": 5,
+      "avg_confidence": 0.7809017557818058,
+      "total_time": 66.0526484893174,
+      "success_rate": 100.0
+    },
+    "performance": {
+      "tasks": 1,
+      "successes": 1,
+      "avg_confidence": 0.7933981835587447,
+      "total_time": 11.374280264605957,
+      "success_rate": 100.0
+    }
+  },
+  "recommendations": [],
+  "success": true
+}
