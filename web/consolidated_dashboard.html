@@ -3562,18 +3562,29 @@ const dataSafetyMonitor = {
         
         // Map of deprecated endpoints to new consolidated endpoints
         const API_REDIRECT_MAP = {
-            '/api/inventory-analysis': '/api/inventory-intelligence-enhanced',
-            '/api/inventory-overview': '/api/inventory-intelligence-enhanced?view=summary',
-            '/api/real-time-inventory': '/api/inventory-intelligence-enhanced?realtime=true',
-            '/api/real-time-inventory-dashboard': '/api/inventory-intelligence-enhanced?view=dashboard&realtime=true',
-            '/api/yarn-data': '/api/yarn-intelligence?view=data',
-            '/api/yarn-shortage-analysis': '/api/yarn-intelligence?analysis=shortage',
-            '/api/yarn-alternatives': '/api/yarn-substitution-intelligent?view=alternatives',
-            '/api/production-data': '/api/production-planning?view=data',
-            '/api/production-orders': '/api/production-planning?view=orders',
-            '/api/ml-forecasting': '/api/ml-forecast-detailed?detail=summary',
-            '/api/ml-forecast-report': '/api/ml-forecast-detailed?format=report',
-            // '/api/fabric-forecast': '/api/fabric-forecast-integrated', // Removed - calling correct endpoint directly
+            // Old deprecated mapping (updated to use unified endpoints)
+            '/api/inventory-analysis': '/api/inventory/unified',
+            '/api/inventory-overview': '/api/inventory/unified?view=summary',
+            '/api/real-time-inventory': '/api/inventory/unified?realtime=true',
+            '/api/real-time-inventory-dashboard': '/api/inventory/unified?view=dashboard&realtime=true',
+            '/api/yarn-data': '/api/yarn/unified?view=data',
+            '/api/yarn-shortage-analysis': '/api/yarn/unified?analysis=shortage',
+            '/api/yarn-alternatives': '/api/yarn/unified?view=alternatives',
+            '/api/production-data': '/api/production/unified?view=data',
+            '/api/production-orders': '/api/production/unified?view=orders',
+            '/api/ml-forecasting': '/api/forecast/unified?detail=summary',
+            '/api/ml-forecast-report': '/api/forecast/unified?format=report',
+            
+            // Direct deprecated → unified mappings
+            '/api/inventory/unified?enhanced=true': '/api/inventory/unified',
+            '/api/yarn/unified': '/api/yarn/unified',
+            '/api/production-planning': '/api/production/unified',
+            '/api/ml-forecast-detailed': '/api/forecast/unified',
+            '/api/production-suggestions': '/api/production/unified',
+            '/api/yarn/unified?substitution=true': '/api/yarn/unified',
+            '/api/production-pipeline': '/api/production/unified',
+            '/api/debug-data': '/api/system/unified',
+            
             '/api/emergency-shortage': '/api/emergency-shortage-dashboard',
             '/api/supply-chain-analysis-cached': '/api/supply-chain-analysis'
         };
@@ -3614,16 +3625,16 @@ const dataSafetyMonitor = {
         // API COMPATIBILITY LAYER - Ensures dashboard works with consolidated APIs
         // ============================================================================
         const APICompat = {
-            // Map old endpoints to new consolidated ones
+            // Map old endpoints to new consolidated ones (updated to unified endpoints)
             endpointMap: {
-                '/api/inventory-analysis': '/api/inventory-intelligence-enhanced',
-                '/api/inventory-overview': '/api/inventory-intelligence-enhanced?view=summary',
-                '/api/yarn-data': '/api/yarn-intelligence?view=data',
-                '/api/yarn-shortage-analysis': '/api/yarn-intelligence?analysis=shortage',
-                '/api/production-data': '/api/production-planning?view=data',
-                '/api/production-orders': '/api/production-planning?view=orders',
-                '/api/ml-forecasting': '/api/ml-forecast-detailed?detail=summary',
-                '/api/ml-forecast-report': '/api/ml-forecast-detailed?format=report',
+                '/api/inventory-analysis': '/api/inventory/unified',
+                '/api/inventory-overview': '/api/inventory/unified?view=summary',
+                '/api/yarn-data': '/api/yarn/unified?view=data',
+                '/api/yarn-shortage-analysis': '/api/yarn/unified?analysis=shortage',
+                '/api/production-data': '/api/production/unified?view=data',
+                '/api/production-orders': '/api/production/unified?view=orders',
+                '/api/ml-forecasting': '/api/forecast/unified?detail=summary',
+                '/api/ml-forecast-report': '/api/forecast/unified?format=report',
                 '/api/emergency-shortage': '/api/emergency-shortage-dashboard',
                 '/api/supply-chain-analysis-cached': '/api/supply-chain-analysis'
             },
@@ -3932,7 +3943,7 @@ const dataSafetyMonitor = {
                 if (forecastAccuracy) forecastAccuracy.textContent = kpisData.forecast_accuracy || '--';
                 
                 // Load yarn intelligence for shortage info
-                const yarnData = await fetchAPI('/api/yarn-intelligence');
+                const yarnData = await fetchAPI('/api/yarn/unified');
                 console.log('Yarn intelligence loaded:', yarnData);
                 
                 if (yarnData.criticality_analysis && yarnData.criticality_analysis.summary) {
@@ -3956,7 +3967,7 @@ const dataSafetyMonitor = {
                 }
                 
                 // Load inventory intelligence for additional metrics
-                const invIntelData = await fetchAPI('/api/inventory-intelligence-enhanced?realtime=true');
+                const invIntelData = await fetchAPI('/api/inventory/unified?enhanced=true&realtime=true');
                 console.log('Inventory intelligence loaded:', invIntelData);
                 
                 if (invIntelData.summary) {
@@ -4789,11 +4800,11 @@ const dataSafetyMonitor = {
                 // Fetch multiple APIs for comprehensive live data including yarn intelligence
                 const [planningResponse, inventoryResponse, forecastResponse, nettingResponse, kpisResponse, yarnResponse] = await Promise.all([
                     fetch(baseUrl + '/api/production-planning'),
-                    fetch(baseUrl + '/api/inventory-intelligence-enhanced'),
+                    fetch(baseUrl + '/api/inventory/unified?enhanced=true'),
                     fetch(baseUrl + '/api/ml-forecast-detailed'),
                     fetch(baseUrl + '/api/inventory-netting'),
                     fetch(baseUrl + '/api/comprehensive-kpis'),
-                    fetch(baseUrl + '/api/yarn-intelligence')
+                    fetch(baseUrl + '/api/yarn/unified')
                 ]);
                 
                 if (!planningResponse.ok || !inventoryResponse.ok) {
@@ -6701,7 +6712,7 @@ const dataSafetyMonitor = {
                 loadYarnAlternatives();
                 
                 // Load enhanced inventory intelligence data
-                const intelligenceData = await fetchAPI('/api/inventory-intelligence-enhanced');
+                const intelligenceData = await fetchAPI('/api/inventory/unified?enhanced=true');
                 console.log('Inventory intelligence data loaded:', intelligenceData);
                 
                 // Update forecast comparison
@@ -6723,7 +6734,7 @@ const dataSafetyMonitor = {
         // Function to update risk count displays
         async function updateRiskCounts() {
             try {
-                const data = await fetchAPI('/api/yarn-intelligence');
+                const data = await fetchAPI('/api/yarn/unified');
                 
                 if (data && data.criticality_analysis && data.criticality_analysis.yarns) {
                     const yarns = data.criticality_analysis.yarns;
@@ -6760,7 +6771,7 @@ const dataSafetyMonitor = {
         // Load yarn substitution opportunities
         async function loadYarnSubstitutions() {
             try {
-                const response = await fetch(API_BASE_URL + '/api/yarn-substitution-intelligent');
+                const response = await fetch(API_BASE_URL + '/api/yarn/unified?substitution=true');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
@@ -6881,7 +6892,7 @@ const dataSafetyMonitor = {
                 const dataPromises = [
                     fetch(API_BASE_URL + '/api/production-pipeline').then(r => r.ok ? r.json() : null).catch(() => null),
                     fetch(API_BASE_URL + '/api/ml-forecast-detailed').then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(API_BASE_URL + '/api/inventory-intelligence-enhanced').then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(API_BASE_URL + '/api/inventory/unified?enhanced=true').then(r => r.ok ? r.json() : null).catch(() => null),
                     fetch(API_BASE_URL + '/api/inventory-netting').then(r => r.ok ? r.json() : null).catch(() => null),
                     fetch(API_BASE_URL + '/api/po-risk-analysis').then(r => r.ok ? r.json() : null).catch(() => null)
                 ];
@@ -7764,7 +7775,7 @@ const dataSafetyMonitor = {
         async function loadProductForecasts() {
             try {
                 // Fetch live yarn intelligence data
-                const data = await fetchAPI('/api/yarn-intelligence');
+                const data = await fetchAPI('/api/yarn/unified');
                 
                 const tbody = document.querySelector('#productForecastTable tbody');
                 if (tbody) {
@@ -7921,7 +7932,7 @@ const dataSafetyMonitor = {
                 if (!container) return;
                 
                 // Fetch live yarn intelligence data
-                const yarnData = await fetchAPI('/api/yarn-intelligence');
+                const yarnData = await fetchAPI('/api/yarn/unified');
                 
                 // Create inventory data from yarn data
                 const inventoryData = {
@@ -9079,7 +9090,7 @@ const dataSafetyMonitor = {
         async function loadYarnIntelligence() {
             try {
                 // Request yarn intelligence with time-phased data
-                const data = await fetchAPI('/api/yarn-intelligence?include_timing=true');
+                const data = await fetchAPI('/api/yarn/unified?include_timing=true');
                 
                 if (data.error) {
                     console.error('Yarn intelligence error:', data.error);
@@ -12451,7 +12462,7 @@ const dataSafetyMonitor = {
             
             try {
                 // Request yarn intelligence with time-phased data for shortage analysis
-                const data = await fetchAPI('/api/yarn-intelligence?include_timing=true');
+                const data = await fetchAPI('/api/yarn/unified?include_timing=true');
                 
                 console.log('Yarn intelligence response:', data);
                 console.log('Has criticality_analysis:', !!data.criticality_analysis);
@@ -13028,7 +13039,7 @@ const dataSafetyMonitor = {
             
             try {
                 // Use yarn-intelligence endpoint with forecast parameters
-                const response = await fetchAPI('/api/yarn-intelligence?forecast=true&analysis=shortage');
+                const response = await fetchAPI('/api/yarn/unified?forecast=true&analysis=shortage');
                 
                 let data = {
                     summary: {
@@ -13193,7 +13204,7 @@ const dataSafetyMonitor = {
                 
                 console.log('Shortage yarn IDs to filter:', Array.from(shortageYarnIds));
                 
-                const data = await fetchAPI('/api/yarn-substitution-intelligent');
+                const data = await fetchAPI('/api/yarn/unified?substitution=true');
                 
                 if (data.status === 'success' && data.substitution_opportunities) {
                     // Show all opportunities with shortage amount > 0 (temporarily bypassing table filter)
@@ -13399,7 +13410,7 @@ const dataSafetyMonitor = {
             if (!tbody) return;
             
             // Load yarn intelligence data directly for better display
-            fetchAPI('/api/yarn-intelligence')
+            fetchAPI('/api/yarn/unified')
                 .then(data => {
                     if (data.criticality_analysis && data.criticality_analysis.yarns) {
                         const yarns = data.criticality_analysis.yarns.slice(0, 20); // Show top 20 yarns

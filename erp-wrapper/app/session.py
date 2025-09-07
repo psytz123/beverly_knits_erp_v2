@@ -45,7 +45,11 @@ class SessionManager:
             logger.error(f"Request error: {e}")
             raise
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text[:200]}")
+            # Don't log 404s as errors for knit-orders endpoints (they don't exist)
+            if e.response.status_code == 404 and 'knit-order' in url.lower():
+                logger.debug(f"HTTP 404 (expected): {url} - endpoint not available")
+            else:
+                logger.error(f"HTTP error: {e.response.status_code} - {e.response.text[:200]}")
             raise
 
     def login(self, force: bool = False) -> None:

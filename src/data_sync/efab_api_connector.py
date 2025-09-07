@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 eFab API Connector for Beverly Knits ERP
-Integrates with eFab.bklapps.com API for real-time data synchronization
+Integrates with eFab.bkiapps.com API for real-time data synchronization
 """
 
 import requests
@@ -22,11 +22,12 @@ logger = logging.getLogger(__name__)
 class eFabAPIConnector:
     """Connector for eFab API integration"""
     
-    def __init__(self, base_url: str = "https://efab.bklapps.com", 
+    def __init__(self, base_url: str = "http://localhost:8000", 
                  session_cookie: Optional[str] = None,
                  username: Optional[str] = None,
                  password: Optional[str] = None,
-                 config_path: Optional[str] = None):
+                 config_path: Optional[str] = None,
+                 request_timeout: int = 120):
         """
         Initialize eFab API connector
         
@@ -36,6 +37,7 @@ class eFabAPIConnector:
             username: Username for login authentication
             password: Password for login authentication
             config_path: Path to configuration file with credentials
+            request_timeout: Request timeout in seconds (default: 120 for large datasets)
         """
         # Store initial parameters
         self._initial_base_url = base_url
@@ -45,6 +47,7 @@ class eFabAPIConnector:
         self.username = username or "psytz"  # From .env.efab.example
         self.password = password or "big$cat"  # From .env.efab.example
         self.config_path = config_path or "/mnt/c/finalee/beverly_knits_erp_v2/config/efab_config.json"
+        self.request_timeout = request_timeout  # Configurable timeout for large datasets
         
         # Load configuration (but don't override explicit parameters)
         self._load_config()
@@ -172,9 +175,9 @@ class eFabAPIConnector:
         for attempt in range(retries):
             try:
                 if method == 'GET':
-                    response = self.session.get(url, params=params, timeout=30)
+                    response = self.session.get(url, params=params, timeout=self.request_timeout)
                 elif method == 'POST':
-                    response = self.session.post(url, json=data, timeout=30)
+                    response = self.session.post(url, json=data, timeout=self.request_timeout)
                 else:
                     raise ValueError(f"Unsupported method: {method}")
                 
@@ -183,7 +186,11 @@ class eFabAPIConnector:
                 # Check if response is JSON
                 content_type = response.headers.get('content-type', '')
                 if 'application/json' in content_type:
-                    return response.json()
+                    json_data = response.json()
+                    # Handle wrapper response format
+                    if isinstance(json_data, dict) and 'data' in json_data:
+                        return json_data['data']  # Extract data from wrapper response
+                    return json_data
                 else:
                     logger.warning(f"Non-JSON response: {response.text[:200]}")
                     return None
@@ -207,7 +214,7 @@ class eFabAPIConnector:
         logger.info("Fetching sales order plan list...")
         
         try:
-            data = self._make_request('/api/sales-order/plan/list')
+            data = self._make_request('/api/sales-orders')
             
             if data:
                 # Convert to DataFrame
@@ -255,7 +262,7 @@ class eFabAPIConnector:
                 except:
                     continue
             
-            logger.warning("Could not fetch knit orders from any endpoint")
+            logger.debug("Could not fetch knit orders from any endpoint (expected - endpoints not available)")
             return None
             
         except Exception as e:
@@ -384,7 +391,7 @@ class eFabAPIConnector:
         """
         try:
             logger.info("Testing API connection...")
-            data = self._make_request('/api/sales-order/plan/list')
+            data = self._make_request('/api/sales-orders')
             
             if data is not None:
                 logger.info("✅ Connection successful!")

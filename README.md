@@ -24,7 +24,7 @@ make run
 ## 📋 Features
 
 ### Core Capabilities
-- **Real-time Inventory Management** - Track yarn inventory across multiple stages
+- **Real-time Inventory Management** - Track 246 active yarns across multiple stages with corrected data
 - **ML Forecasting** - 90% accuracy at 9-week horizon with ensemble models
 - **Supply Chain Optimization** - 6-phase planning engine
 - **Yarn Intelligence** - Automatic substitution recommendations

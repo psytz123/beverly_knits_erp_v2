@@ -175,38 +175,66 @@ class ModelRegistry:
     
     def register_model(self, model_version: ModelVersion) -> bool:
         """Register new model version"""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute('''
-                    INSERT OR REPLACE INTO model_versions 
-                    (model_id, model_name, version, model_path, model_hash, 
-                     metadata, created_at, status, performance_metrics, deployment_config)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    model_version.model_id,
-                    model_version.model_name,
-                    model_version.version,
-                    model_version.model_path,
-                    model_version.model_hash,
-                    json.dumps(model_version.metadata),
-                    model_version.created_at.isoformat(),
-                    model_version.status.value,
-                    json.dumps(model_version.performance_metrics),
-                    json.dumps(model_version.deployment_config)
-                ))
+        max_retries = 3
+        retry_delay = 0.1
+        
+        for attempt in range(max_retries):
+            try:
+                with sqlite3.connect(self.db_path, timeout=30) as conn:
+                    conn.execute('BEGIN IMMEDIATE')
+                    try:
+                        conn.execute('''
+                            INSERT OR REPLACE INTO model_versions 
+                            (model_id, model_name, version, model_path, model_hash, 
+                             metadata, created_at, status, performance_metrics, deployment_config)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (
+                            model_version.model_id,
+                            model_version.model_name,
+                            model_version.version,
+                            model_version.model_path,
+                            model_version.model_hash,
+                            json.dumps(model_version.metadata),
+                            model_version.created_at.isoformat(),
+                            model_version.status.value,
+                            json.dumps(model_version.performance_metrics),
+                            json.dumps(model_version.deployment_config)
+                        ))
+                        
+                        # Log registration
+                        conn.execute('''
+                            INSERT INTO deployment_history (model_id, action, timestamp, details)
+                            VALUES (?, ?, ?, ?)
+                        ''', (
+                            model_version.model_id, 
+                            "registered", 
+                            datetime.now().isoformat(), 
+                            json.dumps({
+                                "version": model_version.version,
+                                "path": model_version.model_path
+                            })
+                        ))
+                        
+                        conn.commit()
+                    except Exception:
+                        conn.rollback()
+                        raise
+                    
+                logger.info(f"Registered model {model_version.model_name} v{model_version.version}")
+                return True
                 
-                # Log registration
-                self.log_deployment_action(model_version.model_id, "registered", {
-                    "version": model_version.version,
-                    "path": model_version.model_path
-                })
-                
-            logger.info(f"Registered model {model_version.model_name} v{model_version.version}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to register model: {e}")
-            return False
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e) and attempt < max_retries - 1:
+                    time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                    continue
+                else:
+                    logger.error(f"Failed to register model after {max_retries} attempts: {e}")
+                    return False
+            except Exception as e:
+                logger.error(f"Failed to register model: {e}")
+                return False
+        
+        return False
     
     def get_model_versions(self, model_name: str) -> List[ModelVersion]:
         """Get all versions of a model"""
@@ -267,22 +295,51 @@ class ModelRegistry:
     def update_model_status(self, model_id: str, status: DeploymentStatus, 
                            details: Dict[str, Any] = None) -> bool:
         """Update model deployment status"""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute('''
-                    UPDATE model_versions 
-                    SET status = ? 
-                    WHERE model_id = ?
-                ''', (status.value, model_id))
+        max_retries = 3
+        retry_delay = 0.1
+        
+        for attempt in range(max_retries):
+            try:
+                with sqlite3.connect(self.db_path, timeout=30) as conn:
+                    conn.execute('BEGIN IMMEDIATE')
+                    try:
+                        conn.execute('''
+                            UPDATE model_versions 
+                            SET status = ? 
+                            WHERE model_id = ?
+                        ''', (status.value, model_id))
+                        
+                        # Log action
+                        conn.execute('''
+                            INSERT INTO deployment_history (model_id, action, timestamp, details)
+                            VALUES (?, ?, ?, ?)
+                        ''', (
+                            model_id, 
+                            f"status_changed_to_{status.value}", 
+                            datetime.now().isoformat(), 
+                            json.dumps(details or {})
+                        ))
+                        
+                        conn.commit()
+                    except Exception:
+                        conn.rollback()
+                        raise
                 
-                self.log_deployment_action(model_id, f"status_changed_to_{status.value}", details or {})
-            
-            logger.info(f"Updated model {model_id} status to {status.value}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to update model status: {e}")
-            return False
+                logger.info(f"Updated model {model_id} status to {status.value}")
+                return True
+                
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e) and attempt < max_retries - 1:
+                    time.sleep(retry_delay * (2 ** attempt))
+                    continue
+                else:
+                    logger.error(f"Failed to update model status after {max_retries} attempts: {e}")
+                    return False
+            except Exception as e:
+                logger.error(f"Failed to update model status: {e}")
+                return False
+        
+        return False
     
     def log_deployment_action(self, model_id: str, action: str, details: Dict[str, Any]):
         """Log deployment action"""

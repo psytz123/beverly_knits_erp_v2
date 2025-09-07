@@ -260,6 +260,19 @@ class CacheManager:
             self.stats['invalidations'] += count
             return count
     
+    def clear_pattern(self, pattern: str, namespace: str = "default") -> int:
+        """
+        Alias for invalidate_pattern for backward compatibility.
+        
+        Args:
+            pattern: Pattern to match (supports * wildcard)
+            namespace: Cache namespace
+            
+        Returns:
+            Number of invalidated entries
+        """
+        return self.invalidate_pattern(pattern, namespace)
+    
     def clear_expired(self) -> int:
         """
         Clear all expired entries from cache.

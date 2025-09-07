@@ -82,6 +82,18 @@ class eFabAutoSync:
             logger.error(f"Failed to initialize connector: {e}")
             self.enabled = False
     
+    def _clear_cache_safely(self, pattern: str):
+        """Safe cache clearing that handles different cache manager versions"""
+        try:
+            if hasattr(self.cache_manager, 'clear_pattern'):
+                self.cache_manager.clear_pattern(pattern)
+            elif hasattr(self.cache_manager, 'invalidate_pattern'):
+                self.cache_manager.invalidate_pattern(pattern)
+            else:
+                logger.debug(f"Cache manager doesn't support pattern clearing: {pattern}")
+        except Exception as e:
+            logger.debug(f"Cache clear failed for pattern {pattern}: {e}")
+    
     def sync_data(self) -> Dict[str, Any]:
         """
         Perform a single sync operation
@@ -123,8 +135,8 @@ class eFabAutoSync:
                     records_synced += len(sales_orders)
                     
                     # Clear related cache
-                    self.cache_manager.clear_pattern('*sales*')
-                    self.cache_manager.clear_pattern('*order*')
+                    self._clear_cache_safely('*sales*')
+                    self._clear_cache_safely('*order*')
             except Exception as e:
                 logger.error(f"Error syncing sales orders: {e}")
                 results['errors'].append(f"Sales orders: {str(e)}")
@@ -141,8 +153,8 @@ class eFabAutoSync:
                     records_synced += len(knit_orders)
                     
                     # Clear related cache
-                    self.cache_manager.clear_pattern('*knit*')
-                    self.cache_manager.clear_pattern('*production*')
+                    self._clear_cache_safely('*knit*')
+                    self._clear_cache_safely('*production*')
             except Exception as e:
                 logger.error(f"Error syncing knit orders: {e}")
                 results['errors'].append(f"Knit orders: {str(e)}")
@@ -163,8 +175,8 @@ class eFabAutoSync:
                     results['errors'].append(f"Inventory {warehouse}: {str(e)}")
             
             # Clear inventory cache
-            self.cache_manager.clear_pattern('*inventory*')
-            self.cache_manager.clear_pattern('*stock*')
+            self._clear_cache_safely('*inventory*')
+            self._clear_cache_safely('*stock*')
             
             # Update statistics
             self.sync_stats['successful_syncs'] += 1

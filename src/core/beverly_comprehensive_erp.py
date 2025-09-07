@@ -48,6 +48,9 @@ from functools import lru_cache, wraps
 import logging
 import traceback
 import math
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 warnings.filterwarnings('ignore')
 
 # Import feature flags for API consolidation
@@ -364,6 +367,283 @@ except ImportError as e:
     PLANNING_API_AVAILABLE = False
     planning_api = None
     ml_logger.warning(f"Planning APIs not available: {e}")
+
+# API-based Data Loading Client
+class APIDataLoader:
+    """Client for loading data via APIs instead of direct file access"""
+    
+    def __init__(self, wrapper_url="http://localhost:8000", efab_url="https://efab.bkiapps.com"):
+        self.wrapper_url = wrapper_url
+        self.efab_url = efab_url
+        
+        # Setup session with retry strategy (version-compatible)
+        self.session = requests.Session()
+        try:
+            # Try with older urllib3 (< 2.0) parameters first
+            retry_strategy = Retry(
+                total=3,
+                status_forcelist=[429, 500, 502, 503, 504],
+                method_whitelist=["HEAD", "GET", "OPTIONS"]
+            )
+        except TypeError:
+            try:
+                # Fallback for newer urllib3 (>= 2.0) parameters  
+                retry_strategy = Retry(
+                    total=3,
+                    status_forcelist=[429, 500, 502, 503, 504],
+                    allowed_methods=["HEAD", "GET", "OPTIONS"]
+                )
+            except Exception:
+                # Minimal retry if all else fails
+                retry_strategy = Retry(total=3)
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+    
+    def load_yarn_inventory(self):
+        """Load yarn inventory via API"""
+        try:
+            # Try wrapper service first
+            response = self.session.get(f"{self.wrapper_url}/api/yarn/active", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API yarn loading failed, falling back to file: {e}")
+            
+        # Fallback to file reading
+        return self._fallback_yarn_loading()
+    
+    def load_knit_orders(self):
+        """Load knit orders via API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/knit-orders", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API knit orders loading failed, falling back to file: {e}")
+            
+        return self._fallback_knit_orders_loading()
+    
+    def load_sales_orders(self):
+        """Load sales orders via API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/sales-orders", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API sales orders loading failed, falling back to file: {e}")
+            
+        return pd.DataFrame()  # Empty fallback for now
+    
+    def load_inventory_by_warehouse(self, warehouse="all"):
+        """Load inventory by warehouse via API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/inventory/{warehouse}", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API inventory loading failed for {warehouse}, falling back to file: {e}")
+            
+        return pd.DataFrame()  # Empty fallback
+    
+    def load_styles(self):
+        """Load styles via API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/styles", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API styles loading failed, falling back to file: {e}")
+        return pd.DataFrame()
+    
+    def load_yarn_demand_ko(self):
+        """Load yarn demand (KO format) via API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/report/yarn_demand_ko", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API yarn demand KO loading failed: {e}")
+        return pd.DataFrame()
+    
+    def load_yarn_demand(self):
+        """Load standard yarn demand via API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/report/yarn_demand", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API yarn demand loading failed: {e}")
+        return pd.DataFrame()
+    
+    def load_yarn_po(self):
+        """Load yarn purchase orders via API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/yarn-po", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API yarn PO loading failed: {e}")
+        return pd.DataFrame()
+    
+    def load_yarn_expected(self):
+        """Load expected yarn deliveries via API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/report/yarn_expected", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API yarn expected deliveries loading failed: {e}")
+        return pd.DataFrame()
+    
+    def load_greige_g00(self):
+        """Load Greige stage 1 inventory via direct eFab API"""
+        try:
+            # Try wrapper first
+            response = self.session.get(f"{self.wrapper_url}/api/greige/g00", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API greige G00 loading failed: {e}")
+        return pd.DataFrame()
+    
+    def load_greige_g02(self):
+        """Load Greige stage 2 inventory via direct eFab API"""
+        try:
+            # Try wrapper first
+            response = self.session.get(f"{self.wrapper_url}/api/greige/g02", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API greige G02 loading failed: {e}")
+        return pd.DataFrame()
+    
+    def load_inspection_i01(self):
+        """Load QC/Inspection inventory via direct eFab API"""
+        try:
+            # Try wrapper first
+            response = self.session.get(f"{self.wrapper_url}/api/finished/i01", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API inspection I01 loading failed: {e}")
+        return pd.DataFrame()
+    
+    def load_finished_f01(self):
+        """Load finished goods inventory via direct eFab API"""
+        try:
+            # Try wrapper first
+            response = self.session.get(f"{self.wrapper_url}/api/finished/f01", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API finished F01 loading failed: {e}")
+        return pd.DataFrame()
+
+    def load_bom_data(self):
+        """Load BOM data - currently file-based as no API endpoint available"""
+        # BOM data is typically static and loaded from files
+        # Could be enhanced to use API when available
+        return self._fallback_bom_loading()
+    
+    def load_greige_styles(self):
+        """Load greige styles via QuadS API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/styles/greige/active", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API greige styles loading failed: {e}")
+        return pd.DataFrame()
+    
+    def load_finished_styles(self):
+        """Load finished styles via QuadS API"""
+        try:
+            response = self.session.get(f"{self.wrapper_url}/api/styles/finished/active", timeout=30)
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data:
+                    return pd.DataFrame(data['data'])
+                return pd.DataFrame(data)
+        except Exception as e:
+            print(f"API finished styles loading failed: {e}")
+        return pd.DataFrame()
+    
+    def _fallback_bom_loading(self):
+        """Fallback to file-based BOM loading"""
+        try:
+            bom_file = Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/BOM_updated.csv")
+            if bom_file.exists():
+                return pd.read_csv(bom_file)
+        except Exception as e:
+            print(f"Fallback BOM loading failed: {e}")
+        return pd.DataFrame()
+    
+    def _fallback_yarn_loading(self):
+        """Fallback to file-based yarn loading"""
+        try:
+            yarn_file = Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/yarn_inventory.csv")
+            if yarn_file.exists():
+                return pd.read_csv(yarn_file)
+        except Exception as e:
+            print(f"Fallback yarn loading failed: {e}")
+        return pd.DataFrame()
+    
+    def _fallback_knit_orders_loading(self):
+        """Fallback to file-based knit orders loading"""
+        try:
+            knit_file = Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/eFab_Knit_Orders.csv")
+            if knit_file.exists():
+                return pd.read_csv(knit_file)
+        except Exception as e:
+            print(f"Fallback knit orders loading failed: {e}")
+        return pd.DataFrame()
+
+# Initialize API data loader
+api_loader = APIDataLoader()
+print("[OK] API Data Loader initialized")
 
 app = Flask(__name__)
 if CORS_AVAILABLE:
@@ -3452,50 +3732,108 @@ class ManufacturingSupplyChainAI:
         """Load and process all manufacturing data sources - industry agnostic"""
         try:
 
-            # Use Day 0 Dynamic Path Resolution if available
-            if DAY0_FIXES_AVAILABLE:
+            # Always try API loading first (force enable for clean data)  
+            if True:  # Force API loading regardless of DAY0_FIXES_AVAILABLE
                 try:
-                    path_resolver = DynamicPathResolver()
+                    # Try API-based loading first (no path resolver needed)
+                    self.raw_materials_data = api_loader.load_yarn_inventory()
+                    if not self.raw_materials_data.empty:
+                        print(f"[API] Loaded yarn inventory via API ({len(self.raw_materials_data)} items)")
+                        # Map API column names to expected names
+                        if 'qty_planning' in self.raw_materials_data.columns:
+                            self.raw_materials_data['Planning_Balance'] = self.raw_materials_data['qty_planning']
+                        if 'desc_number' in self.raw_materials_data.columns:
+                            self.raw_materials_data['Desc#'] = self.raw_materials_data['desc_number']
+                        # Assign to yarn_data for compatibility
+                        self.yarn_data = self.raw_materials_data
                     
-                    # Resolve all data files dynamically
-                    yarn_file = path_resolver.resolve_file('yarn_inventory')
-                    if yarn_file:
-                        self.raw_materials_data = pd.read_excel(yarn_file) if yarn_file.suffix == '.xlsx' else pd.read_csv(yarn_file)
-                        print(f"[DAY0] Loaded yarn inventory from: {yarn_file}")
+                    # Try API-based loading first for BOM data
+                    self.bom_data = api_loader.load_bom_data()
+                    if not self.bom_data.empty:
+                        print(f"[API] Loaded BOM data via API")
+                    else:
+                        # Fallback to file loading
+                        bom_file = path_resolver.resolve_file('bom')
+                        if bom_file:
+                            self.bom_data = pd.read_csv(bom_file)
+                            print(f"[DAY0] Loaded BOM from: {bom_file}")
                     
-                    bom_file = path_resolver.resolve_file('bom')
-                    if bom_file:
-                        self.bom_data = pd.read_csv(bom_file)
-                        print(f"[DAY0] Loaded BOM from: {bom_file}")
+                    # Try API-based loading first for sales data  
+                    self.sales_data = api_loader.load_sales_orders()
+                    if not self.sales_data.empty:
+                        print(f"[API] Loaded sales data via API ({len(self.sales_data)} items)")
                     
-                    sales_file = path_resolver.resolve_file('sales')
-                    if sales_file:
-                        self.sales_data = pd.read_csv(sales_file)
-                        print(f"[DAY0] Loaded sales from: {sales_file}")
+                    # Try API-based loading first for knit orders
+                    self.knit_orders = api_loader.load_knit_orders()
+                    if not self.knit_orders.empty:
+                        self.knit_orders_data = self.knit_orders  # For compatibility
+                        print(f"[API] Loaded knit orders via API ({len(self.knit_orders)} items)")
                     
-                    knit_orders_file = path_resolver.resolve_file('knit_orders')
-                    if knit_orders_file:
-                        self.knit_orders = pd.read_excel(knit_orders_file) if knit_orders_file.suffix == '.xlsx' else pd.read_csv(knit_orders_file)
-                        print(f"[DAY0] Loaded knit orders from: {knit_orders_file}")
+                    # Try API-based loading for greige styles from QuadS
+                    self.greige_styles_data = api_loader.load_greige_styles()
+                    if not self.greige_styles_data.empty:
+                        print(f"[API] Loaded greige styles via QuadS API ({len(self.greige_styles_data)} items)")
+                    
+                    # Try API-based loading for finished styles from QuadS  
+                    self.finished_styles_data = api_loader.load_finished_styles()
+                    if not self.finished_styles_data.empty:
+                        print(f"[API] Loaded finished styles via QuadS API ({len(self.finished_styles_data)} items)")
+                    
+                    # Try API-based loading for inventory stages
+                    self.greige_g00_data = api_loader.load_greige_g00()
+                    if not self.greige_g00_data.empty:
+                        print(f"[API] Loaded G00 greige inventory via API ({len(self.greige_g00_data)} items)")
+                        
+                    self.greige_g02_data = api_loader.load_greige_g02()
+                    if not self.greige_g02_data.empty:
+                        print(f"[API] Loaded G02 greige inventory via API ({len(self.greige_g02_data)} items)")
+                        
+                    self.inspection_i01_data = api_loader.load_inspection_i01()
+                    if not self.inspection_i01_data.empty:
+                        print(f"[API] Loaded I01 inspection inventory via API ({len(self.inspection_i01_data)} items)")
+                        
+                    self.finished_f01_data = api_loader.load_finished_f01()
+                    if not self.finished_f01_data.empty:
+                        print(f"[API] Loaded F01 finished inventory via API ({len(self.finished_f01_data)} items)")
                         
                 except Exception as e:
-                    print(f"[DAY0] Path resolution failed, using fallback: {e}")
+                    print(f"[API] API data loading encountered errors: {e}")
 
-            # Use parallel loader if available for 4x faster loading
+            # Use parallel loader as fallback if API loading didn't work
             if PARALLEL_LOADER_AVAILABLE and hasattr(self, 'parallel_loader'):
-                print("[FAST] Using parallel data loader for fast concurrent loading...")
-                start_time = datetime.now()
+                # Check if API loading was successful (don't override API data)
+                use_parallel_for_yarn = self.raw_materials_data is None or self.raw_materials_data.empty
+                use_parallel_for_bom = self.bom_data is None or self.bom_data.empty
+                use_parallel_for_sales = self.sales_data is None or self.sales_data.empty
+                use_parallel_for_knit = self.knit_orders_data is None or self.knit_orders_data.empty
                 
-                # Load all data in parallel
-                parallel_results = self.parallel_loader.load_all_data()
-                
-                # Map parallel loader results to class attributes
-                self.raw_materials_data = parallel_results.get('yarn_inventory', pd.DataFrame())
-                self.yarn_data = self.raw_materials_data  # For compatibility
-                self.bom_data = parallel_results.get('bom', pd.DataFrame())  # parallel loader returns 'bom'
-                self.sales_data = parallel_results.get('sales_orders', pd.DataFrame())  # parallel loader returns 'sales_orders'
-                self.knit_orders_data = parallel_results.get('knit_orders', pd.DataFrame())
-                self.knit_orders = self.knit_orders_data  # For compatibility
+                if use_parallel_for_yarn or use_parallel_for_bom or use_parallel_for_sales or use_parallel_for_knit:
+                    print("[FALLBACK] Using parallel data loader for missing data...")
+                    start_time = datetime.now()
+                    
+                    # Load all data in parallel
+                    parallel_results = self.parallel_loader.load_all_data()
+                    
+                    # Only update data that wasn't successfully loaded via API
+                    if use_parallel_for_yarn:
+                        self.raw_materials_data = parallel_results.get('yarn_inventory', pd.DataFrame())
+                        self.yarn_data = self.raw_materials_data  # For compatibility
+                        print(f"[FALLBACK] Loaded yarn data via parallel loader")
+                    
+                    if use_parallel_for_bom:
+                        self.bom_data = parallel_results.get('bom', pd.DataFrame())
+                        print(f"[FALLBACK] Loaded BOM data via parallel loader")
+                    
+                    if use_parallel_for_sales:
+                        self.sales_data = parallel_results.get('sales_orders', pd.DataFrame())
+                        print(f"[FALLBACK] Loaded sales data via parallel loader")
+                    
+                    if use_parallel_for_knit:
+                        self.knit_orders_data = parallel_results.get('knit_orders', pd.DataFrame())
+                        self.knit_orders = self.knit_orders_data  # For compatibility
+                        print(f"[FALLBACK] Loaded knit orders via parallel loader")
+                else:
+                    print("[API-FIRST] All data successfully loaded via API, skipping parallel loader")
                 
                 # Standardize fStyle# to Style# in sales data
                 if not self.sales_data.empty and 'fStyle#' in self.sales_data.columns and 'Style#' not in self.sales_data.columns:
@@ -3749,9 +4087,30 @@ class ManufacturingSupplyChainAI:
             if finished_files:
                 self.finished_goods_data = pd.read_excel(finished_files[0])
 
-            # Load production stages (generic) - prioritize from primary_data_path
-            for stage in ["raw", "wip", "component", "assembly", "finished", "G00", "G02", "I01", "F01", "P01"]:
-                # First check primary_data_path (directory 5), then fallback to general data_path
+            # Load production stages with API-first approach
+            # Try API loading first for eFab production stages
+            production_stages = {"G00": "load_greige_g00", "G02": "load_greige_g02", "I01": "load_inspection_i01", "F01": "load_finished_f01"}
+            for stage, api_method in production_stages.items():
+                try:
+                    # Try API loading first
+                    if hasattr(api_loader, api_method):
+                        stage_data = getattr(api_loader, api_method)()
+                        if not stage_data.empty:
+                            self.inventory_data[stage] = stage_data
+                            print(f"[API] Loaded {stage} inventory via API ({len(stage_data)} items)")
+                            continue
+                except Exception as e:
+                    print(f"API loading failed for {stage}: {e}")
+                
+                # Fallback to file loading
+                stage_files = list(primary_data_path.glob(f"*{stage}*.xlsx")) + \
+                             list(self.data_path.glob(f"*{stage}*.xlsx"))
+                if stage_files and stage not in self.inventory_data:
+                    self.inventory_data[stage] = pd.read_excel(stage_files[0])
+                    print(f"[FILE] Loaded {stage} inventory: {stage_files[0]}")
+            
+            # Load other generic stages (file-based)
+            for stage in ["raw", "wip", "component", "assembly", "finished", "P01"]:
                 stage_files = list(primary_data_path.glob(f"*{stage}*.xlsx")) + \
                              list(self.data_path.glob(f"*{stage}*.xlsx"))
                 if stage_files and stage not in self.inventory_data:
@@ -3772,14 +4131,50 @@ class ManufacturingSupplyChainAI:
             else:
                 self.knit_orders_data = None
             
-            # Load demand/forecast files - prioritize from primary_data_path
-            demand_files = list(primary_data_path.glob("*[Dd]emand*.xlsx")) + \
-                          list(primary_data_path.glob("*[Ff]orecast*.xlsx")) + \
-                          list(self.data_path.glob("*[Dd]emand*.xlsx")) + \
-                          list(self.data_path.glob("*[Ff]orecast*.xlsx"))
-            if demand_files:
-                self.demand_forecast = pd.read_excel(demand_files[0])
-                print(f"Loaded demand/forecast: {demand_files[0]}")
+            # Load demand/forecast data with API-first approach
+            try:
+                # Try API loading first for yarn demand
+                yarn_demand_data = api_loader.load_yarn_demand()
+                if not yarn_demand_data.empty:
+                    self.demand_forecast = yarn_demand_data
+                    print(f"[API] Loaded yarn demand via API ({len(yarn_demand_data)} items)")
+                else:
+                    # Try yarn demand KO format
+                    yarn_demand_ko = api_loader.load_yarn_demand_ko()
+                    if not yarn_demand_ko.empty:
+                        self.demand_forecast = yarn_demand_ko
+                        print(f"[API] Loaded yarn demand KO via API ({len(yarn_demand_ko)} items)")
+                    else:
+                        # Fallback to file loading
+                        demand_files = list(primary_data_path.glob("*[Dd]emand*.xlsx")) + \
+                                      list(primary_data_path.glob("*[Ff]orecast*.xlsx")) + \
+                                      list(self.data_path.glob("*[Dd]emand*.xlsx")) + \
+                                      list(self.data_path.glob("*[Ff]orecast*.xlsx"))
+                        if demand_files:
+                            self.demand_forecast = pd.read_excel(demand_files[0])
+                            print(f"[FILE] Loaded demand/forecast: {demand_files[0]}")
+            except Exception as e:
+                print(f"Error loading demand data via API, using file fallback: {e}")
+                # File fallback
+                demand_files = list(primary_data_path.glob("*[Dd]emand*.xlsx")) + \
+                              list(primary_data_path.glob("*[Ff]orecast*.xlsx")) + \
+                              list(self.data_path.glob("*[Dd]emand*.xlsx")) + \
+                              list(self.data_path.glob("*[Ff]orecast*.xlsx"))
+                if demand_files:
+                    self.demand_forecast = pd.read_excel(demand_files[0])
+                    print(f"[FILE] Loaded demand/forecast: {demand_files[0]}")
+            
+            # Load yarn PO and expected deliveries for time-phased planning
+            try:
+                self.yarn_po_data = api_loader.load_yarn_po()
+                if not self.yarn_po_data.empty:
+                    print(f"[API] Loaded yarn PO data via API ({len(self.yarn_po_data)} items)")
+                
+                self.yarn_expected_data = api_loader.load_yarn_expected()
+                if not self.yarn_expected_data.empty:
+                    print(f"[API] Loaded yarn expected deliveries via API ({len(self.yarn_expected_data)} items)")
+            except Exception as e:
+                print(f"Error loading PO/expected data via API: {e}")
             
             # Load comprehensive knit order data
             self.load_knit_orders()
@@ -6928,14 +7323,43 @@ class ManufacturingSupplyChainAI:
             rename_map = {v: k for k, v in column_mapping.items()}
             df = df.rename(columns=rename_map)
             
-            # Fill missing values with defaults
-            df['Cost/Pound'] = df.get('Cost/Pound', 0).fillna(0)
-            df['Consumed'] = df.get('Consumed', 0).fillna(0)
-            df['Supplier'] = df.get('Supplier', 'Unknown').fillna('Unknown')
-            df['On Order'] = df.get('On Order', 0).fillna(0)
+            # Fill missing values with defaults - use proper column access
+            if 'Cost/Pound' not in df.columns:
+                df['Cost/Pound'] = 0
+            else:
+                df['Cost/Pound'] = pd.to_numeric(
+                    df['Cost/Pound'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
+                
+            if 'Consumed' not in df.columns:
+                df['Consumed'] = 0
+            else:
+                df['Consumed'] = pd.to_numeric(
+                    df['Consumed'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
+                
+            if 'Supplier' not in df.columns:
+                df['Supplier'] = 'Unknown'
+            else:
+                df['Supplier'] = df['Supplier'].fillna('Unknown')
+                
+            if 'On Order' not in df.columns:
+                df['On Order'] = 0
+            else:
+                df['On Order'] = pd.to_numeric(
+                    df['On Order'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
 
             # PRIORITY 1: CRITICAL STOCK-OUTS (Negative Planning Balance)
             if 'Planning Balance' in df.columns:
+                # Ensure Planning Balance is numeric for comparisons
+                df['Planning Balance'] = pd.to_numeric(
+                    df['Planning Balance'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
                 critical_items = df[df['Planning Balance'] < 0].copy()
             else:
                 critical_items = pd.DataFrame()
@@ -9830,6 +10254,74 @@ def clear_cache():
         cache_store.clear()
         return jsonify({"message": "Basic cache cleared"})
 
+@app.route("/api/health", methods=['GET'])
+@app.route("/health", methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        import time
+        start_time = time.time()
+        
+        # Check basic system health
+        health_status = {
+            "status": "healthy",
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "service": "Beverly Knits ERP",
+            "port": 5006,
+            "checks": {}
+        }
+        
+        # Check data availability
+        health_status["checks"]["data_loaded"] = {
+            "status": "ok" if analyzer and analyzer.raw_materials_data is not None else "warning",
+            "yarn_items": len(analyzer.raw_materials_data) if analyzer and analyzer.raw_materials_data is not None else 0,
+            "bom_entries": len(analyzer.bom_data) if analyzer and analyzer.bom_data is not None else 0
+        }
+        
+        # Check wrapper service connectivity
+        try:
+            import requests
+            wrapper_response = requests.get("http://localhost:8000/health", timeout=5)
+            health_status["checks"]["wrapper_service"] = {
+                "status": "ok" if wrapper_response.status_code == 200 else "error",
+                "response_time_ms": round((time.time() - start_time) * 1000, 2)
+            }
+        except:
+            health_status["checks"]["wrapper_service"] = {
+                "status": "error",
+                "error": "Cannot connect to wrapper service"
+            }
+        
+        # Check cache system
+        if CACHE_MANAGER_AVAILABLE:
+            try:
+                cache_stats = cache_manager.get_statistics()
+                health_status["checks"]["cache_system"] = {
+                    "status": "ok",
+                    "hit_rate": round(cache_stats.get("hit_rate", 0), 2),
+                    "items": cache_stats.get("memory_items", 0)
+                }
+            except:
+                health_status["checks"]["cache_system"] = {"status": "error"}
+        else:
+            health_status["checks"]["cache_system"] = {"status": "basic"}
+        
+        # Determine overall status
+        if any(check.get("status") == "error" for check in health_status["checks"].values()):
+            health_status["status"] = "degraded"
+            return jsonify(health_status), 503
+        elif any(check.get("status") == "warning" for check in health_status["checks"].values()):
+            health_status["status"] = "warning"
+            
+        return jsonify(health_status), 200
+        
+    except Exception as e:
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        }), 500
+
 @app.route("/api/consolidation-metrics")
 def consolidation_metrics():
     """Monitor API consolidation progress"""
@@ -10963,11 +11455,13 @@ def get_fabric_forecast():
         # Use the latest data folder (9-2-2025 or most recent)
         base_path = "/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/"
         
-        # Try to find the latest data folder
-        efab_data_path = base_path + "9-2-2025/"
-        if not os.path.exists(efab_data_path):
-            # Fallback to 8-28-2025 if 9-2-2025 doesn't exist
-            efab_data_path = base_path + "8-28-2025/"
+        # Try to find the latest data folder - use main ERP Data directory for most current files
+        efab_data_path = base_path
+        
+        # Check if we have dated subdirectories for specific data
+        dated_path = base_path + "9-2-2025/"
+        if os.path.exists(dated_path):
+            efab_data_path = dated_path
         
         print(f"[FABRIC-FORECAST] Using data from: {efab_data_path}")
         
@@ -11417,7 +11911,7 @@ def get_consistency_forecast():
                 ]
             else:
                 # Try loading sales data
-                sales_file = Path('/mnt/d/Agent-MCP-1-ddd/Agent-MCP-1-dd/ERP Data/prompts/5/Sales Activity Report.csv')
+                sales_file = Path('/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/Sales Activity Report.csv')
                 if sales_file.exists():
                     sales_data = pd.read_csv(sales_file)
                     style_data = sales_data[sales_data['Style#'] == style]
@@ -12302,28 +12796,80 @@ def get_yarn_intelligence():
                         
                     else:
                         # Fallback to legacy logic
-                        # Extract actual values from data - handle both original and standardized column names
-                        theoretical_bal = float(yarn.get('theoretical_balance', 
-                                             yarn.get('Theoretical Balance', 
-                                             yarn.get('Beginning Balance',
-                                             yarn.get('beginning_balance', 0)))))
-                        allocated = float(yarn.get('allocated', yarn.get('Allocated', 0)))
-                        on_order = float(yarn.get('on_order', yarn.get('On Order', 0)))
-                        consumed = abs(float(yarn.get('consumed', yarn.get('Consumed', 0))))
+                        # Extract actual values from data - handle both original and standardized column names with proper string cleaning
+                        theoretical_bal_raw = yarn.get('theoretical_balance', 
+                                                   yarn.get('Theoretical Balance', 
+                                                   yarn.get('Beginning Balance',
+                                                   yarn.get('beginning_balance', 0))))
+                        theoretical_bal = pd.to_numeric(
+                            str(theoretical_bal_raw).replace('$', '').replace(',', ''), 
+                            errors='coerce'
+                        )
+                        if pd.isna(theoretical_bal):
+                            theoretical_bal = 0.0
+                        else:
+                            theoretical_bal = float(theoretical_bal)
                         
-                        # Use the pre-calculated planning balance
-                        planning_bal = float(yarn.get('Calculated_Planning_Balance', 0))
+                        allocated_raw = yarn.get('allocated', yarn.get('Allocated', 0))
+                        allocated = pd.to_numeric(
+                            str(allocated_raw).replace('$', '').replace(',', ''), 
+                            errors='coerce'
+                        )
+                        if pd.isna(allocated):
+                            allocated = 0.0
+                        else:
+                            allocated = float(allocated)
+                        
+                        on_order_raw = yarn.get('on_order', yarn.get('On Order', 0))
+                        on_order = pd.to_numeric(
+                            str(on_order_raw).replace('$', '').replace(',', ''), 
+                            errors='coerce'
+                        )
+                        if pd.isna(on_order):
+                            on_order = 0.0
+                        else:
+                            on_order = float(on_order)
+                        
+                        consumed_raw = yarn.get('consumed', yarn.get('Consumed', 0))
+                        consumed = pd.to_numeric(
+                            str(consumed_raw).replace('$', '').replace(',', ''), 
+                            errors='coerce'
+                        )
+                        if pd.isna(consumed):
+                            consumed = 0.0
+                        else:
+                            consumed = abs(float(consumed))
+                        
+                        # Use the pre-calculated planning balance with proper string cleaning
+                        planning_bal_raw = yarn.get('Calculated_Planning_Balance', yarn.get('Planning Balance', 0))
+                        planning_bal = pd.to_numeric(
+                            str(planning_bal_raw).replace('$', '').replace(',', ''), 
+                            errors='coerce'
+                        )
+                        if pd.isna(planning_bal):
+                            planning_bal = 0.0
+                        else:
+                            planning_bal = float(planning_bal)
                         
                         # Calculate weekly demand from consumed data
                         if consumed > 0:
                             weekly_demand = consumed / 4.3
                         elif allocated != 0:
-                            weekly_demand = abs(allocated) / 8
+                            try:
+                                weekly_demand = abs(float(allocated)) / 8
+                            except (ValueError, TypeError):
+                                weekly_demand = 10
                         else:
                             weekly_demand = 10
                         
                         weeks_of_supply = theoretical_bal / weekly_demand if weekly_demand > 0 and theoretical_bal > 0 else 0
-                        shortage_amount = abs(planning_bal) if planning_bal < 0 else 0
+                        # Ensure planning_bal is numeric before using abs()
+                        try:
+                            planning_bal_num = float(planning_bal)
+                            shortage_amount = abs(planning_bal_num) if planning_bal_num < 0 else 0
+                        except (ValueError, TypeError):
+                            planning_bal_num = 0.0
+                            shortage_amount = 0
                         
                         yarn_shortage_data = {
                             'yarn_id': current_yarn_id,
@@ -12334,14 +12880,14 @@ def get_yarn_intelligence():
                             'on_order': float(on_order),
                             'affected_orders': affected_orders_count,
                             'affected_orders_list': affected_orders_list,
-                            'planning_balance': float(planning_bal),
-                            'balance': float(planning_bal),  # Compatibility
+                            'planning_balance': float(planning_bal_num),
+                            'balance': float(planning_bal_num),  # Compatibility
                             'shortage': float(shortage_amount),
-                            'has_shortage': planning_bal < 0,
+                            'has_shortage': planning_bal_num < 0,
                             'weekly_demand': float(weekly_demand),
                             'weeks_of_supply': float(weeks_of_supply),
-                            'criticality_score': min(100, abs(float(planning_bal)) / 100) if planning_bal < 0 else 0,
-                            'risk_level': 'CRITICAL' if planning_bal < -1000 else 'HIGH' if planning_bal < -100 else 'MEDIUM' if planning_bal < 0 else 'LOW'
+                            'criticality_score': min(100, abs(planning_bal_num) / 100) if planning_bal_num < 0 else 0,
+                            'risk_level': 'CRITICAL' if planning_bal_num < -1000 else 'HIGH' if planning_bal_num < -100 else 'MEDIUM' if planning_bal_num < 0 else 'LOW'
                         }
                     
                     shortage_data.append(yarn_shortage_data)
@@ -13088,25 +13634,50 @@ def get_inventory_intelligence_enhanced():
             # Use existing Planning Balance if available, otherwise calculate it
             # Check for both standardized and original column names
             if 'planning_balance' in df.columns:
-                # Use the standardized column name
-                df['Planning_Balance'] = df['planning_balance'].fillna(0)
+                # Use the standardized column name, ensure numeric
+                df['Planning_Balance'] = pd.to_numeric(
+                    df['planning_balance'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
             elif 'Planning Balance' in df.columns:
                 # Use the existing Planning Balance column from the file
-                df['Planning_Balance'] = df['Planning Balance'].fillna(0)
+                # Convert to numeric, handling string values and currency formatting
+                df['Planning_Balance'] = pd.to_numeric(
+                    df['Planning Balance'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
             elif 'theoretical_balance' in df.columns and 'allocated' in df.columns and 'on_order' in df.columns:
-                # Use standardized column names for calculation
-                df['theoretical_balance'] = df['theoretical_balance'].fillna(0)
-                df['allocated'] = df['allocated'].fillna(0)
-                df['on_order'] = df['on_order'].fillna(0)
+                # Use standardized column names for calculation, ensure numeric
+                df['theoretical_balance'] = pd.to_numeric(
+                    df['theoretical_balance'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
+                df['allocated'] = pd.to_numeric(
+                    df['allocated'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
+                df['on_order'] = pd.to_numeric(
+                    df['on_order'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
                 
                 # CORRECT FORMULA: Planning Balance = Theoretical Balance + Allocated + On Order
                 # Note: Allocated is already negative in the data, so we ADD it
                 df['Planning_Balance'] = df['theoretical_balance'] + df['allocated'] + df['on_order']
             elif 'Theoretical Balance' in df.columns and 'Allocated' in df.columns and 'On Order' in df.columns:
-                # Calculate if not present (fallback with original names)
-                df['Theoretical Balance'] = df['Theoretical Balance'].fillna(0)
-                df['Allocated'] = df['Allocated'].fillna(0)
-                df['On Order'] = df['On Order'].fillna(0)
+                # Calculate if not present (fallback with original names), ensure numeric
+                df['Theoretical Balance'] = pd.to_numeric(
+                    df['Theoretical Balance'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
+                df['Allocated'] = pd.to_numeric(
+                    df['Allocated'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
+                df['On Order'] = pd.to_numeric(
+                    df['On Order'].astype(str).str.replace(r'[\$,]', '', regex=True), 
+                    errors='coerce'
+                ).fillna(0)
                 
                 # CORRECT FORMULA: Planning Balance = Theoretical Balance + Allocated + On Order
                 # Note: Allocated is already negative in the data, so we ADD it
@@ -13117,6 +13688,15 @@ def get_inventory_intelligence_enhanced():
                 
             # Count risk levels based on planning balance (same as yarn-intelligence endpoint)
             # Risk levels are based on shortage amount, not weeks of supply
+            # Final safety check: ensure Planning_Balance is numeric (handle comma-formatted strings)
+            if 'Planning_Balance' in df.columns:
+                # First clean comma-formatted strings like "1,989.38"
+                df['Planning_Balance'] = df['Planning_Balance'].astype(str).str.replace(',', '').str.replace('"', '')
+                df['Planning_Balance'] = pd.to_numeric(df['Planning_Balance'], errors='coerce').fillna(0)
+            else:
+                print(f"WARNING: Planning_Balance column not found in df. Columns: {list(df.columns)}")
+                df['Planning_Balance'] = 0
+            
             summary_stats['critical_count'] = len(df[df['Planning_Balance'] < -1000])
             summary_stats['high_count'] = len(df[(df['Planning_Balance'] >= -1000) & (df['Planning_Balance'] < -100)])
             summary_stats['medium_count'] = len(df[(df['Planning_Balance'] >= -100) & (df['Planning_Balance'] < 0)])
@@ -13199,6 +13779,61 @@ def get_inventory_intelligence_enhanced():
                 'shortage_value': summary_stats['total_shortage_lbs'],
                 'critical_shortages': summary_stats['critical_count']
             }
+            
+            # Add detailed shortage items for the dashboard
+            shortage_items = []
+            if hasattr(analyzer, 'raw_materials_data') and analyzer.raw_materials_data is not None:
+                df = analyzer.raw_materials_data.copy()
+                
+                # Ensure Planning_Balance is available and numeric
+                if 'Planning_Balance' not in df.columns:
+                    if 'planning_balance' in df.columns:
+                        df['Planning_Balance'] = pd.to_numeric(df['planning_balance'], errors='coerce').fillna(0)
+                    elif 'Planning Balance' in df.columns:
+                        df['Planning_Balance'] = pd.to_numeric(df['Planning Balance'], errors='coerce').fillna(0)
+                    else:
+                        df['Planning_Balance'] = 0
+                
+                # Get all yarns with shortages (Planning Balance < 0)
+                shortages = df[df['Planning_Balance'] < 0].copy()
+                
+                for _, yarn in shortages.iterrows():
+                    shortage_lbs = abs(float(yarn['Planning_Balance']))
+                    
+                    # Determine severity based on shortage amount
+                    if yarn['Planning_Balance'] < -1000:
+                        severity = 'CRITICAL'
+                        urgency_score = min(90 + (shortage_lbs / 100), 100)
+                    elif yarn['Planning_Balance'] < -100:
+                        severity = 'HIGH' 
+                        urgency_score = 70 + (shortage_lbs / 50)
+                    else:
+                        severity = 'MEDIUM'
+                        urgency_score = 50 + (shortage_lbs / 20)
+                    
+                    estimated_cost = shortage_lbs * 8.50  # Average yarn cost per lb
+                    
+                    shortage_items.append({
+                        'yarn_id': str(yarn.get('Desc#', yarn.get('desc#', yarn.get('YarnID', '')))),
+                        'description': str(yarn.get('Description', yarn.get('description', '')))[:50],
+                        'supplier': str(yarn.get('Supplier', yarn.get('supplier', '')))[:30],
+                        'shortage_lbs': round(shortage_lbs, 2),
+                        'planning_balance': float(yarn['Planning_Balance']),
+                        'theoretical_balance': float(yarn.get('theoretical_balance', yarn.get('Theoretical Balance', 0))),
+                        'allocated': float(yarn.get('allocated', yarn.get('Allocated', 0))),
+                        'on_order': float(yarn.get('on_order', yarn.get('On Order', 0))),
+                        'severity': severity,
+                        'urgency_score': round(urgency_score, 1),
+                        'estimated_cost': round(estimated_cost, 2),
+                        'cost_per_pound': float(yarn.get('Cost/Pound', yarn.get('cost_per_pound', 8.50))),
+                        'category': 'Yarn Shortage',
+                        'suggested_action': 'Place urgent order' if severity == 'CRITICAL' else 'Plan order soon'
+                    })
+                
+                # Sort by urgency score (highest first)
+                shortage_items = sorted(shortage_items, key=lambda x: x['urgency_score'], reverse=True)
+            
+            response_data['shortage_items'] = shortage_items
         elif analysis == 'alerts':
             # Generate top 20 inventory alerts
             alerts = []

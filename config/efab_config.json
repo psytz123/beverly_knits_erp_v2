@@ -1,10 +1,29 @@
 {
-    "base_url": "https://efab.bklapps.com",
+    "base_url": "http://localhost:8000",
     "session_cookie": "aLfHTrRrtWWy4FPgLnxdEPC7ohA37dlR",
     "session_cookie_request": "aLfHKsnTZgRvW0rb1GKVTmzjyU1rvnPN",
     "session_cookie_response": "aLfHTrRrtWWy4FPgLnxdEPC7ohA37dlR",
     "warehouses": ["F01", "G00", "G02", "I01"],
     "sync_interval_minutes": 15,
     "retry_attempts": 3,
-    "timeout_seconds": 30
+    "timeout_seconds": 30,
+    "api_endpoints": {
+        "yarn_demand_ko": "/api/report/yarn_demand_ko",
+        "yarn_demand": "/api/report/yarn_demand",
+        "yarn_po": "/api/yarn-po",
+        "yarn_expected": "/api/report/yarn_expected",
+        "yarn_active": "/api/yarn/active",
+        "knitorder_list": "/api/knitorder/list"
+    },
+    "inventory_endpoints": {
+        "F01": "/api/finished/f01",
+        "G00": "/api/greige/g00",
+        "G02": "/api/greige/g02",
+        "I01": "/api/finished/i01"
+    },
+    "quads_base_url": "https://quads.bkiapps.com",
+    "quads_endpoints": {
+        "styles_greige_active": "/api/styles/greige/active",
+        "styles_finished_active": "/api/styles/finished/active"
+    }
 }

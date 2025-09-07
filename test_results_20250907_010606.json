@@ -1,0 +1,92 @@
+{
+  "timestamp": "2025-09-07T01:05:13.161104",
+  "test_suites": {
+    "Unit - Critical Paths": {
+      "suite": "Unit - Critical Paths",
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration": 0,
+      "output": "",
+      "errors_output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/test_report.json\n  inifile: None\n  rootdir: C:\\finalee\\beverly_knits_erp_v2\n\n"
+    },
+    "Unit - Inventory Analyzer": {
+      "suite": "Unit - Inventory Analyzer",
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration": 0,
+      "output": "",
+      "errors_output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/test_report.json\n  inifile: None\n  rootdir: C:\\finalee\\beverly_knits_erp_v2\n\n"
+    },
+    "Unit - Sales Forecasting": {
+      "suite": "Unit - Sales Forecasting",
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration": 0,
+      "output": "",
+      "errors_output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/test_report.json\n  inifile: None\n  rootdir: C:\\finalee\\beverly_knits_erp_v2\n\n"
+    },
+    "Unit - Capacity Planning": {
+      "suite": "Unit - Capacity Planning",
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration": 0,
+      "output": "",
+      "errors_output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/test_report.json\n  inifile: None\n  rootdir: C:\\finalee\\beverly_knits_erp_v2\n\n"
+    },
+    "Unit - Service Tests": {
+      "suite": "Unit - Service Tests",
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration": 0,
+      "output": "",
+      "errors_output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/test_report.json\n  inifile: None\n  rootdir: C:\\finalee\\beverly_knits_erp_v2\n\n"
+    },
+    "Integration - API Endpoints": {
+      "suite": "Integration - API Endpoints",
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration": 0,
+      "output": "",
+      "errors_output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/test_report.json\n  inifile: None\n  rootdir: C:\\finalee\\beverly_knits_erp_v2\n\n"
+    },
+    "E2E - Critical Workflows": {
+      "suite": "E2E - Critical Workflows",
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration": 0,
+      "output": "",
+      "errors_output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/test_report.json\n  inifile: None\n  rootdir: C:\\finalee\\beverly_knits_erp_v2\n\n"
+    },
+    "Performance": {
+      "suite": "Performance",
+      "passed": 0,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration": 0,
+      "output": "",
+      "errors_output": "ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]\n__main__.py: error: unrecognized arguments: --json-report --json-report-file=/tmp/test_report.json\n  inifile: None\n  rootdir: C:\\finalee\\beverly_knits_erp_v2\n\n"
+    }
+  },
+  "summary": {
+    "total_tests": 0,
+    "passed": 0,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

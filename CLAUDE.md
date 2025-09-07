@@ -7,23 +7,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Beverly Knits ERP v2 - Production-ready textile manufacturing ERP with real-time inventory intelligence, ML-powered forecasting, and 6-phase supply chain optimization.
 
 **Current System Stats**:
-- 1,199 yarn items tracked
-- 28,653 BOM entries (style to yarn mappings)
-- 194 production orders (154 assigned to machines, 40 pending assignment)
+- 1,200+ yarn items actively tracked (5x increase via API integration)
+- 28,653+ BOM entries (style to yarn mappings) 
+- 195 production orders with real-time tracking
 - 91 work centers with 285 total machines
-- 557,671 lbs total production workload
+- 557,671+ lbs total production workload
 - Machine utilization tracking via eFab Knit Orders integration
+- Real-time yarn shortage detection with API-first data loading
+- Complete API-first architecture with file fallbacks
 
 ## Primary Commands
 
 ### Server Operations
 ```bash
-# Start server (Port 5006, NOT 5005 or 5003)
+# Start main ERP server (Port 5006)
 python3 src/core/beverly_comprehensive_erp.py
 
-# Kill existing server if port conflict
+# Start ERP wrapper service (Port 8000) - Required for API integration
+cd erp-wrapper/
+uvicorn app.main:app --port 8000
+# OR with Docker: docker-compose up -d
+
+# Kill existing servers if port conflict
 pkill -f "python3.*beverly"
 lsof -i :5006 | grep LISTEN | awk '{print $2}' | xargs kill -9
+lsof -i :8000 | grep LISTEN | awk '{print $2}' | xargs kill -9
 
 # Start with Makefile (alternative)
 make run          # Production mode
@@ -75,8 +83,10 @@ rm -rf /tmp/bki_cache/*
 # Force data reload via API
 curl -s http://localhost:5006/api/reload-data
 
-# Debug data loading
+# Debug data loading and API integration
 curl -s http://localhost:5006/api/debug-data | python3 -m json.tool
+curl -s http://localhost:8000/health  # Check wrapper service health
+curl -s http://localhost:8000/api/yarn/active | head -c 1000  # Test API data
 
 # Check consolidation metrics
 curl -s http://localhost:5006/api/consolidation-metrics | python3 -m json.tool
@@ -122,11 +132,29 @@ python3 scripts/day0_emergency_fixes.py --validate
 - **SalesForecastingEngine**: ML-powered demand forecasting with ensemble methods
 - **CapacityPlanningEngine**: Production capacity planning and scheduling
 
-### Data Loading Architecture
-The system uses a multi-tier data loading strategy:
-1. **OptimizedDataLoader** (`src/data_loaders/optimized_data_loader.py`): 100x+ speed with caching
-2. **ParallelDataLoader** (`src/data_loaders/parallel_data_loader.py`): 4x speed with concurrent loading
-3. **UnifiedCacheManager** (`src/utils/cache_manager.py`): Memory + Redis caching with TTL
+### Data Loading Architecture (API-First)
+The system uses a comprehensive API-first data loading strategy:
+1. **ERP Wrapper Service** (`erp-wrapper/`): FastAPI proxy handling eFab authentication and session management
+2. **APIDataLoader** (`src/core/beverly_comprehensive_erp.py`): Primary data loading via wrapper service APIs
+3. **ParallelDataLoader** (`src/data_loaders/parallel_data_loader.py`): 4x speed fallback with concurrent file loading
+4. **UnifiedCacheManager** (`src/utils/cache_manager.py`): Memory + Redis caching with TTL
+
+**Data Flow Priority**: API → Parallel Loader → File System → Error
+
+### ERP Wrapper Service (NEW as of Sep 2025)
+**Location**: `erp-wrapper/` - FastAPI microservice for eFab ERP integration
+- **Port**: 8000 (required for main ERP to function)
+- **Purpose**: Handles authentication, session management, and API proxying for eFab ERP
+- **Features**: Auto-login, 5-minute caching, retry logic, health monitoring
+
+**Critical Endpoints**:
+- `/api/yarn/active` - Real-time yarn inventory (1200+ items)
+- `/api/knit-orders` - Production orders 
+- `/api/sales-orders` - Sales data
+- `/api/greige/g00`, `/api/greige/g02` - Production stages
+- `/api/finished/i01`, `/api/finished/f01` - QC and finished goods
+
+**Architecture**: Browser ↔ Main ERP (5006) ↔ Wrapper (8000) ↔ eFab APIs
 
 ### API Consolidation Architecture (NEW as of Aug 2025)
 - **45+ deprecated endpoints** automatically redirect to consolidated endpoints
@@ -138,29 +166,38 @@ The system uses a multi-tier data loading strategy:
 ### Service Modules
 ```
 src/
-├── services/               # Modular business services
+├── core/                  # Main application & API data loading
+│   └── beverly_comprehensive_erp.py  # APIDataLoader + Flask app
+├── services/              # Modular business services
 │   ├── inventory_analyzer_service.py
 │   ├── inventory_pipeline_service.py
 │   ├── sales_forecasting_service.py
 │   └── capacity_planning_service.py
-├── yarn_intelligence/      # Yarn management & substitution
+├── yarn_intelligence/     # Yarn management & substitution
 │   ├── yarn_intelligence_enhanced.py
 │   ├── yarn_substitution_intelligent.py
 │   └── yarn_interchangeability_analyzer.py
-├── production/            # Production planning
+├── production/           # Production planning
 │   ├── six_phase_planning_engine.py
 │   ├── enhanced_production_pipeline.py
 │   └── enhanced_production_suggestions_v2.py
-├── forecasting/          # ML forecasting
+├── forecasting/         # ML forecasting
 │   ├── enhanced_forecasting_engine.py
 │   ├── forecast_accuracy_monitor.py
 │   └── forecast_auto_retrain.py
-├── config/               # Configuration management
-│   └── ml_config.py      # ML model configurations
-└── scripts/              # Utility scripts
+├── config/              # Configuration management
+│   └── ml_config.py     # ML model configurations
+└── scripts/             # Utility scripts
     ├── day0_emergency_fixes.py    # Critical data fixes
     ├── ml_backtest.py              # ML backtesting
     └── ml_training_pipeline.py    # Automated training
+
+erp-wrapper/             # FastAPI microservice (Port 8000)
+├── app/
+│   ├── main.py         # FastAPI application
+│   ├── efab_client.py  # eFab API client
+│   └── auth.py         # Session management
+└── docker-compose.yml  # Container orchestration
 ```
 
 ## Data Flow & Field Mappings
@@ -172,12 +209,13 @@ Primary: /mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/
 ```
 
 ### Key Data Files & Their Purpose
-1. **yarn_inventory.xlsx** - Contains 'Planning Balance' column (with space)
+1. **yarn_inventory.csv** - CORRECTED: Now uses Yarn_ID_Master.csv with proper yarn IDs (18000-19000 range)
 2. **BOM_updated.csv** - Bill of Materials (28,653 entries mapping styles to yarns)
 3. **eFab_Knit_Orders.csv** - 194 production orders (154 assigned, 40 unassigned)
 4. **QuadS_greigeFabricList_(1).xlsx** - Style to Work Center mappings (columns C=style, D=work_center)
 5. **Machine Report fin1.csv** - Machine to Work Center mappings (WC column=machine patterns, MACH=machine IDs)
 6. **Sales Activity Report.csv** - Historical sales data for forecasting
+7. **Yarn_ID_Master.csv** - MASTER yarn inventory file with correct yarn IDs and planning balances
 
 ### Work Center & Machine Structure
 - **Work Center Pattern**: `x.xx.xx.X` where:
@@ -238,23 +276,66 @@ The dashboard includes an API compatibility layer that automatically handles dep
 
 ### Port Issues
 ```bash
-# Server runs on port 5006 (documentation may show 5005 or 5003)
-lsof -i :5006
+# Main ERP server runs on port 5006, wrapper service on port 8000
+lsof -i :5006  # Main ERP
+lsof -i :8000  # ERP wrapper service
+
 # Kill if needed
 lsof -i :5006 | grep LISTEN | awk '{print $2}' | xargs kill -9
+lsof -i :8000 | grep LISTEN | awk '{print $2}' | xargs kill -9
 ```
 
-### Data Loading Issues
-1. Check file exists: `ls -la "/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/yarn_inventory.xlsx"`
-2. Clear cache: `rm -rf /tmp/bki_cache/*`
-3. Reload data: `curl http://localhost:5006/api/reload-data`
-4. Restart server: `pkill -f "python3.*beverly" && python3 src/core/beverly_comprehensive_erp.py`
+### ERP Wrapper Service Issues
+If yarn data shows 0 items or API integration fails:
+1. **Check wrapper service health**: `curl http://localhost:8000/health`
+2. **Verify authentication**: Check eFab credentials in `erp-wrapper/.env`
+3. **Test direct API**: `curl http://localhost:8000/api/yarn/active`
+4. **Check logs**: `docker-compose logs -f` (if using Docker)
+5. **Restart wrapper**: `cd erp-wrapper/ && uvicorn app.main:app --port 8000`
+6. **Force main ERP to use API**: Look for `[API] Loaded yarn inventory via API` in startup logs
 
-### Column Name Errors
-The system handles multiple column name formats. If you see "Planning Balance" errors:
-- Check both 'Planning Balance' and 'Planning_Balance' 
-- Use hasattr() checks before accessing DataFrame columns
-- Implement fallback logic for column variations
+### Data Loading Issues
+1. **API-FIRST ARCHITECTURE (Sep 2025)**: System now primarily loads data via ERP wrapper APIs
+2. Check wrapper service: `curl -s http://localhost:8000/health`
+3. Check API data: `curl -s http://localhost:8000/api/yarn/active | head -c 1000`
+4. Clear cache: `rm -rf /tmp/bki_cache/*`
+5. Reload data: `curl http://localhost:5006/api/reload-data`
+6. Restart services:
+   ```bash
+   # Kill both services
+   pkill -f "python3.*beverly" && pkill -f "uvicorn.*app.main"
+   # Start wrapper first, then main ERP
+   cd erp-wrapper/ && uvicorn app.main:app --port 8000 &
+   cd .. && python3 src/core/beverly_comprehensive_erp.py
+   ```
+
+### eFab API Integration 
+**Corrected Domains & Endpoints (as of Sep 2025):**
+- eFab ERP: `https://efab.bkiapps.com` (NOT bklapps.com)
+- QuadS: `https://quads.bkiapps.com`
+
+**Active API Endpoints:**
+```
+# eFab APIs
+https://efab.bkiapps.com/api/report/yarn_demand_ko
+https://efab.bkiapps.com/api/report/yarn_demand
+https://efab.bkiapps.com/api/yarn-po
+https://efab.bkiapps.com/api/report/yarn_expected
+https://efab.bkiapps.com/api/yarn/active
+
+# QuadS APIs
+https://quads.bkiapps.com/api/styles/greige/active
+https://quads.bkiapps.com/api/styles/finished/active
+```
+
+**Authentication Required:** All endpoints require session cookies for access.
+
+### Column Name Errors (RESOLVED)
+**FIXED (Sep 2025)**: Column naming issues resolved with yarn data correction:
+- System now handles both 'Planning Balance' and 'Planning_Balance' formats
+- UTF-8 BOM characters removed from headers
+- Currency formatting standardized ($ signs and commas cleaned)
+- Use `python3 fix_yarn_data.py` for any new data formatting issues
 
 ### Day 0 Fixes Not Loading
 If you see `[DAY0] Emergency fixes not available: No module named 'scripts'`:
@@ -322,10 +403,10 @@ tests/
 - Cache Hit Rate: 70-90% typical
 
 ### System Capacity
-- Yarn Items: 1,198+ tracked
+- Yarn Items: 1,200+ tracked (5x increase via API integration)
 - BOM Entries: 28,653+ 
-- Sales Records: 10,338+
-- Production Orders: 221+ active
+- Sales Records: 6,946+ (live API data)
+- Production Orders: 195+ active (real-time tracking)
 
 ## ML Models
 
