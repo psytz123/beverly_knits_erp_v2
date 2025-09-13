@@ -16,7 +16,12 @@
       "Read(/mnt/c/Users/psytz/Downloads/**)",
       "mcp__filesystem__directory_tree",
       "mcp__filesystem__read_text_file",
-      "mcp__filesystem__read_multiple_files"
+      "mcp__filesystem__read_multiple_files",
+      "mcp__thinking__sequentialthinking",
+      "Bash(git checkout:*)",
+      "Bash(awk:*)",
+      "Bash(xargs kill:*)",
+      "Bash(uvicorn:*)"
     ],
     "deny": [],
     "ask": []
