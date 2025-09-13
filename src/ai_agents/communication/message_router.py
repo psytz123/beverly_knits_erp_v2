@@ -1,218 +1,155 @@
 #!/usr/bin/env python3
 """
 Message Router for eFab AI Agent System
-High-performance message routing with intelligent delivery, priority queuing, and reliability guarantees
+Handles routing and delivery of messages between agents
 """
 
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Set, Callable, Tuple
-from dataclasses import dataclass, field
-from enum import Enum
-from collections import defaultdict, deque
-import json
+from typing import Dict, List, Any, Optional, Callable, Set
+from dataclasses import dataclass
 import uuid
-from pathlib import Path
-import heapq
+import json
 
-from ..core.agent_base import BaseAgent, AgentMessage, MessageType, Priority, AgentStatus
-from ..core.state_manager import system_state
+from ..core.agent_base import AgentMessage, MessageType, Priority, validate_message
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
 
-class RoutingStrategy(Enum):
-    """Message routing strategies"""
-    DIRECT = "DIRECT"                    # Direct agent-to-agent routing
-    BROADCAST = "BROADCAST"              # Send to all agents
-    ROUND_ROBIN = "ROUND_ROBIN"          # Load balance across agents
-    CAPABILITY_BASED = "CAPABILITY_BASED" # Route based on agent capabilities
-    PRIORITY_BASED = "PRIORITY_BASED"    # Route based on message priority
-    LOAD_BALANCED = "LOAD_BALANCED"      # Route to least loaded agent
-
-
-class DeliveryStatus(Enum):
-    """Message delivery status"""
-    PENDING = "PENDING"
-    QUEUED = "QUEUED"
-    ROUTING = "ROUTING"
-    DELIVERED = "DELIVERED"
-    ACKNOWLEDGED = "ACKNOWLEDGED"
-    FAILED = "FAILED"
-    TIMEOUT = "TIMEOUT"
-    RETRY = "RETRY"
-
-
 @dataclass
-class RoutingRule:
-    """Message routing rule definition"""
-    rule_id: str
-    name: str
-    condition: Dict[str, Any]
-    strategy: RoutingStrategy
-    target_agents: List[str] = field(default_factory=list)
-    priority_boost: int = 0
-    max_retries: int = 3
-    timeout_seconds: int = 300
-    enabled: bool = True
-
-
-@dataclass
-class MessageEnvelope:
-    """Message envelope with routing metadata"""
-    envelope_id: str
-    message: AgentMessage
-    delivery_status: DeliveryStatus = DeliveryStatus.PENDING
-    routing_strategy: RoutingStrategy = RoutingStrategy.DIRECT
-    target_agents: List[str] = field(default_factory=list)
-    attempted_agents: Set[str] = field(default_factory=set)
-    retry_count: int = 0
-    queued_at: datetime = field(default_factory=datetime.now)
-    routed_at: Optional[datetime] = None
-    delivered_at: Optional[datetime] = None
-    acknowledged_at: Optional[datetime] = None
-    
-    @property
-    def is_expired(self) -> bool:
-        """Check if message envelope has expired"""
-        return self.message.is_expired()
-    
-    @property
-    def age_seconds(self) -> float:
-        """Get age of envelope in seconds"""
-        return (datetime.now() - self.queued_at).total_seconds()
+class AgentRegistration:
+    """Agent registration information"""
+    agent_id: str
+    agent_info: Dict[str, Any]
+    message_callback: Callable[[AgentMessage], Any]
+    registered_at: datetime
+    last_activity: datetime
+    message_count: int = 0
 
 
 class MessageRouter:
     """
-    Intelligent Message Router for eFab AI Agent System
+    Message Router for AI Agent Communication
     
     Features:
-    - Priority-based message queuing with heaps
-    - Intelligent routing strategies (direct, broadcast, load-balanced)
-    - Automatic retry with exponential backoff
-    - Dead letter queue for failed messages
-    - Message deduplication and idempotency
-    - Circuit breaker pattern for failed agents
-    - Metrics and performance monitoring
-    - Message persistence for reliability
+    - Agent registration and discovery
+    - Message routing and delivery
+    - Broadcast and multicast messaging
+    - Message queuing and retry logic
+    - Performance monitoring
+    - Dead letter handling
     """
     
-    def __init__(self, orchestrator_agent: Optional[BaseAgent] = None):
+    def __init__(self):
         """Initialize message router"""
         self.logger = logging.getLogger("MessageRouter")
         
-        # Message queuing system
-        self.message_queue: List[Tuple[int, MessageEnvelope]] = []  # Priority heap
-        self.priority_queues: Dict[Priority, deque] = {
-            priority: deque() for priority in Priority
+        # Agent registry
+        self.registered_agents: Dict[str, AgentRegistration] = {}
+        self.agent_capabilities: Dict[str, List[str]] = {}
+        
+        # Message queues
+        self.message_queue: asyncio.Queue = asyncio.Queue()
+        self.dead_letter_queue: List[AgentMessage] = []
+        self.pending_messages: Dict[str, AgentMessage] = {}
+        
+        # Routing tables
+        self.capability_routing: Dict[str, List[str]] = {}  # capability -> agent_ids
+        self.message_handlers: Dict[str, Callable] = {}
+        
+        # Performance metrics
+        self.router_metrics = {
+            "messages_routed": 0,
+            "messages_failed": 0,
+            "average_routing_time_ms": 0.0,
+            "active_agents": 0,
+            "queue_size": 0
         }
         
-        # Agent registry and management
-        self.registered_agents: Dict[str, Dict[str, Any]] = {}
-        self.agent_callbacks: Dict[str, Callable] = {}
-        self.agent_workloads: Dict[str, int] = defaultdict(int)
-        self.agent_health: Dict[str, float] = defaultdict(lambda: 1.0)
-        
-        # Circuit breaker for failed agents
-        self.circuit_breakers: Dict[str, Dict[str, Any]] = {}
-        self.failure_thresholds = {
-            "error_rate": 0.5,      # 50% error rate triggers circuit breaker
-            "timeout_rate": 0.3,    # 30% timeout rate triggers circuit breaker
-            "consecutive_failures": 5  # 5 consecutive failures triggers circuit breaker
-        }
-        
-        # Routing configuration
-        self.routing_rules: List[RoutingRule] = []
-        self.default_routing_strategy = RoutingStrategy.DIRECT
-        
-        # Message tracking and metrics
-        self.message_history: Dict[str, MessageEnvelope] = {}
-        self.delivered_messages: Dict[str, MessageEnvelope] = {}
-        self.failed_messages: Dict[str, MessageEnvelope] = {}  # Dead letter queue
-        self.message_metrics: Dict[str, Any] = {
-            "total_messages": 0,
-            "delivered_messages": 0,
-            "failed_messages": 0,
-            "retry_messages": 0,
-            "average_delivery_time_ms": 0.0,
-            "throughput_messages_per_second": 0.0
-        }
-        
-        # Performance monitoring
-        self.throughput_samples: deque = deque(maxlen=100)
-        self.delivery_time_samples: deque = deque(maxlen=1000)
-        
-        # Orchestrator integration
-        self.orchestrator = orchestrator_agent
-        
-        # Background tasks
-        self.running = False
-        self.background_tasks: List[asyncio.Task] = []
+        # Router state
+        self.is_running = False
+        self.router_task: Optional[asyncio.Task] = None
         
         self.logger.info("Message Router initialized")
     
     async def start(self):
-        """Start message router background tasks"""
-        self.running = True
+        """Start the message router"""
+        if self.is_running:
+            self.logger.warning("Message router is already running")
+            return
         
-        # Start background tasks
-        self.background_tasks = [
-            asyncio.create_task(self._message_processing_loop()),
-            asyncio.create_task(self._health_monitoring_loop()),
-            asyncio.create_task(self._metrics_collection_loop()),
-            asyncio.create_task(self._circuit_breaker_monitoring()),
-            asyncio.create_task(self._dead_letter_processor())
-        ]
-        
-        self.logger.info("Message Router started")
+        self.is_running = True
+        self.router_task = asyncio.create_task(self._message_processing_loop())
+        self.logger.info("Message router started")
     
     async def stop(self):
-        """Stop message router and cleanup"""
-        self.running = False
+        """Stop the message router"""
+        if not self.is_running:
+            return
         
-        # Cancel background tasks
-        for task in self.background_tasks:
-            task.cancel()
+        self.is_running = False
         
-        # Wait for tasks to complete
-        await asyncio.gather(*self.background_tasks, return_exceptions=True)
+        if self.router_task:
+            self.router_task.cancel()
+            try:
+                await self.router_task
+            except asyncio.CancelledError:
+                pass
         
-        self.logger.info("Message Router stopped")
+        self.logger.info("Message router stopped")
     
     def register_agent(
         self, 
         agent_id: str, 
-        agent_info: Dict[str, Any],
-        message_callback: Callable[[AgentMessage], asyncio.Task]
+        agent_info: Dict[str, Any], 
+        message_callback: Callable[[AgentMessage], Any]
     ) -> bool:
-        """Register agent with message router"""
+        """
+        Register an agent with the router
+        
+        Args:
+            agent_id: Unique agent identifier
+            agent_info: Agent metadata and capabilities
+            message_callback: Callback function to deliver messages
+            
+        Returns:
+            True if registration successful
+        """
         try:
-            self.registered_agents[agent_id] = {
-                **agent_info,
-                "registered_at": datetime.now(),
-                "last_activity": datetime.now(),
-                "message_count": 0,
-                "error_count": 0,
-                "timeout_count": 0,
-                "status": AgentStatus.READY.value
-            }
+            if agent_id in self.registered_agents:
+                self.logger.warning(f"Agent {agent_id} is already registered")
+                return False
             
-            self.agent_callbacks[agent_id] = message_callback
-            self.agent_workloads[agent_id] = 0
-            self.agent_health[agent_id] = 1.0
+            # Create registration
+            registration = AgentRegistration(
+                agent_id=agent_id,
+                agent_info=agent_info,
+                message_callback=message_callback,
+                registered_at=datetime.now(),
+                last_activity=datetime.now()
+            )
             
-            # Initialize circuit breaker
-            self.circuit_breakers[agent_id] = {
-                "state": "CLOSED",  # CLOSED, OPEN, HALF_OPEN
-                "failure_count": 0,
-                "last_failure": None,
-                "next_attempt": datetime.now()
-            }
+            self.registered_agents[agent_id] = registration
             
-            self.logger.info(f"Agent registered: {agent_id}")
+            # Register capabilities
+            capabilities = agent_info.get("capabilities", [])
+            if isinstance(capabilities, list) and capabilities:
+                self.agent_capabilities[agent_id] = [
+                    cap if isinstance(cap, str) else cap.get("name", str(cap))
+                    for cap in capabilities
+                ]
+                
+                # Update capability routing
+                for capability in self.agent_capabilities[agent_id]:
+                    if capability not in self.capability_routing:
+                        self.capability_routing[capability] = []
+                    self.capability_routing[capability].append(agent_id)
+            
+            self.router_metrics["active_agents"] = len(self.registered_agents)
+            
+            self.logger.info(f"Agent registered: {agent_id} with {len(capabilities)} capabilities")
             return True
             
         except Exception as e:
@@ -220,533 +157,279 @@ class MessageRouter:
             return False
     
     def deregister_agent(self, agent_id: str) -> bool:
-        """Deregister agent from message router"""
+        """Deregister an agent from the router"""
         try:
-            if agent_id in self.registered_agents:
-                del self.registered_agents[agent_id]
-                del self.agent_callbacks[agent_id]
-                del self.agent_workloads[agent_id]
-                del self.agent_health[agent_id]
-                del self.circuit_breakers[agent_id]
-                
-                self.logger.info(f"Agent deregistered: {agent_id}")
-                return True
-            return False
+            if agent_id not in self.registered_agents:
+                self.logger.warning(f"Agent {agent_id} is not registered")
+                return False
+            
+            # Remove from capability routing
+            capabilities = self.agent_capabilities.get(agent_id, [])
+            for capability in capabilities:
+                if capability in self.capability_routing:
+                    if agent_id in self.capability_routing[capability]:
+                        self.capability_routing[capability].remove(agent_id)
+                    if not self.capability_routing[capability]:
+                        del self.capability_routing[capability]
+            
+            # Clean up
+            del self.registered_agents[agent_id]
+            if agent_id in self.agent_capabilities:
+                del self.agent_capabilities[agent_id]
+            
+            self.router_metrics["active_agents"] = len(self.registered_agents)
+            
+            self.logger.info(f"Agent deregistered: {agent_id}")
+            return True
             
         except Exception as e:
             self.logger.error(f"Failed to deregister agent {agent_id}: {str(e)}")
             return False
     
-    async def route_message(
-        self, 
-        message: AgentMessage,
-        routing_strategy: Optional[RoutingStrategy] = None
-    ) -> str:
+    async def route_message(self, message: AgentMessage) -> bool:
         """
-        Route message to appropriate agent(s)
+        Route a message to its destination
         
         Args:
             message: Message to route
-            routing_strategy: Override default routing strategy
             
         Returns:
-            Envelope ID for tracking
+            True if message was queued successfully
         """
         try:
-            # Create message envelope
-            envelope_id = str(uuid.uuid4())
-            envelope = MessageEnvelope(
-                envelope_id=envelope_id,
-                message=message,
-                routing_strategy=routing_strategy or self._determine_routing_strategy(message)
-            )
+            # Validate message
+            if not validate_message(message):
+                self.logger.error(f"Invalid message format: {message.correlation_id}")
+                return False
             
-            # Determine target agents
-            envelope.target_agents = self._determine_target_agents(envelope)
+            # Check if message has expired
+            if message.is_expired():
+                self.logger.warning(f"Message expired: {message.correlation_id}")
+                self.dead_letter_queue.append(message)
+                return False
             
-            if not envelope.target_agents:
-                self.logger.warning(f"No target agents found for message {envelope_id}")
-                envelope.delivery_status = DeliveryStatus.FAILED
-                self.failed_messages[envelope_id] = envelope
-                return envelope_id
+            # Queue message for processing
+            await self.message_queue.put(message)
+            self.router_metrics["queue_size"] = self.message_queue.qsize()
             
-            # Add to processing queue
-            envelope.delivery_status = DeliveryStatus.QUEUED
-            self.message_history[envelope_id] = envelope
-            
-            # Priority-based queuing
-            priority_score = message.priority.score * -1  # Negative for min-heap
-            heapq.heappush(self.message_queue, (priority_score, envelope))
-            
-            self.message_metrics["total_messages"] += 1
-            
-            self.logger.debug(f"Message {envelope_id} queued for routing to {len(envelope.target_agents)} agents")
-            return envelope_id
+            return True
             
         except Exception as e:
             self.logger.error(f"Failed to route message: {str(e)}")
-            raise
+            return False
     
-    def _determine_routing_strategy(self, message: AgentMessage) -> RoutingStrategy:
-        """Determine routing strategy for message"""
-        # Check routing rules first
-        for rule in self.routing_rules:
-            if rule.enabled and self._matches_rule(message, rule):
-                return rule.strategy
+    async def broadcast_message(self, message: AgentMessage, agent_filter: Optional[Callable] = None) -> int:
+        """
+        Broadcast message to all registered agents
         
-        # Default strategy based on message type
-        if message.target_agent_id:
-            return RoutingStrategy.DIRECT
-        elif message.message_type == MessageType.NOTIFICATION:
-            return RoutingStrategy.BROADCAST
-        else:
-            return self.default_routing_strategy
-    
-    def _matches_rule(self, message: AgentMessage, rule: RoutingRule) -> bool:
-        """Check if message matches routing rule condition"""
-        condition = rule.condition
-        
-        # Check message type
-        if "message_type" in condition:
-            if message.message_type.value != condition["message_type"]:
-                return False
-        
-        # Check priority
-        if "priority" in condition:
-            if message.priority.value != condition["priority"]:
-                return False
-        
-        # Check agent ID patterns
-        if "agent_pattern" in condition:
-            pattern = condition["agent_pattern"]
-            if not (pattern in message.agent_id or pattern in str(message.target_agent_id)):
-                return False
-        
-        # Check payload conditions
-        if "payload_conditions" in condition:
-            for key, expected_value in condition["payload_conditions"].items():
-                if message.payload.get(key) != expected_value:
-                    return False
-        
-        return True
-    
-    def _determine_target_agents(self, envelope: MessageEnvelope) -> List[str]:
-        """Determine target agents for message envelope"""
-        message = envelope.message
-        strategy = envelope.routing_strategy
-        
-        if strategy == RoutingStrategy.DIRECT:
-            # Direct routing to specific agent
-            if message.target_agent_id and message.target_agent_id in self.registered_agents:
-                if self._is_agent_available(message.target_agent_id):
-                    return [message.target_agent_id]
-            return []
-        
-        elif strategy == RoutingStrategy.BROADCAST:
-            # Broadcast to all available agents
-            return [
-                agent_id for agent_id in self.registered_agents.keys()
-                if self._is_agent_available(agent_id) and agent_id != message.agent_id
-            ]
-        
-        elif strategy == RoutingStrategy.CAPABILITY_BASED:
-            # Route based on agent capabilities
-            required_capability = message.payload.get("required_capability")
-            if required_capability:
-                return [
-                    agent_id for agent_id, agent_info in self.registered_agents.items()
-                    if self._agent_has_capability(agent_id, required_capability) and 
-                       self._is_agent_available(agent_id)
-                ]
-        
-        elif strategy == RoutingStrategy.LOAD_BALANCED:
-            # Route to least loaded available agent
-            available_agents = [
-                agent_id for agent_id in self.registered_agents.keys()
-                if self._is_agent_available(agent_id) and agent_id != message.agent_id
-            ]
+        Args:
+            message: Message to broadcast
+            agent_filter: Optional filter function for agents
             
-            if available_agents:
-                # Sort by workload (ascending)
-                available_agents.sort(key=lambda a: self.agent_workloads[a])
-                return [available_agents[0]]
+        Returns:
+            Number of agents message was sent to
+        """
+        sent_count = 0
         
-        elif strategy == RoutingStrategy.ROUND_ROBIN:
-            # Simple round-robin selection
-            available_agents = [
-                agent_id for agent_id in self.registered_agents.keys()
-                if self._is_agent_available(agent_id) and agent_id != message.agent_id
-            ]
+        for agent_id, registration in self.registered_agents.items():
+            # Apply filter if provided
+            if agent_filter and not agent_filter(registration):
+                continue
             
-            if available_agents:
-                # Use message timestamp for round-robin selection
-                index = hash(message.timestamp) % len(available_agents)
-                return [available_agents[index]]
+            # Create copy of message for each agent
+            agent_message = AgentMessage(
+                agent_id=message.agent_id,
+                target_agent_id=agent_id,
+                message_type=message.message_type,
+                payload=message.payload.copy(),
+                priority=message.priority,
+                correlation_id=f"{message.correlation_id}_{agent_id}"
+            )
+            
+            if await self.route_message(agent_message):
+                sent_count += 1
         
-        return []
+        self.logger.info(f"Broadcast message sent to {sent_count} agents")
+        return sent_count
     
-    def _is_agent_available(self, agent_id: str) -> bool:
-        """Check if agent is available for message delivery"""
-        if agent_id not in self.registered_agents:
-            return False
-        
-        agent_info = self.registered_agents[agent_id]
-        
-        # Check agent status
-        if agent_info.get("status") != AgentStatus.READY.value:
-            return False
-        
-        # Check circuit breaker
-        circuit_breaker = self.circuit_breakers.get(agent_id, {})
-        if circuit_breaker.get("state") == "OPEN":
-            # Check if we can attempt half-open
-            if datetime.now() >= circuit_breaker.get("next_attempt", datetime.now()):
-                circuit_breaker["state"] = "HALF_OPEN"
-            else:
-                return False
-        
-        # Check workload limits
-        max_workload = agent_info.get("max_concurrent_messages", 10)
-        if self.agent_workloads[agent_id] >= max_workload:
-            return False
-        
-        return True
+    async def find_agents_by_capability(self, capability: str) -> List[str]:
+        """Find agents that have a specific capability"""
+        return self.capability_routing.get(capability, [])
     
-    def _agent_has_capability(self, agent_id: str, capability_name: str) -> bool:
-        """Check if agent has specific capability"""
-        agent_info = self.registered_agents.get(agent_id, {})
-        capabilities = agent_info.get("capabilities", [])
+    async def send_to_capability(self, message: AgentMessage, capability: str) -> bool:
+        """
+        Send message to an agent that has a specific capability
         
-        for capability in capabilities:
-            if capability.get("name") == capability_name:
-                return True
+        Args:
+            message: Message to send
+            capability: Required capability
+            
+        Returns:
+            True if message was sent successfully
+        """
+        capable_agents = await self.find_agents_by_capability(capability)
         
-        return False
+        if not capable_agents:
+            self.logger.warning(f"No agents found with capability: {capability}")
+            return False
+        
+        # Select agent (simple round-robin for now)
+        selected_agent = capable_agents[0]  # TODO: Implement better selection logic
+        
+        # Update target
+        message.target_agent_id = selected_agent
+        
+        return await self.route_message(message)
     
     async def _message_processing_loop(self):
         """Main message processing loop"""
-        while self.running:
+        self.logger.info("Message processing loop started")
+        
+        while self.is_running:
             try:
-                if self.message_queue:
-                    # Get highest priority message
-                    priority_score, envelope = heapq.heappop(self.message_queue)
-                    
-                    # Process message
-                    await self._process_message_envelope(envelope)
+                # Wait for messages with timeout
+                message = await asyncio.wait_for(
+                    self.message_queue.get(),
+                    timeout=1.0
+                )
                 
-                else:
-                    # No messages to process - short sleep
-                    await asyncio.sleep(0.01)
-                    
+                # Process message
+                await self._deliver_message(message)
+                
+            except asyncio.TimeoutError:
+                # No message received - continue
+                continue
             except Exception as e:
                 self.logger.error(f"Error in message processing loop: {str(e)}")
                 await asyncio.sleep(0.1)
+        
+        self.logger.info("Message processing loop stopped")
     
-    async def _process_message_envelope(self, envelope: MessageEnvelope):
-        """Process individual message envelope"""
+    async def _deliver_message(self, message: AgentMessage):
+        """Deliver message to target agent"""
+        start_time = datetime.now()
+        
         try:
-            envelope.delivery_status = DeliveryStatus.ROUTING
-            envelope.routed_at = datetime.now()
+            target_agent_id = message.target_agent_id
             
-            # Track start time for metrics
-            start_time = datetime.now()
+            # Handle broadcast messages (no specific target)
+            if not target_agent_id:
+                await self.broadcast_message(message)
+                return
             
-            # Attempt delivery to target agents
-            delivery_results = await self._deliver_to_agents(envelope)
+            # Check if target agent is registered
+            if target_agent_id not in self.registered_agents:
+                self.logger.warning(f"Target agent not found: {target_agent_id}")
+                self.dead_letter_queue.append(message)
+                self.router_metrics["messages_failed"] += 1
+                return
             
-            # Update envelope status based on delivery results
-            successful_deliveries = sum(1 for success in delivery_results.values() if success)
+            # Get agent registration
+            registration = self.registered_agents[target_agent_id]
             
-            if successful_deliveries > 0:
-                envelope.delivery_status = DeliveryStatus.DELIVERED
-                envelope.delivered_at = datetime.now()
-                self.delivered_messages[envelope.envelope_id] = envelope
-                self.message_metrics["delivered_messages"] += 1
-                
-                # Update delivery time metrics
-                delivery_time_ms = (envelope.delivered_at - start_time).total_seconds() * 1000
-                self.delivery_time_samples.append(delivery_time_ms)
-                
-            else:
-                # All deliveries failed - check for retry
-                if envelope.retry_count < envelope.message.max_retries:
-                    envelope.retry_count += 1
-                    envelope.delivery_status = DeliveryStatus.RETRY
-                    
-                    # Re-queue with exponential backoff
-                    delay = min(2 ** envelope.retry_count, 60)  # Max 60 second delay
-                    await asyncio.sleep(delay)
-                    
-                    # Re-add to queue
-                    priority_score = envelope.message.priority.score * -1
-                    heapq.heappush(self.message_queue, (priority_score, envelope))
-                    
-                    self.message_metrics["retry_messages"] += 1
-                    self.logger.debug(f"Message {envelope.envelope_id} queued for retry {envelope.retry_count}")
-                
+            # Deliver message
+            try:
+                # Call agent's message callback
+                if asyncio.iscoroutinefunction(registration.message_callback):
+                    await registration.message_callback(message)
                 else:
-                    # Max retries exceeded - move to dead letter queue
-                    envelope.delivery_status = DeliveryStatus.FAILED
-                    self.failed_messages[envelope.envelope_id] = envelope
-                    self.message_metrics["failed_messages"] += 1
-                    
-                    self.logger.warning(f"Message {envelope.envelope_id} failed after {envelope.retry_count} retries")
-            
+                    registration.message_callback(message)
+                
+                # Update metrics
+                registration.message_count += 1
+                registration.last_activity = datetime.now()
+                
+                self.router_metrics["messages_routed"] += 1
+                
+                # Update average routing time
+                routing_time_ms = (datetime.now() - start_time).total_seconds() * 1000
+                self._update_average_routing_time(routing_time_ms)
+                
+                self.logger.debug(f"Message delivered: {message.correlation_id} -> {target_agent_id}")
+                
+            except Exception as e:
+                self.logger.error(f"Failed to deliver message to {target_agent_id}: {str(e)}")
+                self.dead_letter_queue.append(message)
+                self.router_metrics["messages_failed"] += 1
+                
         except Exception as e:
-            self.logger.error(f"Error processing message envelope {envelope.envelope_id}: {str(e)}")
-            envelope.delivery_status = DeliveryStatus.FAILED
-            self.failed_messages[envelope.envelope_id] = envelope
+            self.logger.error(f"Error delivering message: {str(e)}")
+            self.dead_letter_queue.append(message)
+            self.router_metrics["messages_failed"] += 1
     
-    async def _deliver_to_agents(self, envelope: MessageEnvelope) -> Dict[str, bool]:
-        """Deliver message to target agents"""
-        delivery_results = {}
+    def _update_average_routing_time(self, routing_time_ms: float):
+        """Update average routing time metric"""
+        current_avg = self.router_metrics["average_routing_time_ms"]
+        total_routed = self.router_metrics["messages_routed"]
         
-        for agent_id in envelope.target_agents:
-            if agent_id in envelope.attempted_agents:
-                continue  # Skip already attempted agents
-            
-            envelope.attempted_agents.add(agent_id)
-            
-            try:
-                # Check if agent is still available
-                if not self._is_agent_available(agent_id):
-                    delivery_results[agent_id] = False
-                    continue
-                
-                # Get agent callback
-                callback = self.agent_callbacks.get(agent_id)
-                if not callback:
-                    delivery_results[agent_id] = False
-                    continue
-                
-                # Update workload
-                self.agent_workloads[agent_id] += 1
-                
-                # Deliver message
-                task = callback(envelope.message)
-                response = await asyncio.wait_for(task, timeout=envelope.message.timeout_seconds)
-                
-                # Update agent metrics
-                self.registered_agents[agent_id]["message_count"] += 1
-                self.registered_agents[agent_id]["last_activity"] = datetime.now()
-                
-                # Success
-                delivery_results[agent_id] = True
-                self._update_circuit_breaker(agent_id, success=True)
-                
-                self.logger.debug(f"Message {envelope.envelope_id} delivered to {agent_id}")
-                
-            except asyncio.TimeoutError:
-                # Timeout
-                delivery_results[agent_id] = False
-                self.registered_agents[agent_id]["timeout_count"] += 1
-                self._update_circuit_breaker(agent_id, success=False, timeout=True)
-                self.logger.warning(f"Timeout delivering message {envelope.envelope_id} to {agent_id}")
-                
-            except Exception as e:
-                # Other delivery error
-                delivery_results[agent_id] = False
-                self.registered_agents[agent_id]["error_count"] += 1
-                self._update_circuit_breaker(agent_id, success=False)
-                self.logger.error(f"Error delivering message {envelope.envelope_id} to {agent_id}: {str(e)}")
-            
-            finally:
-                # Update workload
-                if agent_id in self.agent_workloads:
-                    self.agent_workloads[agent_id] = max(0, self.agent_workloads[agent_id] - 1)
-        
-        return delivery_results
-    
-    def _update_circuit_breaker(self, agent_id: str, success: bool, timeout: bool = False):
-        """Update circuit breaker state for agent"""
-        circuit_breaker = self.circuit_breakers.get(agent_id, {})
-        
-        if success:
-            # Reset failure count on success
-            circuit_breaker["failure_count"] = 0
-            if circuit_breaker.get("state") == "HALF_OPEN":
-                circuit_breaker["state"] = "CLOSED"
-        
+        if total_routed == 1:
+            self.router_metrics["average_routing_time_ms"] = routing_time_ms
         else:
-            # Increment failure count
-            circuit_breaker["failure_count"] += 1
-            circuit_breaker["last_failure"] = datetime.now()
-            
-            # Check if circuit breaker should open
-            agent_info = self.registered_agents.get(agent_id, {})
-            total_messages = agent_info.get("message_count", 0)
-            error_count = agent_info.get("error_count", 0)
-            timeout_count = agent_info.get("timeout_count", 0)
-            
-            error_rate = error_count / max(total_messages, 1)
-            timeout_rate = timeout_count / max(total_messages, 1)
-            consecutive_failures = circuit_breaker["failure_count"]
-            
-            should_open = (
-                error_rate > self.failure_thresholds["error_rate"] or
-                timeout_rate > self.failure_thresholds["timeout_rate"] or
-                consecutive_failures >= self.failure_thresholds["consecutive_failures"]
+            # Exponential moving average
+            alpha = 0.1
+            self.router_metrics["average_routing_time_ms"] = (
+                alpha * routing_time_ms + (1 - alpha) * current_avg
             )
-            
-            if should_open and circuit_breaker.get("state") != "OPEN":
-                circuit_breaker["state"] = "OPEN"
-                circuit_breaker["next_attempt"] = datetime.now() + timedelta(seconds=60)  # 1 minute timeout
-                self.logger.warning(f"Circuit breaker opened for agent {agent_id}")
     
-    async def _health_monitoring_loop(self):
-        """Monitor agent health and update availability"""
-        while self.running:
-            try:
-                current_time = datetime.now()
-                
-                for agent_id, agent_info in self.registered_agents.items():
-                    last_activity = agent_info.get("last_activity", current_time)
-                    time_since_activity = (current_time - last_activity).total_seconds()
-                    
-                    # Calculate health score based on activity and performance
-                    if time_since_activity < 30:
-                        health_score = 1.0
-                    elif time_since_activity < 120:
-                        health_score = 0.8
-                    elif time_since_activity < 300:
-                        health_score = 0.5
-                    else:
-                        health_score = 0.2
-                    
-                    # Factor in error rates
-                    total_messages = agent_info.get("message_count", 0)
-                    error_count = agent_info.get("error_count", 0)
-                    if total_messages > 0:
-                        error_rate = error_count / total_messages
-                        health_score *= (1.0 - min(error_rate, 0.8))
-                    
-                    self.agent_health[agent_id] = health_score
-                
-                await asyncio.sleep(30)  # Check every 30 seconds
-                
-            except Exception as e:
-                self.logger.error(f"Error in health monitoring loop: {str(e)}")
-                await asyncio.sleep(30)
-    
-    async def _metrics_collection_loop(self):
-        """Collect and update performance metrics"""
-        while self.running:
-            try:
-                # Calculate average delivery time
-                if self.delivery_time_samples:
-                    avg_delivery_time = sum(self.delivery_time_samples) / len(self.delivery_time_samples)
-                    self.message_metrics["average_delivery_time_ms"] = avg_delivery_time
-                
-                # Calculate throughput
-                current_time = datetime.now()
-                self.throughput_samples.append((current_time, self.message_metrics["total_messages"]))
-                
-                if len(self.throughput_samples) >= 2:
-                    time_diff = (self.throughput_samples[-1][0] - self.throughput_samples[0][0]).total_seconds()
-                    message_diff = self.throughput_samples[-1][1] - self.throughput_samples[0][1]
-                    
-                    if time_diff > 0:
-                        throughput = message_diff / time_diff
-                        self.message_metrics["throughput_messages_per_second"] = throughput
-                
-                await asyncio.sleep(60)  # Update every minute
-                
-            except Exception as e:
-                self.logger.error(f"Error in metrics collection loop: {str(e)}")
-                await asyncio.sleep(60)
-    
-    async def _circuit_breaker_monitoring(self):
-        """Monitor and manage circuit breakers"""
-        while self.running:
-            try:
-                current_time = datetime.now()
-                
-                for agent_id, circuit_breaker in self.circuit_breakers.items():
-                    if circuit_breaker.get("state") == "OPEN":
-                        next_attempt = circuit_breaker.get("next_attempt", current_time)
-                        if current_time >= next_attempt:
-                            circuit_breaker["state"] = "HALF_OPEN"
-                            self.logger.info(f"Circuit breaker for agent {agent_id} moved to half-open")
-                
-                await asyncio.sleep(10)  # Check every 10 seconds
-                
-            except Exception as e:
-                self.logger.error(f"Error in circuit breaker monitoring: {str(e)}")
-                await asyncio.sleep(10)
-    
-    async def _dead_letter_processor(self):
-        """Process messages in dead letter queue"""
-        while self.running:
-            try:
-                # Periodically check for failed messages that might be retryable
-                current_time = datetime.now()
-                
-                for envelope_id, envelope in list(self.failed_messages.items()):
-                    # Check if message is very old and should be permanently discarded
-                    age_hours = (current_time - envelope.queued_at).total_seconds() / 3600
-                    
-                    if age_hours > 24:  # 24 hours retention in dead letter queue
-                        del self.failed_messages[envelope_id]
-                        self.logger.info(f"Permanently discarded failed message {envelope_id}")
-                
-                await asyncio.sleep(300)  # Check every 5 minutes
-                
-            except Exception as e:
-                self.logger.error(f"Error in dead letter processor: {str(e)}")
-                await asyncio.sleep(300)
-    
-    def add_routing_rule(self, rule: RoutingRule):
-        """Add message routing rule"""
-        self.routing_rules.append(rule)
-        self.logger.info(f"Added routing rule: {rule.name}")
-    
-    def remove_routing_rule(self, rule_id: str) -> bool:
-        """Remove routing rule"""
-        for i, rule in enumerate(self.routing_rules):
-            if rule.rule_id == rule_id:
-                del self.routing_rules[i]
-                self.logger.info(f"Removed routing rule: {rule_id}")
-                return True
-        return False
-    
-    def get_metrics(self) -> Dict[str, Any]:
-        """Get comprehensive routing metrics"""
+    def get_router_status(self) -> Dict[str, Any]:
+        """Get comprehensive router status"""
         return {
-            "message_metrics": self.message_metrics.copy(),
-            "agent_metrics": {
-                "total_agents": len(self.registered_agents),
-                "available_agents": sum(1 for agent_id in self.registered_agents.keys() if self._is_agent_available(agent_id)),
-                "average_workload": sum(self.agent_workloads.values()) / max(len(self.agent_workloads), 1),
-                "average_health_score": sum(self.agent_health.values()) / max(len(self.agent_health), 1)
+            "is_running": self.is_running,
+            "registered_agents": len(self.registered_agents),
+            "queue_size": self.message_queue.qsize(),
+            "dead_letter_count": len(self.dead_letter_queue),
+            "capabilities_registered": len(self.capability_routing),
+            "metrics": self.router_metrics.copy(),
+            "agent_list": list(self.registered_agents.keys())
+        }
+    
+    def get_agent_info(self, agent_id: str) -> Optional[Dict[str, Any]]:
+        """Get information about specific agent"""
+        if agent_id not in self.registered_agents:
+            return None
+        
+        registration = self.registered_agents[agent_id]
+        return {
+            "agent_id": agent_id,
+            "agent_info": registration.agent_info,
+            "registered_at": registration.registered_at.isoformat(),
+            "last_activity": registration.last_activity.isoformat(),
+            "message_count": registration.message_count,
+            "capabilities": self.agent_capabilities.get(agent_id, [])
+        }
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """Perform router health check"""
+        return {
+            "status": "healthy" if self.is_running else "stopped",
+            "uptime_seconds": (datetime.now() - datetime.now()).total_seconds(),  # TODO: Track actual uptime
+            "performance": {
+                "average_routing_time_ms": self.router_metrics["average_routing_time_ms"],
+                "success_rate": self._calculate_success_rate(),
+                "queue_utilization": min(self.message_queue.qsize() / 1000, 1.0)  # Assume max 1000
             },
-            "queue_metrics": {
-                "pending_messages": len(self.message_queue),
-                "failed_messages": len(self.failed_messages),
-                "delivered_messages": len(self.delivered_messages)
-            },
-            "circuit_breaker_metrics": {
-                "open_breakers": sum(1 for cb in self.circuit_breakers.values() if cb.get("state") == "OPEN"),
-                "half_open_breakers": sum(1 for cb in self.circuit_breakers.values() if cb.get("state") == "HALF_OPEN")
+            "agents": {
+                "total_registered": len(self.registered_agents),
+                "active_in_last_hour": self._count_active_agents(3600),
+                "capabilities_available": len(self.capability_routing)
             }
         }
     
-    def get_agent_status(self, agent_id: str) -> Dict[str, Any]:
-        """Get detailed status for specific agent"""
-        if agent_id not in self.registered_agents:
-            return {"error": "Agent not found"}
-        
-        agent_info = self.registered_agents[agent_id].copy()
-        circuit_breaker = self.circuit_breakers.get(agent_id, {})
-        
-        return {
-            "agent_id": agent_id,
-            "agent_info": agent_info,
-            "workload": self.agent_workloads.get(agent_id, 0),
-            "health_score": self.agent_health.get(agent_id, 0.0),
-            "circuit_breaker_state": circuit_breaker.get("state", "UNKNOWN"),
-            "is_available": self._is_agent_available(agent_id)
-        }
+    def _calculate_success_rate(self) -> float:
+        """Calculate message routing success rate"""
+        total_messages = self.router_metrics["messages_routed"] + self.router_metrics["messages_failed"]
+        if total_messages == 0:
+            return 1.0
+        return self.router_metrics["messages_routed"] / total_messages
+    
+    def _count_active_agents(self, seconds: int) -> int:
+        """Count agents active within specified seconds"""
+        cutoff_time = datetime.now() - timedelta(seconds=seconds)
+        return sum(
+            1 for reg in self.registered_agents.values()
+            if reg.last_activity > cutoff_time
+        )
 
 
 # Export main component
-__all__ = ["MessageRouter", "RoutingStrategy", "RoutingRule", "MessageEnvelope"]
+__all__ = ["MessageRouter", "AgentRegistration"]

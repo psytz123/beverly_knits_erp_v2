@@ -1,20 +1,21 @@
 {
   "data_source": {
-    "type": "mock",
-    "files": {
-      "primary_path": "/mnt/c/finalee/beverly_knits_erp_v2/data/mock",
-      "fallback_path": "/mnt/c/finalee/beverly_knits_erp_v2/data/mock/5/ERP Data"
+    "type": "live_api",
+    "status": "DEPRECATED - Mock data disabled",
+    "migration_notice": "Beverly Knits ERP v2 uses API-first architecture with live eFab data",
+    "live_endpoints": {
+      "erp_wrapper": "http://localhost:8000",
+      "efab_api": "https://efab.bkiapps.com",
+      "quads_api": "https://quads.bkiapps.com"
     }
   },
   "mock_settings": {
-    "enabled": true,
-    "realistic": true,
+    "enabled": false,
+    "status": "PERMANENTLY_DISABLED",
+    "realistic": false,
+    "note": "System converted to live data - use ERP wrapper service on port 8000",
     "record_counts": {
-      "yarns": 1200,
-      "styles": 300,
-      "sales": 10000,
-      "knit_orders": 1500,
-      "bom_entries": 28000
+      "note": "Live data counts vary based on production system"
     }
   }
 }

@@ -1,0 +1,33 @@
+{
+  "description": "Beverly Knits ERP v2 - Production-ready textile manufacturing ERP with real-time inventory intelligence, ML-powered forecasting, and 6-phase supply chain optimization.",
+  "startupProcesses": [
+    {
+      "name": "erp-server",
+      "command": "python src/core/beverly_comprehensive_erp.py",
+      "enabled": true,
+      "stdoutFile": "logs/erp-server.log"
+    },
+    {
+      "name": "erp-wrapper",
+      "command": "uvicorn app.main:app --port 8000",
+      "cwd": "erp-wrapper",
+      "enabled": true,
+      "stdoutFile": "logs/erp-wrapper.log"
+    }
+  ],
+  "fileChangeHooks": [
+    {
+      "name": "type-check",
+      "command": "python -m mypy --ignore-missing-imports src/ || true",
+      "filePattern": "src/**/*.py",
+      "enabled": true
+    },
+    {
+      "name": "lint",
+      "command": "python -m ruff check src/ || true",
+      "filePattern": "src/**/*.py",
+      "enabled": true
+    }
+  ],
+  "maxAgentSteps": 25
+}

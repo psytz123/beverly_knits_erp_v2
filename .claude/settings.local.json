@@ -14,7 +14,9 @@
       "Read(/mnt/c/Users/psytz/OneDrive/Pictures/Screenshots 1/**)",
       "WebSearch",
       "Read(/mnt/c/Users/psytz/Downloads/**)",
-      "mcp__filesystem__directory_tree"
+      "mcp__filesystem__directory_tree",
+      "Read(//mnt/c/Users/psytz/OneDrive/Pictures/Screenshots 1/**)",
+      "mcp__thinking__sequentialthinking"
     ],
     "deny": [],
     "ask": []

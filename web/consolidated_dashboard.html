@@ -12792,11 +12792,16 @@ const dataSafetyMonitor = {
             try {
                 // Request time-phased yarn PO data
                 const response = await fetchAPI('/api/time-phased-yarn-po');
-                
+
                 console.log('Time-phased PO response:', response);
-                
+
+                // Check if fetchAPI returned an error
+                if (response.error) {
+                    throw new Error(response.message || 'API call failed');
+                }
+
                 tbody.innerHTML = '';
-                
+
                 // Initialize summary counters
                 let totalPOsScheduled = 0;
                 let nextWeekReceipts = 0;
@@ -12804,7 +12809,7 @@ const dataSafetyMonitor = {
                 let totalCoverageWeeks = 0;
                 let yarnCount = 0;
                 let expediteRecommendations = [];
-                
+
                 if (response.yarns && Object.keys(response.yarns).length > 0) {
                     const yarns = Object.entries(response.yarns);
                     
@@ -12925,10 +12930,21 @@ const dataSafetyMonitor = {
                     
                     // Update summary cards with improved metrics from API
                     if (response.summary) {
-                        document.getElementById('totalPOsScheduled').textContent = response.summary.total_pos_scheduled || totalPOsScheduled;
-                        document.getElementById('nextWeekReceipts').textContent = (response.summary.next_week_receipts || nextWeekReceipts).toFixed(0) + ' lbs';
-                        document.getElementById('expediteNeeded').textContent = response.summary.expedite_needed || expediteNeeded;
-                        
+                        const totalPOsElement = document.getElementById('totalPOsScheduled');
+                        if (totalPOsElement) {
+                            totalPOsElement.textContent = response.summary.total_pos_scheduled || totalPOsScheduled;
+                        }
+
+                        const nextWeekElement = document.getElementById('nextWeekReceipts');
+                        if (nextWeekElement) {
+                            nextWeekElement.textContent = (response.summary.next_week_receipts || nextWeekReceipts).toFixed(0) + ' lbs';
+                        }
+
+                        const expediteElement = document.getElementById('expediteNeeded');
+                        if (expediteElement) {
+                            expediteElement.textContent = response.summary.expedite_needed || expediteNeeded;
+                        }
+
                         // Show yarns with shortage instead of coverage weeks
                         const coverageElement = document.getElementById('coverageWeeks');
                         if (coverageElement) {

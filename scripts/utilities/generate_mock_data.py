@@ -18,7 +18,10 @@ os.makedirs(MOCK_DATA_DIR, exist_ok=True)
 os.makedirs(f"{MOCK_DATA_DIR}/5", exist_ok=True)
 os.makedirs(f"{MOCK_DATA_DIR}/5/ERP Data", exist_ok=True)
 
-print("🔧 Generating realistic mock data for Beverly Knits ERP...")
+print("❌ DEPRECATED: Mock data generation disabled - system now uses live API data only")
+print("✅ Beverly Knits ERP v2 uses API-first architecture with live eFab data")
+print("🔗 Data sources: ERP wrapper service (port 8000) → eFab APIs → Live production data")
+exit(0)
 
 # Generate mock yarn inventory data
 def generate_yarn_inventory():
@@ -258,4 +261,4 @@ if __name__ == "__main__":
     print("   export DATA_BASE_DIR=\"" + MOCK_DATA_DIR + "/5\"")
     print("\n   Or run:")
     print(f"   DATA_BASE_DIR=\"{MOCK_DATA_DIR}/5\" python3 src/core/beverly_comprehensive_erp.py")
-    print("\n" + "="*60)
+    print("\n" + "="*60)

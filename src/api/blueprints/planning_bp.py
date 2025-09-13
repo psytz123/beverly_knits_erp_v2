@@ -485,4 +485,4 @@ def validate_substitution():
     
     except Exception as e:
         logger.error(f"Error validating substitution: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
