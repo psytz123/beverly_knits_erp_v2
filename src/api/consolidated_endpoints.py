@@ -582,7 +582,7 @@ def register_consolidated_endpoints(app, erp_instance):
                      methods=['GET'])
     
     # Register yarn endpoint
-    app.add_url_rule('/api/yarn/unified',
+    app.add_url_rule('/api/yarn-intelligence',
                      'yarn_unified',
                      ConsolidatedYarnAPI.unified_endpoint,
                      methods=['GET'])

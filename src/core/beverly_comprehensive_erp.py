@@ -8993,18 +8993,31 @@ class ManufacturingSupplyChainAI:
                 "planning_data": {}
             }
 
-            # Get production orders
+            # Get production orders with correct column mappings
             if self.knit_orders is not None and not self.knit_orders.empty:
                 orders = []
                 for _, order in self.knit_orders.iterrows():
+                    # Parse style and customer from knit_style_base JSON
+                    style_value = ''
+                    customer_value = ''
+                    if 'knit_style_base' in order.index and pd.notna(order['knit_style_base']):
+                        try:
+                            import ast
+                            style_info = ast.literal_eval(str(order['knit_style_base']))
+                            style_value = str(style_info.get('base_style', ''))
+                            customer_value = str(style_info.get('qs_customer', ''))
+                        except:
+                            style_value = str(order.get('Style #', ''))
+                            customer_value = str(order.get('Customer', ''))
+
                     orders.append({
-                        'order_id': str(order.get('KO #', '')),
-                        'style': str(order.get('Style #', '')),
-                        'customer': str(order.get('Customer', '')),
-                        'quantity': safe_float(order.get('Lbs', 0)),
-                        'machine': str(order.get('Machine', '')),
-                        'status': str(order.get('Status', 'Unknown')),
-                        'due_date': str(order.get('Due Date', ''))
+                        'order_id': str(order.get('serial_number', order.get('KO #', order.get('id', '')))),
+                        'style': style_value,
+                        'customer': customer_value,
+                        'quantity': safe_float(order.get('qty_ordered', order.get('Lbs', 0))),
+                        'machine': str(order.get('machine', order.get('Machine', ''))),
+                        'status': str(order.get('status', order.get('Status', 'Unknown'))),
+                        'due_date': str(order.get('requested_date', order.get('Due Date', '')))
                     })
 
                 planning_data['planning_data']['orders'] = orders
@@ -10952,12 +10965,12 @@ def get_knit_orders():
                     return default
             
             # Map actual column names from knit orders data
-            # Column names from actual data: 'Style #', 'Order #', 'Qty Ordered (lbs)', 'G00 (lbs)', etc.
-            qty_ordered = safe_float(ko.get('Qty Ordered (lbs)', 0))
-            g00 = safe_float(ko.get('G00 (lbs)', 0))
-            shipped = safe_float(ko.get('Shipped (lbs)', 0))
-            seconds = safe_float(ko.get('Seconds (lbs)', 0))
-            balance = safe_float(ko.get('Balance (lbs)', 0))
+            # Using actual CSV column names: qty_ordered, qty_G00, qty_shipped, seconds, balance
+            qty_ordered = safe_float(ko.get('qty_ordered', ko.get('Qty Ordered (lbs)', 0)))
+            g00 = safe_float(ko.get('qty_G00', ko.get('G00 (lbs)', 0)))
+            shipped = safe_float(ko.get('qty_shipped', ko.get('Shipped (lbs)', 0)))
+            seconds = safe_float(ko.get('seconds', ko.get('Seconds (lbs)', 0)))
+            balance = safe_float(ko.get('balance', ko.get('Balance (lbs)', 0)))
             
             # Validate balance calculation
             calculated_balance = qty_ordered - (g00 + shipped + seconds)
@@ -10973,19 +10986,26 @@ def get_knit_orders():
                 days_until_due = (start_date - pd.Timestamp.now()).days
             
             # Prepare order data with correct column mappings
-            # Try all possible column variations for Style
-            style_value = None
-            for style_col in ['Style #', 'Style#', 'style#', 'style', 'Style']:
-                if style_col in ko.index:
-                    val = ko.get(style_col)
-                    if pd.notna(val) and str(val).strip() != '':
-                        style_value = str(val).strip()
-                        break
-            if style_value is None or style_value == '':
-                style_value = 'N/A'
-                
-            # Clean HTML from order ID
-            ko_id = clean_html_from_string(ko.get('Order #', 'N/A'))
+            # Parse style from knit_style_base JSON
+            style_value = 'N/A'
+            customer_value = ''
+            if 'knit_style_base' in ko.index and pd.notna(ko['knit_style_base']):
+                try:
+                    import ast
+                    style_info = ast.literal_eval(str(ko['knit_style_base']))
+                    style_value = str(style_info.get('base_style', 'N/A'))
+                    customer_value = str(style_info.get('qs_customer', ''))
+                except:
+                    # Fallback to old column names
+                    for style_col in ['Style #', 'Style#', 'style#', 'style', 'Style']:
+                        if style_col in ko.index:
+                            val = ko.get(style_col)
+                            if pd.notna(val) and str(val).strip() != '':
+                                style_value = str(val).strip()
+                                break
+
+            # Use serial_number as the primary order ID
+            ko_id = str(ko.get('serial_number', ko.get('Order #', f"ID_{ko.get('id', 'N/A')}")))
             
             order_data = {
                 'ko_id': str(ko_id),
@@ -10993,6 +11013,8 @@ def get_knit_orders():
                 'order_id': str(ko_id),  # Add for dashboard compatibility
                 'po_number': str(ko_id),  # Add for dashboard compatibility
                 'style': str(style_value),
+                'customer': customer_value,  # Add customer from parsed data
+                'machine': str(ko.get('machine', '')),  # Add machine from CSV
                 'qty_ordered_lbs': qty_ordered,
                 'quantity_lbs': qty_ordered,  # Add for dashboard compatibility
                 'g00_lbs': g00,
@@ -11002,12 +11024,13 @@ def get_knit_orders():
                 'calculated_balance': calculated_balance,
                 'is_balance_correct': is_balance_correct,
                 'efficiency': round(efficiency, 1),
-                'status': 'Active' if balance > 0 else 'Complete',
+                'status': str(ko.get('status', 'Active' if balance > 0 else 'Complete')),
                 'completion_percentage': round((1 - balance/qty_ordered) * 100, 1) if qty_ordered > 0 else 0,
                 'is_active': balance > 0,
                 'has_started': g00 > 0,
                 'in_production': balance > 0 and g00 > 0,
-                'days_until_due': days_until_due
+                'days_until_due': days_until_due,
+                'requested_date': str(ko.get('requested_date', ''))  # Add requested date
             }
             
             # Add date fields with correct column names

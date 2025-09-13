@@ -61,15 +61,15 @@ ENDPOINT_MAPPINGS = {
     '/api/production-bottlenecks': '/api/production/unified',
     
     # Yarn consolidation
-    '/api/yarn-intelligence': '/api/yarn/unified',
-    '/api/yarn-shortages': '/api/yarn/unified',
-    '/api/yarn-forecast-shortages': '/api/yarn/unified',
-    '/api/yarn-aggregation': '/api/yarn/unified',
-    '/api/yarn-alternatives': '/api/yarn/unified',
-    '/api/yarn-substitution': '/api/yarn/unified',
-    '/api/yarn-substitution-intelligent': '/api/yarn/unified',
-    '/api/yarn-compatibility': '/api/yarn/unified',
-    '/api/yarn-optimization': '/api/yarn/unified',
+    '/api/yarn-intelligence': '/api/yarn-intelligence',
+    '/api/yarn-shortages': '/api/yarn-intelligence',
+    '/api/yarn-forecast-shortages': '/api/yarn-intelligence',
+    '/api/yarn-aggregation': '/api/yarn-intelligence',
+    '/api/yarn-alternatives': '/api/yarn-intelligence',
+    '/api/yarn-substitution': '/api/yarn-intelligence',
+    '/api/yarn-substitution-intelligent': '/api/yarn-intelligence',
+    '/api/yarn-compatibility': '/api/yarn-intelligence',
+    '/api/yarn-optimization': '/api/yarn-intelligence',
     
     # Planning consolidation
     '/api/six-phase-planning': '/api/planning/unified',

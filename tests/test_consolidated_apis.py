@@ -53,7 +53,7 @@ def main():
         },
         {
             'name': 'Yarn Unified',
-            'url': f'{BASE_URL}/api/yarn/unified',
+            'url': f'{BASE_URL}/api/yarn-intelligence',
             'params': {'type': 'all'}
         },
         {
@@ -131,7 +131,7 @@ def main():
         {
             'name': 'Old Yarn Intelligence',
             'old': f'{BASE_URL}/api/yarn-intelligence',
-            'new': f'{BASE_URL}/api/yarn/unified'
+            'new': f'{BASE_URL}/api/yarn-intelligence'
         },
         {
             'name': 'Old ML Forecast',

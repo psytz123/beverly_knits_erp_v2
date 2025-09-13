@@ -105,7 +105,7 @@ class APIConsolidationMigrator:
             {'name': 'inventory', 'url': f'{self.base_url}/api/inventory/unified'},
             {'name': 'forecast', 'url': f'{self.base_url}/api/forecast/unified'},
             {'name': 'production', 'url': f'{self.base_url}/api/production/unified'},
-            {'name': 'yarn', 'url': f'{self.base_url}/api/yarn/unified'},
+            {'name': 'yarn', 'url': f'{self.base_url}/api/yarn-intelligence'},
             {'name': 'planning', 'url': f'{self.base_url}/api/planning/unified'},
             {'name': 'system', 'url': f'{self.base_url}/api/system/unified'}
         ]
