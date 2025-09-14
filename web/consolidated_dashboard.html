@@ -12896,7 +12896,8 @@ const dataSafetyMonitor = {
                         const totalOnOrder = Object.values(weeklyReceipts).reduce((sum, val) => sum + (val || 0), 0);
                         
                         // Format current balance with color
-                        const currentBalance = yarnData.current_balance || yarnData.theoretical_balance || 0;
+                        // Use Planning Balance as primary (key metric), fallback to Theoretical then Beginning Balance
+                        const currentBalance = yarnData["Planning Balance"] || yarnData["Theoretical Balance"] || yarnData["Beginning Balance"] || 0;
                         const balanceClass = currentBalance < 0 ? 'text-red-600 font-bold' : currentBalance < 1000 ? 'text-orange-600' : 'text-gray-700';
                         
                         row.innerHTML = `

@@ -16,7 +16,8 @@
       "Read(/mnt/c/Users/psytz/Downloads/**)",
       "mcp__filesystem__directory_tree",
       "Read(//mnt/c/Users/psytz/OneDrive/Pictures/Screenshots 1/**)",
-      "mcp__thinking__sequentialthinking"
+      "mcp__thinking__sequentialthinking",
+      "Read(//mnt/c/Users/psytz/Downloads/**)"
     ],
     "deny": [],
     "ask": []
