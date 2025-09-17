@@ -177,14 +177,14 @@ This document outlines additional data requirements to significantly improve ML 
 
 ### Phase 1: Quick Wins (1-2 weeks)
 1. **Historical Data Recovery**
-   - Extract from backup systems
-   - Import from legacy databases
-   - Parse old reports/spreadsheets
-   
-2. **API Integrations**
-   - Cotton futures API
-   - Weather data API
-   - Currency exchange API
+   - Query historical data from eFab platform APIs
+   - Extract data from QuadS platform via API
+   - Access historical records through existing API endpoints
+
+2. **External API Integrations**
+   - Cotton futures API integration
+   - Weather data API connection
+   - Currency exchange API setup
 
 ### Phase 2: System Integration (2-4 weeks)
 1. **Customer Data Enhancement**
@@ -290,14 +290,14 @@ This document outlines additional data requirements to significantly improve ML 
 ## Recommended Priority Actions
 
 ### Immediate (This Week):
-1. ✅ Audit existing databases for historical data
-2. ✅ Set up automated data quality monitoring
-3. ✅ Begin collecting granular production metrics
+1. ✅ Query eFab platform for available historical data
+2. ✅ Set up automated data quality monitoring via API responses
+3. ✅ Begin collecting granular production metrics through real-time APIs
 
 ### Short-term (This Month):
-1. 📊 Integrate external market data APIs
-2. 📊 Enhance customer data collection
-3. 📊 Implement production IoT sensors
+1. 📊 Integrate external market data APIs with current system
+2. 📊 Enhance customer data collection via eFab customer APIs
+3. 📊 Implement real-time production monitoring through eFab/QuadS APIs
 
 ### Medium-term (This Quarter):
 1. 📈 Build supplier performance portal

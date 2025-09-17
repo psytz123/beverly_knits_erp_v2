@@ -6,8 +6,8 @@ Your Beverly Knits ERP is successfully deployed in Docker and ready for producti
 
 ### 📍 Current Access Points
 
-- **Local Access**: http://localhost:5005/consolidated
-- **Network Access**: http://172.30.1.251:5005/consolidated
+- **Local Access**: http://localhost:5006/consolidated
+- **Network Access**: http://172.30.1.251:5006/consolidated
 - **Container Status**: Running (`bki-erp-minimal`)
 
 ## 🌐 Next Steps for Production
@@ -18,7 +18,7 @@ Your Beverly Knits ERP is successfully deployed in Docker and ready for producti
 ./setup_internet_access.sh
 
 # Or manually:
-ngrok http 5005
+ngrok http 5006
 # Share the generated URL (e.g., https://abc123.ngrok.io)
 ```
 
@@ -66,7 +66,7 @@ docker-compose -f docker-compose.minimal.yml up -d --build
 ### Health Monitoring
 ```bash
 # Check status
-curl http://localhost:5005/api/comprehensive-kpis
+curl http://localhost:5006/api/comprehensive-kpis
 
 # Monitor resources
 docker stats bki-erp-minimal
@@ -94,7 +94,7 @@ docker logs bki-erp-minimal --tail 100
 docker logs bki-erp-minimal
 
 # Check ports
-netstat -tuln | grep 5005
+netstat -tuln | grep 5006
 
 # Restart Docker
 docker-compose -f docker-compose.minimal.yml down
@@ -107,7 +107,7 @@ docker-compose -f docker-compose.minimal.yml up -d
 docker exec bki-erp-minimal rm -rf /app/cache/*
 
 # Force reload
-curl http://localhost:5005/api/reload-data
+curl http://localhost:5006/api/reload-data
 ```
 
 ### High memory usage
@@ -168,8 +168,8 @@ docker-compose -f docker-compose.prod.yml up -d
 
 - **Documentation**: See `PRODUCTION_DEPLOYMENT_GUIDE.md`
 - **Logs**: Check `docker logs bki-erp-minimal`
-- **API Health**: http://localhost:5005/api/comprehensive-kpis
-- **Dashboard**: http://localhost:5005/consolidated
+- **API Health**: http://localhost:5006/api/comprehensive-kpis
+- **Dashboard**: http://localhost:5006/consolidated
 
 ## ✅ Status Check
 
@@ -177,8 +177,8 @@ Run this command to verify everything is working:
 ```bash
 echo "=== Beverly Knits ERP Status ==="
 echo "Container: $(docker ps | grep bki-erp-minimal | awk '{print $7}')"
-echo "API: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:5005/api/comprehensive-kpis)"
-echo "Dashboard: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:5005/consolidated)"
+echo "API: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:5006/api/comprehensive-kpis)"
+echo "Dashboard: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:5006/consolidated)"
 echo "Logs: $(docker logs bki-erp-minimal --tail 1 2>&1 | cut -c1-50)..."
 ```
 

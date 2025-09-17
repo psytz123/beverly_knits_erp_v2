@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beverly Knits - Inventory Improvements Demo (Live Data)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 0.85em;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 0.95em;
+            background: white;
+            min-width: 150px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.9em;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .yarn-id {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .yarn-desc {
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+
+        /* Cell status colors */
+        .cell-positive {
+            background: #d4edda;
+            color: #155724;
+            font-weight: 500;
+        }
+
+        .cell-negative {
+            background: #f8d7da;
+            color: #721c24;
+            font-weight: 600;
+        }
+
+        .cell-warning {
+            background: #fff3cd;
+            color: #856404;
+            font-weight: 500;
+        }
+
+        .cell-neutral {
+            background: #f8f9fa;
+            color: #495057;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .summary-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .summary-card .value {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .summary-card.danger .value {
+            color: #dc3545;
+        }
+
+        .summary-card.warning .value {
+            color: #ffc107;
+        }
+
+        .summary-card.success .value {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Beverly Knits Inventory Management</h1>
+            <p>Time-Phased Yarn Planning Dashboard - Live Data Integration</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span>Data Source:</span>
+                <span class="status-badge">LIVE API</span>
+            </div>
+            <div class="status-item">
+                <span>Last Updated:</span>
+                <span id="lastUpdated">-</span>
+            </div>
+            <div class="status-item">
+                <button class="btn btn-success" onclick="refreshData()">🔄 Refresh Data</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="summary-cards" id="summaryCards">
+                <div class="summary-card">
+                    <h3>Total Yarns</h3>
+                    <div class="value" id="totalYarns">-</div>
+                </div>
+                <div class="summary-card danger">
+                    <h3>Critical Shortages</h3>
+                    <div class="value" id="criticalShortages">-</div>
+                </div>
+                <div class="summary-card warning">
+                    <h3>Warnings</h3>
+                    <div class="value" id="warnings">-</div>
+                </div>
+                <div class="summary-card success">
+                    <h3>Healthy Stock</h3>
+                    <div class="value" id="healthyStock">-</div>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Status Filter</label>
+                    <select id="statusFilter" onchange="filterTable()">
+                        <option value="all">All Yarns</option>
+                        <option value="shortage">Shortages Only</option>
+                        <option value="critical">Critical Only</option>
+                        <option value="warning">Warnings Only</option>
+                        <option value="healthy">Healthy Only</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Yarn Search</label>
+                    <input type="text" id="yarnSearch" placeholder="Search yarn ID or description..." onkeyup="filterTable()">
+                </div>
+                <div class="filter-group">
+                    <label>Week Range</label>
+                    <select id="weekRange" onchange="updateWeekColumns()">
+                        <option value="36-44">Weeks 36-44</option>
+                        <option value="44-52" selected>Weeks 44-52</option>
+                        <option value="1-9">Weeks 1-9 (2025)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div id="loadingIndicator" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading live data from API...</p>
+                </div>
+                <div id="errorContainer"></div>
+                <table id="inventoryTable" style="display: none;">
+                    <thead>
+                        <tr id="tableHeader">
+                            <!-- Headers will be dynamically generated -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Rows will be dynamically generated from API data -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5006/api';
+        let currentData = [];
+        let weekColumns = [];
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+            setInterval(refreshData, 60000); // Auto-refresh every minute
+        });
+
+        async function refreshData() {
+            showLoading(true);
+            clearError();
+
+            try {
+                // First try to load integrated Yarn Demand data
+                let integratedData = null;
+                try {
+                    const integratedResponse = await fetch('/yarn_demand_integrated.json');
+                    if (integratedResponse.ok) {
+                        integratedData = await integratedResponse.json();
+                        console.log('Loaded integrated Yarn Demand data:', integratedData);
+                    }
+                } catch (e) {
+                    console.log('Integrated data not available, falling back to API');
+                }
+
+                // If integrated data is available, use it
+                if (integratedData && integratedData.yarns) {
+                    processIntegratedData(integratedData);
+                } else {
+                    // Fall back to API data
+                    const yarnResponse = await fetch(`${API_BASE}/yarn-intelligence`);
+                    if (!yarnResponse.ok) throw new Error('Failed to fetch yarn data');
+                    const yarnData = await yarnResponse.json();
+
+                    // Fetch time-phased PO data
+                    const poResponse = await fetch(`${API_BASE}/time-phased-yarn-po`);
+                    let poData = {};
+                    try {
+                        if (poResponse.ok) {
+                            poData = await poResponse.json();
+                        }
+                    } catch (e) {
+                        console.log('Time-phased PO data not available');
+                    }
+
+                    // Process and combine data
+                    processData(yarnData, poData);
+                }
+
+                // Update last updated time
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                showError('Failed to load data. Please check if the server is running.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function processIntegratedData(data) {
+            // Get week range
+            const weekRange = document.getElementById('weekRange').value;
+            const [startWeek, endWeek] = weekRange.split('-').map(Number);
+
+            // Generate week columns
+            weekColumns = [];
+            for (let week = startWeek; week <= endWeek; week++) {
+                weekColumns.push(`Week ${week}`);
+            }
+
+            // Build table header
+            buildTableHeader();
+
+            // Process yarns from integrated data
+            currentData = [];
+            const yarns = data.yarns || [];
+
+            yarns.forEach(yarn => {
+                const row = {
+                    yarnId: yarn.yarn_id,
+                    description: yarn.description,
+                    currentBalance: yarn.current_inventory || 0,
+                    allocated: yarn.allocated || 0, // Now included in integrated data
+                    available: yarn.planning_balance || 0,
+                    onOrder: 0, // Would need to merge with inventory data
+                    shortage: 0,
+                    isAllocated: yarn.is_allocated || false,
+                    weeklyData: {}
+                };
+
+                // Use actual weekly balances from Yarn Demand
+                weekColumns.forEach(weekCol => {
+                    const weekNum = parseInt(weekCol.replace('Week ', ''));
+                    const weekKey = `week_${weekNum}`;
+
+                    if (yarn.weekly_balances && yarn.weekly_balances[weekKey] !== undefined) {
+                        const balance = yarn.weekly_balances[weekKey];
+                        row.weeklyData[weekCol] = {
+                            value: Math.round(balance),
+                            demand: 0,
+                            supply: 0,
+                            status: balance < 0 ? 'negative' :
+                                   balance < 1000 ? 'warning' : 'positive'
+                        };
+                    } else {
+                        // No data for this week
+                        row.weeklyData[weekCol] = {
+                            value: row.available,
+                            demand: 0,
+                            supply: 0,
+                            status: 'neutral'
+                        };
+                    }
+                });
+
+                // Set overall status based on actual shortage data
+                row.status = yarn.has_shortage ? 'critical' :
+                            yarn.risk_level === 'CRITICAL' ? 'critical' :
+                            row.available < 1000 ? 'warning' : 'healthy';
+
+                currentData.push(row);
+            });
+
+            // Update summary cards
+            updateSummary();
+
+            // Render table
+            renderTable();
+        }
+
+        function processData(yarnData, poData) {
+            // Get week range
+            const weekRange = document.getElementById('weekRange').value;
+            const [startWeek, endWeek] = weekRange.split('-').map(Number);
+
+            // Generate week columns
+            weekColumns = [];
+            for (let week = startWeek; week <= endWeek; week++) {
+                weekColumns.push(`Week ${week}`);
+            }
+
+            // Build table header
+            buildTableHeader();
+
+            // Process yarn data - handle both old and new API response structures
+            currentData = [];
+            let yarns = [];
+
+            // Check if data is in criticality_analysis structure (new API)
+            if (yarnData.criticality_analysis && yarnData.criticality_analysis.yarns) {
+                yarns = yarnData.criticality_analysis.yarns;
+            } else if (yarnData.yarns) {
+                yarns = yarnData.yarns;
+            }
+
+            // Create a map of PO data by yarn
+            const poMap = {};
+            if (poData.yarn_po_details) {
+                poData.yarn_po_details.forEach(po => {
+                    if (!poMap[po.yarn_id]) {
+                        poMap[po.yarn_id] = [];
+                    }
+                    poMap[po.yarn_id].push(po);
+                });
+            }
+
+            // Process each yarn
+            yarns.forEach(yarn => {
+                const row = {
+                    yarnId: yarn.yarn_id || yarn['Yarn ID'] || '-',
+                    description: yarn.description || yarn['Desc#'] || '-',
+                    currentBalance: parseFloat(yarn.planning_balance || yarn.balance || yarn['Planning Balance'] || 0),
+                    allocated: parseFloat(yarn.allocated || 0),
+                    available: parseFloat(yarn.balance || yarn.planning_balance || 0),
+                    onOrder: parseFloat(yarn.on_order || 0),
+                    shortage: parseFloat(yarn.shortage || 0),
+                    weeklyData: {}
+                };
+
+                // Calculate weekly projections
+                let runningBalance = row.currentBalance;
+                const yarnPOs = poMap[row.yarnId] || [];
+                const weeklyDemand = yarn.weekly_demand || (Math.abs(row.allocated) / 8);
+
+                weekColumns.forEach((week, index) => {
+                    // Calculate week number
+                    const weekNum = startWeek + index;
+
+                    // Find POs for this week
+                    const weekPOs = yarnPOs.filter(po => {
+                        const poWeek = getWeekNumber(po.expected_date);
+                        return poWeek === weekNum;
+                    });
+
+                    // Calculate week's supply
+                    const weekSupply = weekPOs.reduce((sum, po) => sum + parseFloat(po.quantity || 0), 0);
+
+                    // Update running balance
+                    runningBalance = runningBalance - weeklyDemand + weekSupply;
+
+                    row.weeklyData[week] = {
+                        value: Math.round(runningBalance),
+                        demand: weeklyDemand,
+                        supply: weekSupply,
+                        status: runningBalance < 0 ? 'negative' :
+                               runningBalance < 1000 ? 'warning' : 'positive'
+                    };
+                });
+
+                // Determine overall status based on risk level or calculated status
+                if (yarn.risk_level === 'CRITICAL' || row.shortage > 0) {
+                    row.status = 'critical';
+                } else {
+                    const hasShortage = Object.values(row.weeklyData).some(w => w.status === 'negative');
+                    const hasWarning = Object.values(row.weeklyData).some(w => w.status === 'warning');
+                    row.status = hasShortage ? 'critical' : hasWarning ? 'warning' : 'healthy';
+                }
+
+                currentData.push(row);
+            });
+
+            // Update summary cards
+            updateSummary();
+
+            // Render table
+            renderTable();
+        }
+
+        function getWeekNumber(dateStr) {
+            if (!dateStr) return 0;
+            const date = new Date(dateStr);
+            const onejan = new Date(date.getFullYear(), 0, 1);
+            const millisecsInDay = 86400000;
+            return Math.ceil((((date - onejan) / millisecsInDay) + onejan.getDay() + 1) / 7);
+        }
+
+        function buildTableHeader() {
+            const header = document.getElementById('tableHeader');
+            header.innerHTML = `
+                <th>Yarn ID</th>
+                <th>Description</th>
+                <th class="text-right">Current Balance</th>
+                <th class="text-right">Allocated</th>
+                <th class="text-right">Available</th>
+                <th class="text-right">On Order</th>
+                ${weekColumns.map(week => `<th class="text-center">${week}</th>`).join('')}
+            `;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const filteredData = getFilteredData();
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="100%" class="text-center">No data matches the current filters</td></tr>';
+                return;
+            }
+
+            filteredData.forEach(row => {
+                const tr = document.createElement('tr');
+
+                // Build row HTML
+                let html = `
+                    <td class="yarn-id">${row.yarnId}</td>
+                    <td class="yarn-desc">${row.description}</td>
+                    <td class="text-right ${row.currentBalance < 0 ? 'cell-negative' : ''}">${formatNumber(row.currentBalance)}</td>
+                    <td class="text-right">${formatNumber(row.allocated)}</td>
+                    <td class="text-right ${row.available < 0 ? 'cell-negative' : row.available < 1000 ? 'cell-warning' : ''}">${formatNumber(row.available)}</td>
+                    <td class="text-right">${formatNumber(row.onOrder)}</td>
+                `;
+
+                // Add weekly columns
+                weekColumns.forEach(week => {
+                    const weekData = row.weeklyData[week];
+                    if (weekData) {
+                        const cellClass = `cell-${weekData.status}`;
+                        html += `<td class="text-center ${cellClass}">${formatNumber(weekData.value)}</td>`;
+                    } else {
+                        html += `<td class="text-center cell-neutral">-</td>`;
+                    }
+                });
+
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+
+            // Show table
+            document.getElementById('inventoryTable').style.display = 'table';
+        }
+
+        function getFilteredData() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('yarnSearch').value.toLowerCase();
+
+            return currentData.filter(row => {
+                // Apply status filter
+                if (statusFilter !== 'all') {
+                    if (statusFilter === 'shortage' && row.status === 'healthy') return false;
+                    if (statusFilter === 'critical' && row.status !== 'critical') return false;
+                    if (statusFilter === 'warning' && row.status !== 'warning') return false;
+                    if (statusFilter === 'healthy' && row.status !== 'healthy') return false;
+                }
+
+                // Apply search filter
+                if (searchTerm) {
+                    const yarnIdMatch = row.yarnId.toLowerCase().includes(searchTerm);
+                    const descMatch = row.description.toLowerCase().includes(searchTerm);
+                    if (!yarnIdMatch && !descMatch) return false;
+                }
+
+                return true;
+            });
+        }
+
+        function updateSummary() {
+            const total = currentData.length;
+            const critical = currentData.filter(r => r.status === 'critical').length;
+            const warning = currentData.filter(r => r.status === 'warning').length;
+            const healthy = currentData.filter(r => r.status === 'healthy').length;
+
+            document.getElementById('totalYarns').textContent = total;
+            document.getElementById('criticalShortages').textContent = critical;
+            document.getElementById('warnings').textContent = warning;
+            document.getElementById('healthyStock').textContent = healthy;
+        }
+
+        function filterTable() {
+            renderTable();
+        }
+
+        function updateWeekColumns() {
+            refreshData();
+        }
+
+        function formatNumber(num) {
+            if (num === null || num === undefined || isNaN(num)) return '0';
+            return Math.round(num).toLocaleString();
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+            if (show) {
+                document.getElementById('inventoryTable').style.display = 'none';
+            }
+        }
+
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('errorContainer').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

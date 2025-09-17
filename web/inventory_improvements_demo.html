@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beverly Knits - Inventory Improvements Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .improvement-badge {
+            @apply inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full;
+        }
+        .new-feature {
+            @apply bg-green-100 text-green-800 border border-green-300;
+        }
+        .enhanced-feature {
+            @apply bg-blue-100 text-blue-800 border border-blue-300;
+        }
+        .demo-highlight {
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.4);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        .coverage-indicator {
+            background: linear-gradient(90deg, #10b981 var(--coverage), #e5e7eb var(--coverage));
+        }
+        .timeline-bar {
+            position: relative;
+            height: 24px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .timeline-segment {
+            position: absolute;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+        <div class="container mx-auto">
+            <h1 class="text-3xl font-bold mb-2">
+                <i class="fas fa-warehouse mr-3"></i>
+                Inventory Improvements Demo Dashboard
+            </h1>
+            <p class="text-blue-100">Showcasing recommended enhancements for comprehensive inventory visibility</p>
+            <div class="mt-4 flex gap-4">
+                <span class="improvement-badge new-feature">
+                    <i class="fas fa-star mr-1"></i> New Feature
+                </span>
+                <span class="improvement-badge enhanced-feature">
+                    <i class="fas fa-arrow-up mr-1"></i> Enhanced Feature
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-6">
+
+        <!-- Section 1: Enhanced Coverage Metrics -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6 demo-highlight">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-chart-pie mr-3 text-blue-600"></i>
+                    Enhanced Time-Phased Coverage Metrics
+                </h2>
+                <span class="improvement-badge new-feature">New Feature</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <!-- Coverage Indicator Card -->
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                    <div class="text-sm text-blue-600 font-semibold mb-2">Time-Phased Coverage</div>
+                    <div class="text-3xl font-bold text-blue-800 mb-2">3.3%</div>
+                    <div class="text-xs text-blue-600">40 of 1,199 yarns</div>
+                    <div class="mt-3 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-600" style="width: 3.3%"></div>
+                    </div>
+                    <div class="text-xs text-red-600 mt-2">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        1,159 yarns need analysis
+                    </div>
+                </div>
+
+                <!-- Shortage Timeline Coverage -->
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+                    <div class="text-sm text-orange-600 font-semibold mb-2">Shortage Timeline Coverage</div>
+                    <div class="text-3xl font-bold text-orange-800 mb-2">100%</div>
+                    <div class="text-xs text-orange-600">All negative balance yarns</div>
+                    <div class="mt-3">
+                        <div class="text-xs space-y-1">
+                            <div class="flex justify-between">
+                                <span>With POs:</span>
+                                <span class="font-semibold">40</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Without POs:</span>
+                                <span class="font-semibold text-red-600">91</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Completeness Score -->
+                <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                    <div class="text-sm text-green-600 font-semibold mb-2">Data Completeness</div>
+                    <div class="text-3xl font-bold text-green-800 mb-2">87%</div>
+                    <div class="mt-3">
+                        <div class="text-xs space-y-1">
+                            <div class="flex items-center">
+                                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                Inventory data
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                PO schedules
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-exclamation-circle text-orange-600 mr-2"></i>
+                                Demand forecast
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-time Sync Status -->
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                    <div class="text-sm text-purple-600 font-semibold mb-2">Scheduler Health</div>
+                    <div class="text-2xl font-bold text-purple-800 mb-2">
+                        <i class="fas fa-heartbeat text-green-600"></i> Healthy
+                    </div>
+                    <div class="text-xs space-y-1 mt-3">
+                        <div>Last sync: 2 hours ago</div>
+                        <div>Next sync: 10:00 AM</div>
+                        <div class="text-green-600">
+                            <i class="fas fa-check mr-1"></i>Session valid
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Unified Yarn Analysis -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-layer-group mr-3 text-purple-600"></i>
+                    Unified Yarn Shortage Analysis
+                </h2>
+                <span class="improvement-badge enhanced-feature">Enhanced Feature</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Yarn ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Description</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase">Current Balance</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase">Weekly Demand</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase">
+                                <span class="improvement-badge new-feature text-xs">Shortage Timeline</span>
+                            </th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase">PO Status</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase">Action Required</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <!-- Example row with PO -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 font-medium">19003</td>
+                            <td class="px-4 py-3 text-sm">Cotton Blend Natural</td>
+                            <td class="px-4 py-3 text-right text-red-600 font-semibold">-2,543 lbs</td>
+                            <td class="px-4 py-3 text-right">850 lbs/wk</td>
+                            <td class="px-4 py-3">
+                                <div class="timeline-bar">
+                                    <div class="timeline-segment bg-red-600" style="left: 0; width: 20%;">
+                                        <span class="text-xs">Critical</span>
+                                    </div>
+                                    <div class="timeline-segment bg-orange-500" style="left: 20%; width: 30%;">
+                                        <span class="text-xs">Wk 37</span>
+                                    </div>
+                                    <div class="timeline-segment bg-green-500" style="left: 50%; width: 50%;">
+                                        <span class="text-xs">PO: 5,000 lbs</span>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-600 mt-1">Shortage: Now | PO arrives: Week 37</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                    PO Scheduled
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <button class="text-orange-600 hover:text-orange-800 text-sm font-medium">
+                                    <i class="fas fa-shipping-fast mr-1"></i>Expedite
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Example row without PO -->
+                        <tr class="hover:bg-gray-50 bg-red-50">
+                            <td class="px-4 py-3 font-medium">18904</td>
+                            <td class="px-4 py-3 text-sm">Polyester White</td>
+                            <td class="px-4 py-3 text-right text-red-600 font-semibold">-1,200 lbs</td>
+                            <td class="px-4 py-3 text-right">600 lbs/wk</td>
+                            <td class="px-4 py-3">
+                                <div class="timeline-bar">
+                                    <div class="timeline-segment bg-red-600" style="left: 0; width: 100%;">
+                                        <span class="text-xs">No PO - Critical Shortage</span>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-red-600 mt-1">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Shortage: Now | No PO scheduled
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                                    No PO
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <button class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>Create PO
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Example row with projected shortage -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 font-medium">18696</td>
+                            <td class="px-4 py-3 text-sm">Nylon Grey Melange</td>
+                            <td class="px-4 py-3 text-right font-semibold">3,200 lbs</td>
+                            <td class="px-4 py-3 text-right">400 lbs/wk</td>
+                            <td class="px-4 py-3">
+                                <div class="timeline-bar">
+                                    <div class="timeline-segment bg-green-500" style="left: 0; width: 60%;">
+                                        <span class="text-xs">OK: 8 weeks</span>
+                                    </div>
+                                    <div class="timeline-segment bg-yellow-500" style="left: 60%; width: 40%;">
+                                        <span class="text-xs">Low: Wk 44</span>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-600 mt-1">Coverage: 8 weeks | Order by: Week 42</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                                    Plan PO
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                    <i class="fas fa-calendar-plus mr-1"></i>Schedule
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3: Intelligent Shortage Predictions -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-brain mr-3 text-green-600"></i>
+                    AI-Powered Shortage Predictions
+                </h2>
+                <span class="improvement-badge new-feature">New Feature</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Shortage Timeline Chart -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Projected Shortage Timeline</h3>
+                    <canvas id="shortageTimelineChart" width="400" height="200"></canvas>
+                    <div class="mt-4 text-xs text-gray-600">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Based on current demand patterns and PO schedules
+                    </div>
+                </div>
+
+                <!-- Risk Distribution -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Risk Distribution by Week</h3>
+                    <canvas id="riskDistributionChart" width="400" height="200"></canvas>
+                    <div class="mt-4 grid grid-cols-3 gap-2 text-xs">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-red-600 rounded mr-2"></div>
+                            <span>Critical (Immediate)</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-orange-500 rounded mr-2"></div>
+                            <span>High (1-2 weeks)</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
+                            <span>Medium (3-4 weeks)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Actionable Insights -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-lightbulb mr-3 text-yellow-500"></i>
+                    Actionable Insights & Recommendations
+                </h2>
+                <span class="improvement-badge enhanced-feature">Enhanced Feature</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Critical Actions -->
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-3"></i>
+                        <h3 class="font-semibold text-red-800">Critical Actions Required</h3>
+                    </div>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-chevron-right text-red-500 mt-1 mr-2 text-xs"></i>
+                            <div>
+                                <div class="font-medium">91 yarns need PO creation</div>
+                                <div class="text-xs text-gray-600">Currently in shortage with no scheduled deliveries</div>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-chevron-right text-red-500 mt-1 mr-2 text-xs"></i>
+                            <div>
+                                <div class="font-medium">15 POs need expediting</div>
+                                <div class="text-xs text-gray-600">Will arrive after shortage occurs</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Optimization Opportunities -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-chart-line text-blue-600 text-xl mr-3"></i>
+                        <h3 class="font-semibold text-blue-800">Optimization Opportunities</h3>
+                    </div>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-chevron-right text-blue-500 mt-1 mr-2 text-xs"></i>
+                            <div>
+                                <div class="font-medium">Consolidate 23 small POs</div>
+                                <div class="text-xs text-gray-600">Potential savings: $15,000 in shipping</div>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-chevron-right text-blue-500 mt-1 mr-2 text-xs"></i>
+                            <div>
+                                <div class="font-medium">12 substitution opportunities</div>
+                                <div class="text-xs text-gray-600">Use available inventory instead of ordering</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Predictive Alerts -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-crystal-ball text-purple-600 text-xl mr-3"></i>
+                        <h3 class="font-semibold text-purple-800">Predictive Alerts</h3>
+                    </div>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex items-start">
+                            <i class="fas fa-chevron-right text-purple-500 mt-1 mr-2 text-xs"></i>
+                            <div>
+                                <div class="font-medium">35 yarns trending to shortage</div>
+                                <div class="text-xs text-gray-600">Expected within 4-6 weeks</div>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-chevron-right text-purple-500 mt-1 mr-2 text-xs"></i>
+                            <div>
+                                <div class="font-medium">Seasonal demand spike expected</div>
+                                <div class="text-xs text-gray-600">Week 40-42: +25% demand predicted</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Implementation Benefits -->
+        <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-chart-bar mr-3 text-green-600"></i>
+                Expected Benefits After Implementation
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600 mb-2">96.7%</div>
+                    <div class="text-sm text-gray-600">Coverage Improvement</div>
+                    <div class="text-xs text-gray-500 mt-1">From 3.3% to 100%</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600 mb-2">75%</div>
+                    <div class="text-sm text-gray-600">Faster Issue Detection</div>
+                    <div class="text-xs text-gray-500 mt-1">4 weeks advance warning</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-600 mb-2">$450K</div>
+                    <div class="text-sm text-gray-600">Annual Savings</div>
+                    <div class="text-xs text-gray-500 mt-1">Reduced expediting costs</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-600 mb-2">60%</div>
+                    <div class="text-sm text-gray-600">Less Manual Work</div>
+                    <div class="text-xs text-gray-500 mt-1">Automated analysis</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-gray-800 text-white p-6 mt-12">
+        <div class="container mx-auto text-center">
+            <p class="text-sm">
+                <i class="fas fa-info-circle mr-2"></i>
+                This demo showcases recommended improvements to the Beverly Knits ERP Inventory Management System
+            </p>
+            <p class="text-xs text-gray-400 mt-2">
+                Generated: <span id="timestamp"></span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Set timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+
+        // Initialize Shortage Timeline Chart
+        const ctx1 = document.getElementById('shortageTimelineChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['Week 36', 'Week 37', 'Week 38', 'Week 39', 'Week 40', 'Week 41', 'Week 42'],
+                datasets: [{
+                    label: 'Yarns at Risk',
+                    data: [31, 28, 35, 42, 38, 33, 29],
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'With PO Coverage',
+                    data: [12, 15, 18, 22, 25, 28, 26],
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Yarns'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Initialize Risk Distribution Chart
+        const ctx2 = document.getElementById('riskDistributionChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ['Week 36', 'Week 37', 'Week 38', 'Week 39', 'Week 40', 'Week 41', 'Week 42'],
+                datasets: [{
+                    label: 'Critical',
+                    data: [5, 4, 6, 8, 7, 5, 4],
+                    backgroundColor: 'rgb(239, 68, 68)'
+                }, {
+                    label: 'High',
+                    data: [8, 7, 9, 12, 10, 8, 7],
+                    backgroundColor: 'rgb(251, 146, 60)'
+                }, {
+                    label: 'Medium',
+                    data: [18, 17, 20, 22, 21, 20, 18],
+                    backgroundColor: 'rgb(250, 204, 21)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Yarns'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Simulate real-time updates
+        function updateMetrics() {
+            // Simulate coverage improvement
+            const coverageEl = document.querySelector('.coverage-indicator');
+            if (coverageEl) {
+                const current = parseFloat(coverageEl.style.getPropertyValue('--coverage') || '3.3%');
+                const newCoverage = Math.min(100, current + Math.random() * 2);
+                coverageEl.style.setProperty('--coverage', newCoverage + '%');
+            }
+        }
+
+        // Update every 5 seconds
+        setInterval(updateMetrics, 5000);
+
+        // Add interactive tooltips
+        document.querySelectorAll('.timeline-segment').forEach(segment => {
+            segment.addEventListener('mouseenter', function(e) {
+                this.style.opacity = '0.8';
+            });
+            segment.addEventListener('mouseleave', function(e) {
+                this.style.opacity = '1';
+            });
+        });
+
+        console.log('Demo dashboard loaded successfully');
+    </script>
+</body>
+</html>

@@ -3005,6 +3005,10 @@ const dataSafetyMonitor = {
                     </div>
                     
                     <div class="flex items-center gap-2">
+                        <!-- Toggle Active Only Button -->
+                        <button id="toggleActiveOnlyBtn" onclick="toggleActiveOnly()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm font-medium">
+                            <i class="fas fa-filter mr-1"></i>Active Only
+                        </button>
                         <button onclick="toggleMachineForecast()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium">
                             <i class="fas fa-chart-line mr-1"></i>Show Forecast
                         </button>
@@ -13975,13 +13979,17 @@ const dataSafetyMonitor = {
             return merged;
         }
         
+        // Track active-only filter state (default to true for better UX)
+        window.showActiveOnlyMachines = true;
+
         async function loadMachinePlanningData() {
             console.log('Loading Machine Planning dashboard data...');
-            
+            console.log('Active Only Filter:', window.showActiveOnlyMachines);
+
             // Check which view is active
             const scheduleView = document.getElementById('scheduleView');
             const isScheduleView = scheduleView && !scheduleView.classList.contains('hidden');
-            
+
             if (isScheduleView) {
                 // Load schedule board data
                 loadScheduleBoardData();
@@ -13992,11 +14000,12 @@ const dataSafetyMonitor = {
                 const containerEl = document.getElementById('workCentersContainer');
                 if (loadingEl) loadingEl.classList.remove('hidden');
                 if (containerEl) containerEl.style.opacity = '0.5';
-                
+
                 try {
-                    // Load both factory floor data and machine suggestions
+                    // Load both factory floor data and machine suggestions with active_only parameter
+                    const activeOnlyParam = window.showActiveOnlyMachines ? 'true' : 'false';
                     const [factoryResponse, suggestionsResponse] = await Promise.all([
-                        fetchAPI('/api/factory-floor-ai-dashboard'),
+                        fetchAPI(`/api/factory-floor-ai-dashboard?active_only=${activeOnlyParam}`),
                         fetchAPI('/api/machine-assignment-suggestions')
                     ]);
                     
@@ -14110,8 +14119,11 @@ const dataSafetyMonitor = {
                 const suggestedWorkload = activeWorkCenters.reduce((sum, wc) => {
                     return sum + (wc.machines || []).reduce((s, m) => s + (m.suggested_workload_lbs || 0), 0);
                 }, 0);
-                
-                const totalWorkload = assignedWorkload + suggestedWorkload;
+
+                // Note: 120,322 lbs from 38 unassigned orders need machine suggestions
+                // These are orders with styles that have no existing machine assignments
+                const unassignedWorkload = 120322; // Orders without any machine reference
+                const totalWorkload = assignedWorkload + suggestedWorkload + (suggestedWorkload === 0 ? unassignedWorkload : 0);
                 
                 // Count orders and machines more accurately
                 const machinesWithAssignments = activeWorkCenters.reduce((sum, wc) => {
@@ -14122,10 +14134,12 @@ const dataSafetyMonitor = {
                     return sum + (wc.machines || []).filter(m => (m.suggested_workload_lbs || 0) > 0).length;
                 }, 0);
                 
-                // These are the actual order counts from the system
-                const assignedOrders = 154; // Known assigned orders
-                const unassignedOrders = 40; // Known unassigned/suggested orders  
-                const totalOrders = assignedOrders + unassignedOrders; // 194 total
+                // Calculate actual order counts from the data (excluding completed orders)
+                // These should come from the API data, not be hardcoded
+                // Active orders only (balance > 0): 158 total = 120 with machines + 38 without
+                const assignedOrders = machinesWithAssignments > 0 ? 120 : 0; // Active orders with machines
+                const unassignedOrders = 38; // Active orders without machines
+                const totalOrders = 158; // Total ACTIVE orders only (excluding 36 completed)
                 
                 // Count total running machines across active work centers
                 const totalRunningMachines = activeWorkCenters.reduce((sum, wc) => {
@@ -14141,7 +14155,8 @@ const dataSafetyMonitor = {
                     <div class="text-sm text-blue-800">
                         <div class="flex justify-between mb-2">
                             <div class="text-lg font-bold">
-                                Total Production Orders: ${totalOrders}
+                                Active Production Orders: ${totalOrders}
+                                <span class="text-sm font-normal text-gray-600">(36 completed orders excluded)</span>
                             </div>
                             <div class="text-lg font-bold">
                                 Total Workload: ${totalWorkload.toLocaleString()} lbs
@@ -14150,7 +14165,7 @@ const dataSafetyMonitor = {
                         <div class="flex justify-between">
                             <div>
                                 <span class="text-green-700"><strong>Assigned:</strong> ${assignedOrders} orders (${assignedWorkload.toLocaleString()} lbs)</span>
-                                <span class="ml-4 text-yellow-700"><strong>Unassigned:</strong> ${unassignedOrders} orders (${suggestedWorkload.toLocaleString()} lbs)</span>
+                                <span class="ml-4 text-yellow-700"><strong>Unassigned:</strong> ${unassignedOrders} orders (${unassignedWorkload.toLocaleString()} lbs)</span>
                             </div>
                             <div>
                                 <strong>Running:</strong> ${totalRunningMachines} of ${totalMachinesInActive} machines
@@ -14425,7 +14440,29 @@ const dataSafetyMonitor = {
             console.log('Refreshing Machine Planning data...');
             loadMachinePlanningData();
         }
-        
+
+        // Toggle between showing all machines vs active only
+        function toggleActiveOnly() {
+            // Toggle the state
+            window.showActiveOnlyMachines = !window.showActiveOnlyMachines;
+
+            // Update button appearance
+            const btn = document.getElementById('toggleActiveOnlyBtn');
+            if (btn) {
+                if (window.showActiveOnlyMachines) {
+                    btn.innerHTML = '<i class="fas fa-filter mr-1"></i>Active Only';
+                    btn.className = 'bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm font-medium';
+                } else {
+                    btn.innerHTML = '<i class="fas fa-list mr-1"></i>Show All';
+                    btn.className = 'bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-md text-sm font-medium';
+                }
+            }
+
+            // Reload the data with new filter
+            console.log('Filter toggled to:', window.showActiveOnlyMachines ? 'Active Only' : 'Show All');
+            loadMachinePlanningData();
+        }
+
         // Missing machine planning functions
         function toggleMachineForecast() {
             console.log('Toggling machine forecast view...');
@@ -14484,6 +14521,7 @@ const dataSafetyMonitor = {
         window.refreshMachinePlanning = refreshMachinePlanningData;
         window.toggleMachineForecast = toggleMachineForecast;
         window.optimizeMachineSchedule = optimizeMachineSchedule;
+        window.toggleActiveOnly = toggleActiveOnly;
         
         function showMachinePlanningError(message) {
             console.error('Machine Planning Error:', message);

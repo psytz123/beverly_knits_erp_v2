@@ -3307,6 +3307,7 @@ class ManufacturingSupplyChainAI:
         self.data_path = data_path
         self.raw_materials_data = None  # Replaces yarn_data
         self.yarn_data = None  # Explicit yarn_data for dashboard compatibility
+        self.scheduler_thread = None  # For yarn demand refresh scheduler
         self.sales_data = None
         self.inventory_data = {}
         self.bom_data = None  # Multi-level BOM support
@@ -3856,7 +3857,99 @@ class ManufacturingSupplyChainAI:
             traceback.print_exc()
             self.time_phased_enabled = False
             self.yarn_weekly_receipts = {}
-    
+
+    def initialize_yarn_demand_scheduler(self):
+        """
+        Initialize automated Yarn Demand report fetching
+        Runs at 10:00 AM and 12:00 PM daily
+        Minimal implementation following Operating Charter
+        """
+        try:
+            import threading
+            import schedule
+            import time
+            # Try enhanced downloader first, fallback to original
+            try:
+                from src.data_loaders.efab_report_downloader_enhanced import EFabReportDownloaderEnhanced as EFabReportDownloader
+                print("[SCHEDULER] Using enhanced downloader with auto-refresh and retry logic")
+                self.using_enhanced_downloader = True
+            except ImportError:
+                from src.data_loaders.efab_report_downloader import EFabReportDownloader
+                print("[SCHEDULER] Using standard downloader")
+                self.using_enhanced_downloader = False
+
+            # Check if scheduler already running
+            if hasattr(self, 'scheduler_thread') and self.scheduler_thread and self.scheduler_thread.is_alive():
+                print("[SCHEDULER] Yarn demand scheduler already running")
+                return
+
+            # Get configuration
+            try:
+                from src.config.efab_config import EFAB_CONFIG, get_refresh_schedule
+                efab_session = EFAB_CONFIG['session_cookie']
+                refresh_times = get_refresh_schedule()
+            except ImportError:
+                # Fallback if config not available
+                efab_session = os.environ.get('EFAB_SESSION', 'aMdcwNLa0ov0pcbWcQ_zb5wyPLSkYF_B')
+                refresh_times = ['10:00', '12:00']
+
+            # Store reference to self for use in nested functions
+            analyzer_instance = self
+
+            def refresh_yarn_demand():
+                """Job to download and process Yarn Demand report"""
+                try:
+                    print(f"[SCHEDULER] Starting Yarn Demand refresh at {datetime.now()}")
+
+                    # Initialize downloader
+                    downloader = EFabReportDownloader(efab_session)
+
+                    # Store reference for health checks if enhanced
+                    if analyzer_instance.using_enhanced_downloader:
+                        analyzer_instance.yarn_downloader = downloader
+
+                    # Target path - save as Expected_Yarn_Report.xlsx for compatibility
+                    target_path = Path(analyzer_instance.data_path) / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx"
+
+                    # Download latest report
+                    if downloader.download_latest(target_path):
+                        print(f"[SCHEDULER] Downloaded Yarn Demand report to {target_path}")
+
+                        # Reload time-phased data
+                        analyzer_instance.initialize_time_phased_data()
+                        print(f"[SCHEDULER] Time-phased data refreshed successfully")
+                    else:
+                        print("[SCHEDULER] No new Yarn Demand report available")
+
+                except Exception as e:
+                    print(f"[SCHEDULER ERROR] Failed to refresh Yarn Demand: {e}")
+
+            def run_scheduler():
+                """Background thread to run scheduler"""
+                # Schedule jobs based on configuration
+                for time_str in refresh_times:
+                    schedule.every().day.at(time_str).do(refresh_yarn_demand)
+
+                print(f"[SCHEDULER] Yarn Demand refresh scheduled for {', '.join(refresh_times)}")
+
+                while True:
+                    try:
+                        schedule.run_pending()
+                        time.sleep(60)  # Check every minute
+                    except Exception as e:
+                        print(f"[SCHEDULER ERROR] Scheduler error: {e}")
+                        time.sleep(60)
+
+            # Start scheduler in background thread
+            self.scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+            self.scheduler_thread.start()
+            print("[SCHEDULER] Yarn Demand auto-refresh initialized successfully")
+
+        except ImportError as e:
+            print(f"[SCHEDULER] Could not initialize scheduler: {e}")
+        except Exception as e:
+            print(f"[SCHEDULER ERROR] Failed to initialize scheduler: {e}")
+
     def get_yarn_time_phased_data(self, yarn_id: str) -> dict:
         """
         Get time-phased analysis for a specific yarn
@@ -12777,10 +12870,86 @@ def time_phased_yarn_po():
                 }), 200
         
         result = {'yarns': {}, 'summary': {}, 'timestamp': datetime.now().isoformat()}
-        
+
+        # Get active production styles to filter relevant yarns
+        active_production_yarns = set()
+
+        # Load knit orders to identify active styles
+        if hasattr(analyzer, 'knit_orders') and analyzer.knit_orders is not None and not analyzer.knit_orders.empty:
+            # Get styles with active production (positive balance)
+            try:
+                # Check for balance columns
+                if 'Calculated_Balance' in analyzer.knit_orders.columns:
+                    balance_col = analyzer.knit_orders['Calculated_Balance']
+                elif 'Balance_Lbs' in analyzer.knit_orders.columns:
+                    balance_col = analyzer.knit_orders['Balance_Lbs']
+                else:
+                    balance_col = pd.Series(0, index=analyzer.knit_orders.index)
+
+                # Check for production status
+                in_production = analyzer.knit_orders.get('In_Production', pd.Series(False, index=analyzer.knit_orders.index))
+
+                # Filter for active orders
+                active_orders = analyzer.knit_orders[
+                    (balance_col > 0) | (in_production == True)
+                ]
+
+                # Get unique styles
+                active_styles = set(active_orders['Style'].dropna().unique()) if 'Style' in active_orders.columns else set()
+            except Exception as e:
+                print(f"[WARNING] Could not filter active orders: {e}")
+                active_styles = set()
+
+            # Map styles to yarns via BOM
+            if hasattr(analyzer, 'bom_data') and analyzer.bom_data is not None and not analyzer.bom_data.empty:
+                # Filter BOM for active styles
+                bom_for_active = analyzer.bom_data[analyzer.bom_data['Style#'].isin(active_styles)] if 'Style#' in analyzer.bom_data.columns else pd.DataFrame()
+                if not bom_for_active.empty and 'YarnID' in bom_for_active.columns:
+                    active_production_yarns = set(bom_for_active['YarnID'].dropna().astype(str).unique())
+
+        # Load the Yarn Demand report that was downloaded by the scheduler
+        # This file is automatically updated at 10 AM and 12 PM from eFab API
+        # It contains the full time-phased yarn demand data with all balance columns
+        yarn_demand_data = []
+        try:
+            # Load the report that the scheduler downloads from eFab API
+            # This is the authoritative source for yarn demand data
+            report_path = Path(analyzer.data_path) / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx"
+            if report_path.exists():
+                import pandas as pd
+                # Read with correct header row
+                df = pd.read_excel(report_path, header=2)
+
+                # Get all yarns with any negative balance
+                balance_cols = [col for col in df.columns if 'Balance' in str(col)]
+
+                for _, row in df.iterrows():
+                    yarn_id = str(row.get('Yarn', ''))
+                    if not yarn_id or pd.isna(yarn_id):
+                        continue
+
+                    # Check if any balance is negative
+                    has_negative = False
+                    for col in balance_cols:
+                        if pd.notna(row.get(col)) and row.get(col, 0) < 0:
+                            has_negative = True
+                            break
+
+                    if has_negative:
+                        yarn_demand_data.append({
+                            'yarn_id': yarn_id,
+                            'has_negative_balance': True
+                        })
+        except Exception as e:
+            print(f"[WARNING] Could not load Yarn Demand data: {e}")
+
+        # Get yarn IDs that have negative balances from Yarn Demand report
+        yarns_with_negative = set(item['yarn_id'] for item in yarn_demand_data)
+
         # First, analyze all yarns to find the most critical ones
         all_yarn_analysis = []
-        
+
+        # Process yarns from weekly receipts if available
         for yarn_id in analyzer.yarn_weekly_receipts.keys():
             yarn_analysis = analyzer.get_yarn_time_phased_data(yarn_id)
             if 'error' not in yarn_analysis:
@@ -12796,7 +12965,7 @@ def time_phased_yarn_po():
                             yarn_analysis['current_balance'] = float(yarn_row.iloc[0].get('Theoretical Balance', 0))
 
                             # Read Planning Balance directly from reference file (no calculations)
-                            yarn_analysis['planning_balance'] = self.get_planning_balance_from_reference(yarn_id)
+                            yarn_analysis['planning_balance'] = analyzer.get_planning_balance_from_reference(yarn_id) if hasattr(analyzer, 'get_planning_balance_from_reference') else 0
                 except:
                     yarn_analysis['yarn_id'] = yarn_id
                 
@@ -12829,12 +12998,74 @@ def time_phased_yarn_po():
                 if yarn_analysis.get('next_receipt_week'):
                     criticality_score += 10
                 
-                yarn_analysis['criticality_score'] = criticality_score
+                # Apply filtering based on negative balances
+                # Include yarn if it has ANY negative balance at ANY point in time
+                # This matches the Yarn Demand report logic
+
+                filter_nonproduction = os.environ.get('FILTER_NONPRODUCTION_YARNS', 'true').lower() == 'true'
+
+                include_yarn = False
+                if not filter_nonproduction:
+                    # Filtering disabled - include all yarns
+                    include_yarn = True
+                else:
+                    # Check if yarn has ANY negative balance at ANY point
+
+                    # Check all weekly balances
+                    weekly_balances = yarn_analysis.get('weekly_balances', {})
+                    for week, balance in weekly_balances.items():
+                        if balance < 0:
+                            include_yarn = True
+                            break
+
+                    # Also check standard balance fields
+                    if not include_yarn:
+                        if (yarn_analysis.get('current_balance', 0) < 0 or
+                            yarn_analysis.get('planning_balance', 0) < 0 or
+                            yarn_analysis.get('theoretical_balance', 0) < 0):
+                            include_yarn = True
+
+                    # Include if has any shortage
+                    if not include_yarn and yarn_analysis.get('has_shortage', False):
+                        include_yarn = True
+
+                if include_yarn:
+                    yarn_analysis['criticality_score'] = criticality_score
+                    all_yarn_analysis.append(yarn_analysis)
+
+        # Also add yarns from Yarn Demand report that weren't processed yet
+        processed_yarn_ids = set(y.get('yarn_id') for y in all_yarn_analysis)
+
+        # Add remaining yarns from Yarn Demand report
+        for yarn_id in yarns_with_negative:
+            if yarn_id not in processed_yarn_ids:
+                # Create minimal yarn analysis for yarns without PO data
+                yarn_analysis = {
+                    'yarn_id': yarn_id,
+                    'has_shortage': True,
+                    'has_negative_balance_in_report': True,
+                    'criticality_score': 500,  # Medium priority for unprocessed yarns with negative balance
+                    'current_balance': 0,
+                    'planning_balance': 0,
+                    'weekly_balances': {},
+                    'time_phased_enabled': False,
+                    'description': f'Yarn {yarn_id} (from Yarn Demand report)'
+                }
+
+                # Try to get yarn info from inventory
+                if hasattr(analyzer, 'yarn_data') and not analyzer.yarn_data.empty:
+                    yarn_row = analyzer.yarn_data[analyzer.yarn_data['Desc#'].astype(str) == str(yarn_id)]
+                    if not yarn_row.empty:
+                        yarn_analysis['description'] = yarn_row.iloc[0].get('Description', yarn_analysis['description'])
+                        yarn_analysis['current_balance'] = float(yarn_row.iloc[0].get('Theoretical Balance', 0))
+                        yarn_analysis['planning_balance'] = analyzer.get_planning_balance_from_reference(yarn_id) if hasattr(analyzer, 'get_planning_balance_from_reference') else 0
+
                 all_yarn_analysis.append(yarn_analysis)
-        
-        # Sort by criticality score (highest first) and take top 20
+
+        # Sort by criticality score (highest first)
+        # Show all yarns with negative balances (no artificial limit)
         all_yarn_analysis.sort(key=lambda x: x.get('criticality_score', 0), reverse=True)
-        top_yarns = all_yarn_analysis[:20]  # Only top 20 most critical
+        top_yarns = all_yarn_analysis  # Show all yarns with negative balances
         
         # Process top yarns for response
         processed_count = 0
@@ -12851,8 +13082,9 @@ def time_phased_yarn_po():
                 cleaned_yarn_data = clean_for_json(yarn_analysis)
 
                 # Set Planning Balance directly from reference file
-                cleaned_yarn_data['Planning Balance'] = self.get_planning_balance_from_reference(yarn_id)
-                cleaned_yarn_data['planning_balance'] = cleaned_yarn_data['Planning Balance']
+                planning_balance_value = analyzer.get_planning_balance_from_reference(yarn_id) if hasattr(analyzer, 'get_planning_balance_from_reference') else 0
+                cleaned_yarn_data['Planning Balance'] = planning_balance_value
+                cleaned_yarn_data['planning_balance'] = planning_balance_value
 
                 result['yarns'][yarn_id] = cleaned_yarn_data
                 processed_count += 1
@@ -12877,7 +13109,7 @@ def time_phased_yarn_po():
             'next_week_receipts': next_week_total,
             'expedite_needed': expedite_count,
             'time_phased_enabled': True,
-            'display_note': f'Showing top {processed_count} most critical yarns'
+            'display_note': f'Showing all {processed_count} yarns with negative balances'
         }
         
         return jsonify(result)
@@ -13006,6 +13238,151 @@ def yarn_intelligence_with_time_phased():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route("/api/manual-yarn-refresh", methods=['POST'])
+def manual_yarn_refresh():
+    """
+    Manually trigger Yarn Demand report refresh
+    Minimal implementation - reuses existing infrastructure
+    """
+    global new_api_count
+    new_api_count += 1
+
+    try:
+        from src.data_loaders.efab_report_downloader import EFabReportDownloader
+
+        # Get session from environment or request
+        efab_session = None
+        try:
+            if request.json:
+                efab_session = request.json.get('session')
+        except:
+            pass
+
+        if not efab_session:
+            efab_session = os.environ.get('EFAB_SESSION', 'aMdcwNLa0ov0pcbWcQ_zb5wyPLSkYF_B')
+
+        # Initialize downloader
+        downloader = EFabReportDownloader(efab_session)
+
+        # Target path
+        target_path = Path(DATA_PATH) / "production" / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx"
+
+        # Download report
+        success = downloader.download_latest(target_path)
+
+        if success:
+            # Reload time-phased data
+            analyzer.initialize_time_phased_data()
+
+            return jsonify({
+                'success': True,
+                'message': 'Yarn Demand report refreshed successfully',
+                'file': str(target_path),
+                'timestamp': datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'No new Yarn Demand report available',
+                'timestamp': datetime.now().isoformat()
+            })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route("/api/yarn-scheduler-health")
+def yarn_scheduler_health():
+    """
+    Health check endpoint for Yarn Demand scheduler
+    Returns comprehensive health metrics and status
+    """
+    health_data = {
+        'timestamp': datetime.now().isoformat(),
+        'scheduler_enabled': os.environ.get('ENABLE_YARN_SCHEDULER', 'false').lower() == 'true'
+    }
+
+    try:
+        # Check if scheduler thread is running
+        if hasattr(analyzer, 'scheduler_thread'):
+            health_data['scheduler_running'] = analyzer.scheduler_thread.is_alive()
+        else:
+            health_data['scheduler_running'] = False
+
+        # Check if using enhanced downloader
+        if hasattr(analyzer, 'using_enhanced_downloader'):
+            health_data['using_enhanced_downloader'] = analyzer.using_enhanced_downloader
+        else:
+            health_data['using_enhanced_downloader'] = False
+
+        # Get health metrics from enhanced downloader if available
+        if hasattr(analyzer, 'yarn_downloader') and hasattr(analyzer.yarn_downloader, 'get_health_status'):
+            downloader_health = analyzer.yarn_downloader.get_health_status()
+            health_data['downloader_health'] = downloader_health
+        else:
+            health_data['downloader_health'] = None
+
+        # Check time-phased data status
+        health_data['time_phased_enabled'] = analyzer.time_phased_enabled if hasattr(analyzer, 'time_phased_enabled') else False
+
+        # Check for latest report file
+        report_path = Path(DATA_PATH) / "production" / "5" / "ERP Data" / "Expected_Yarn_Report.xlsx"
+        if report_path.exists():
+            file_stat = report_path.stat()
+            health_data['latest_report'] = {
+                'exists': True,
+                'size': file_stat.st_size,
+                'modified': datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
+                'age_hours': (datetime.now() - datetime.fromtimestamp(file_stat.st_mtime)).total_seconds() / 3600
+            }
+        else:
+            health_data['latest_report'] = {'exists': False}
+
+        # Get session status
+        current_session = os.environ.get('EFAB_SESSION', '')
+        health_data['session_configured'] = bool(current_session)
+        health_data['session_prefix'] = current_session[:10] + '...' if current_session else None
+
+        # Overall health assessment
+        health_issues = []
+
+        if not health_data['scheduler_enabled']:
+            health_issues.append("Scheduler not enabled")
+        if not health_data['scheduler_running']:
+            health_issues.append("Scheduler thread not running")
+        if health_data['latest_report'].get('age_hours', float('inf')) > 24:
+            health_issues.append("Report older than 24 hours")
+        if not health_data['session_configured']:
+            health_issues.append("No session cookie configured")
+
+        if health_data.get('downloader_health'):
+            if not health_data['downloader_health'].get('session_valid', True):
+                health_issues.append("Session cookie invalid or expired")
+            if health_data['downloader_health'].get('failed_downloads', 0) > 3:
+                health_issues.append("Multiple download failures detected")
+
+        health_data['status'] = 'healthy' if not health_issues else 'degraded' if len(health_issues) < 3 else 'unhealthy'
+        health_data['issues'] = health_issues
+        health_data['recommendations'] = []
+
+        # Add recommendations based on issues
+        if "Session cookie invalid" in str(health_issues):
+            health_data['recommendations'].append("Update EFAB_SESSION environment variable with fresh cookie from browser")
+        if "Report older than 24 hours" in str(health_issues):
+            health_data['recommendations'].append("Trigger manual refresh via POST /api/manual-yarn-refresh")
+        if "Scheduler not enabled" in str(health_issues):
+            health_data['recommendations'].append("Set ENABLE_YARN_SCHEDULER=true and restart server")
+
+        return jsonify(health_data)
+
+    except Exception as e:
+        health_data['error'] = str(e)
+        health_data['status'] = 'error'
+        return jsonify(health_data), 500
 
 @app.route("/api/debug-time-phased-init")
 def debug_time_phased_init():
@@ -16199,11 +16576,42 @@ def production_planning_api():
         else:
             orders = []
         
-        # Get knit orders for scheduling
+        # Get knit orders from the knit-orders API endpoint for consistency
         knit_orders = []
-        if hasattr(analyzer, 'knit_orders') and analyzer.knit_orders is not None:
-            if not analyzer.knit_orders.empty:
-                knit_orders = analyzer.knit_orders.head(20).to_dict('records')
+        try:
+            # Call the knit-orders endpoint internally to get processed data
+            with app.test_request_context():
+                ko_response = get_knit_orders()
+                if hasattr(ko_response, 'json'):
+                    ko_data = ko_response.json
+                else:
+                    import json
+                    ko_data = json.loads(ko_response.get_data(as_text=True))
+
+                if ko_data.get('status') == 'success':
+                    # Convert API response format to the format expected below
+                    api_orders = ko_data.get('orders', [])[:20]  # Get top 20 orders
+                    for api_order in api_orders:
+                        knit_orders.append({
+                            'Order #': api_order.get('order_id'),
+                            'Style #': api_order.get('style'),
+                            'Machine': api_order.get('machine'),
+                            'Qty Ordered (lbs)': api_order.get('qty_ordered_lbs'),
+                            'G00 (lbs)': api_order.get('g00_lbs', 0),
+                            'Shipped (lbs)': api_order.get('shipped_lbs', 0),
+                            'Balance (lbs)': api_order.get('balance_lbs'),
+                            'Start Date': api_order.get('start_date'),
+                            'Quoted Date': api_order.get('due_date'),
+                            'in_production': api_order.get('in_production', False),
+                            'has_started': api_order.get('has_started', False),
+                            'completion_percentage': api_order.get('completion_percentage', 0)
+                        })
+        except Exception as e:
+            app.logger.warning(f"Could not get knit orders from API: {e}")
+            # Fallback to direct data access if API fails
+            if hasattr(analyzer, 'knit_orders') and analyzer.knit_orders is not None:
+                if not analyzer.knit_orders.empty:
+                    knit_orders = analyzer.knit_orders.head(20).to_dict('records')
         
         # If no knit orders, try to get forecast data to create schedule
         if len(knit_orders) == 0 and request.args.get('forecast') == 'true':
@@ -16247,19 +16655,50 @@ def production_planning_api():
             machine_value = order.get('Machine', order.get('Machine#', 'Unassigned'))
             if pd.isna(machine_value) or machine_value == '' or machine_value is None:
                 machine_value = 'Unassigned'
-            
+
             customer_value = order.get('Customer', 'Unknown')
             if pd.isna(customer_value) or customer_value == '' or customer_value is None:
                 customer_value = 'Unknown'
+
+            # Use preprocessed status from knit-orders API if available
+            # Otherwise calculate based on production data
+            if 'in_production' in order:
+                # Data from API already has processed status
+                g00_lbs = safe_float(order.get('G00 (lbs)', 0))
+                shipped_lbs = safe_float(order.get('Shipped (lbs)', 0))
+                balance_lbs = safe_float(order.get('Balance (lbs)', quantity_lbs))
+
+                if balance_lbs <= 0:
+                    status_value = 'Complete'
+                elif order.get('in_production', False):
+                    status_value = 'In Production'
+                else:
+                    status_value = 'Scheduled'
+            else:
+                # Fallback calculation for direct data access
+                g00_lbs = safe_float(order.get('G00 (lbs)', order.get('G00_Lbs', 0)))
+                shipped_lbs = safe_float(order.get('Shipped (lbs)', order.get('Shipped_Lbs', 0)))
+                balance_lbs = safe_float(order.get('Balance (lbs)', order.get('Balance_Lbs', quantity_lbs)))
+
+                if balance_lbs <= 0:
+                    status_value = 'Complete'
+                elif (g00_lbs + shipped_lbs) > 0:
+                    status_value = 'In Production'
+                else:
+                    status_value = 'Scheduled'
             
-            status_value = order.get('Status', 'Scheduled')
-            if pd.isna(status_value) or status_value == '' or status_value is None:
-                status_value = 'Scheduled'
-            
-            # Format start_date properly
+            # Format start_date properly (handles M/D/YYYY format)
             start_date_raw = order.get('Start Date', order.get('Start_Date', datetime.now()))
             if isinstance(start_date_raw, str):
-                start_date = start_date_raw
+                try:
+                    # Parse M/D/YYYY format
+                    start_date = pd.to_datetime(start_date_raw, format='%m/%d/%Y').strftime('%Y-%m-%d')
+                except:
+                    try:
+                        # Try other formats as fallback
+                        start_date = pd.to_datetime(start_date_raw).strftime('%Y-%m-%d')
+                    except:
+                        start_date = datetime.now().strftime('%Y-%m-%d')
             elif pd.notna(start_date_raw):
                 try:
                     start_date = pd.to_datetime(start_date_raw).strftime('%Y-%m-%d')
@@ -16267,17 +16706,47 @@ def production_planning_api():
                     start_date = datetime.now().strftime('%Y-%m-%d')
             else:
                 start_date = datetime.now().strftime('%Y-%m-%d')
-            
-            # Format end_date properly
-            end_date_raw = order.get('End_Date', None)
+
+            # Format end_date using Quoted Date column (handles M/D/YYYY format)
+            end_date_raw = order.get('Quoted Date', order.get('End_Date', None))
             if end_date_raw and pd.notna(end_date_raw):
                 try:
-                    end_date = pd.to_datetime(end_date_raw).strftime('%Y-%m-%d')
+                    # Parse M/D/YYYY format
+                    end_date = pd.to_datetime(end_date_raw, format='%m/%d/%Y').strftime('%Y-%m-%d')
                 except:
-                    end_date = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d')
+                    try:
+                        # Try other formats as fallback
+                        end_date = pd.to_datetime(end_date_raw).strftime('%Y-%m-%d')
+                    except:
+                        # Default to 30 days from start if parsing fails
+                        try:
+                            start_dt = pd.to_datetime(start_date)
+                            end_date = (start_dt + timedelta(days=30)).strftime('%Y-%m-%d')
+                        except:
+                            end_date = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
             else:
-                end_date = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d')
+                # No quoted date, use 30 days from start date
+                try:
+                    start_dt = pd.to_datetime(start_date)
+                    end_date = (start_dt + timedelta(days=30)).strftime('%Y-%m-%d')
+                except:
+                    end_date = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d')
             
+            # Calculate priority based on due date
+            try:
+                end_dt = pd.to_datetime(end_date)
+                days_until_due = (end_dt - datetime.now()).days
+                if days_until_due < 0:
+                    priority = "Critical"  # Overdue
+                elif days_until_due <= 7:
+                    priority = "High"      # Due within a week
+                elif days_until_due <= 14:
+                    priority = "Medium"    # Due within 2 weeks
+                else:
+                    priority = "Normal"    # More than 2 weeks out
+            except:
+                priority = "Normal"        # Default if date parsing fails
+
             schedule_item = {
                 "order_id": str(order.get('Order #', order.get('Machine#', f"ORD-{idx+1}"))),
                 "style": str(style) if not pd.isna(style) else 'Unknown',
@@ -16288,7 +16757,7 @@ def production_planning_api():
                 "end_date": end_date,
                 "machine": str(machine_value),
                 "status": str(status_value),
-                "priority": "High" if idx < 3 else "Normal"
+                "priority": priority
             }
             planning_data["production_schedule"].append(schedule_item)
         
@@ -17025,17 +17494,20 @@ def get_factory_floor_status():
     """Get complete factory floor status overview for visualization"""
     try:
         from production.production_capacity_manager import get_capacity_manager
-        
+
         capacity_mgr = get_capacity_manager()
-        
+
         if not capacity_mgr.machine_mapper:
             return jsonify({
-                "status": "error", 
+                "status": "error",
                 "message": "Factory floor tracking not available"
             }), 503
-        
-        # Get complete machine-level status
-        machine_status = capacity_mgr.get_machine_level_status()
+
+        # Check for active_only parameter
+        active_only = request.args.get('active_only', 'false').lower() == 'true'
+
+        # Get complete machine-level status with filtering option
+        machine_status = capacity_mgr.get_machine_level_status(active_only=active_only)
         
         # Group machines by work center for visualization
         work_center_groups = {}
@@ -17452,14 +17924,18 @@ def get_factory_floor_ai_dashboard():
     """Get complete factory floor data optimized for AI dashboard visualization"""
     try:
         from ai_production_model import get_ai_production_model
-        
+
         ai_model = get_ai_production_model()
-        
+
         # Get complete AI insights
         insights = ai_model.get_factory_floor_ai_insights()
-        
-        # Get machine status with work center groupings
-        factory_status_response = get_factory_floor_status()
+
+        # Check for active_only parameter - default to true for dashboard
+        active_only = request.args.get('active_only', 'true').lower() == 'true'
+
+        # Pass the active_only parameter internally
+        with app.test_request_context(f'/api/factory-floor-status?active_only={active_only}'):
+            factory_status_response = get_factory_floor_status()
         factory_status = factory_status_response.get_json()
         
         if factory_status.get('status') != 'success':
@@ -18141,14 +18617,19 @@ if PRODUCTION_FLOW_AVAILABLE and production_tracker:
 if __name__ == "__main__":
     # Initialize global forecasting engine
     forecasting_engine = SalesForecastingEngine()
-    
+
     print("Starting Beverly Knits Comprehensive AI-Enhanced ERP System...")
     print(f"Data Path: {DATA_PATH}")
     print(f"ML Available: {ML_AVAILABLE}")
     print(f"Plotting Available: {PLOT_AVAILABLE}")
     print("ML Forecasting endpoints available:")
     print("  - /api/ml-forecast-report")
-    print("  - /api/ml-forecast-detailed") 
+    print("  - /api/ml-forecast-detailed")
+
+    # Initialize Yarn Demand scheduler if enabled
+    if os.environ.get('ENABLE_YARN_SCHEDULER', 'true').lower() == 'true':
+        print("Initializing Yarn Demand auto-refresh scheduler...")
+        analyzer.initialize_yarn_demand_scheduler() 
     print("  - /api/ml-validation-summary")
     print("  - /api/retrain-ml (POST)")
     print("New Production endpoints:")

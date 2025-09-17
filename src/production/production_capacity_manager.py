@@ -42,6 +42,8 @@ class ProductionCapacityManager:
         self.machine_assignments = {}  # machine_id -> current_style
         self.work_center_loads = {}    # work_center -> current load
         self.machine_workload_lbs = {}  # machine_id -> remaining work in lbs
+        self.machine_suggested_workload_lbs = {}  # machine_id -> suggested/unassigned work in lbs
+        self.machine_forecasted_workload_lbs = {}  # machine_id -> forecasted demand in lbs
         
         if capacity_file_path:
             self.load_capacity_data(capacity_file_path)
@@ -62,63 +64,140 @@ class ProductionCapacityManager:
                 logger.warning(f"Failed to initialize machine mapper: {e}")
     
     def load_machine_workloads(self):
-        """Load actual machine workloads from eFab Knit Orders"""
+        """Load actual machine workloads from eFab Knit Orders
+
+        Implements smart assignment logic:
+        1. If multiple orders of same style and only some have machines,
+           unassigned orders inherit the same machine(s)
+        2. If multiple machines for a style, distribute unassigned orders equally
+        """
         try:
             import pandas as pd
             from pathlib import Path
-            
+            from collections import defaultdict
+
             # Try to load knit orders file
             knit_orders_path = Path("/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/8-28-2025/eFab_Knit_Orders.csv")
-            
+
             if not knit_orders_path.exists():
                 logger.warning("Knit orders file not found, using default machine utilization")
                 return
-            
+
             df = pd.read_csv(knit_orders_path)
-            
+
             # Clear existing assignments
             self.machine_workload_lbs.clear()
+            self.machine_suggested_workload_lbs.clear()
             self.machine_assignments.clear()
             self.machine_utilization.clear()
-            
-            # Process each knit order with machine assignment
-            for _, row in df.iterrows():
-                machine_id = row.get('Machine')
-                balance_lbs = row.get('Balance (lbs)')
+
+            # First pass: collect machine assignments by style
+            style_machines = defaultdict(set)  # style -> set of machine IDs
+            style_orders = defaultdict(list)   # style -> list of order rows
+
+            for idx, row in df.iterrows():
                 style = row.get('Style #')
-                
-                if pd.notna(machine_id) and pd.notna(balance_lbs):
-                    machine_id = str(int(machine_id))  # Convert to string for consistency
-                    
-                    # Clean balance value (remove commas)
-                    if isinstance(balance_lbs, str):
-                        balance_lbs = float(balance_lbs.replace(',', ''))
-                    
-                    # Accumulate workload for machines with multiple orders
-                    if machine_id in self.machine_workload_lbs:
-                        self.machine_workload_lbs[machine_id] += balance_lbs
+                if pd.notna(style):
+                    style_orders[style].append(row)
+                    machine_id = row.get('Machine')
+                    if pd.notna(machine_id):
+                        style_machines[style].add(int(machine_id))
+
+            # Second pass: process orders with smart machine assignment
+            for style, orders in style_orders.items():
+                machines = list(style_machines[style])
+
+                # Separate orders with and without machines
+                orders_with_machine = []
+                orders_without_machine = []
+
+                for order in orders:
+                    if pd.notna(order.get('Machine')):
+                        orders_with_machine.append(order)
                     else:
-                        self.machine_workload_lbs[machine_id] = balance_lbs
-                    
-                    # Assign style (latest assignment wins)
-                    if pd.notna(style):
+                        orders_without_machine.append(order)
+
+                # Process orders that already have machines
+                for order in orders_with_machine:
+                    machine_id = str(int(order['Machine']))
+                    balance_lbs = order.get('Balance (lbs)')
+
+                    if pd.notna(balance_lbs):
+                        # Clean balance value (remove commas)
+                        if isinstance(balance_lbs, str):
+                            balance_lbs = float(balance_lbs.replace(',', ''))
+
+                        # Skip completed orders (balance <= 0)
+                        if balance_lbs <= 0:
+                            continue
+
+                        # Accumulate workload
+                        if machine_id in self.machine_workload_lbs:
+                            self.machine_workload_lbs[machine_id] += balance_lbs
+                        else:
+                            self.machine_workload_lbs[machine_id] = balance_lbs
+
+                        # Assign style
                         self.machine_assignments[machine_id] = str(style)
-            
-            # Calculate utilization based on workload
+
+                # Process orders without machines - distribute across known machines for this style
+                if orders_without_machine and machines:
+                    # Calculate total unassigned workload (excluding completed orders)
+                    unassigned_workload = 0
+                    for order in orders_without_machine:
+                        balance_lbs = order.get('Balance (lbs)')
+                        if pd.notna(balance_lbs):
+                            if isinstance(balance_lbs, str):
+                                balance_lbs = float(balance_lbs.replace(',', ''))
+                            # Only add if not completed (balance > 0)
+                            if balance_lbs > 0:
+                                unassigned_workload += balance_lbs
+
+                    # Distribute equally across machines
+                    if unassigned_workload > 0:
+                        workload_per_machine = unassigned_workload / len(machines)
+                        for machine_id in machines:
+                            machine_id_str = str(machine_id)
+
+                            # Add to suggested workload (to distinguish from assigned)
+                            if machine_id_str in self.machine_suggested_workload_lbs:
+                                self.machine_suggested_workload_lbs[machine_id_str] += workload_per_machine
+                            else:
+                                self.machine_suggested_workload_lbs[machine_id_str] = workload_per_machine
+
+                            # Also add to main workload for utilization calculation
+                            if machine_id_str in self.machine_workload_lbs:
+                                self.machine_workload_lbs[machine_id_str] += workload_per_machine
+                            else:
+                                self.machine_workload_lbs[machine_id_str] = workload_per_machine
+
+                            # Ensure style assignment
+                            self.machine_assignments[machine_id_str] = str(style)
+
+                        logger.info(f"Distributed {unassigned_workload:.0f} lbs for style {style} across {len(machines)} machines")
+
+            # Calculate utilization based on total workload
             for machine_id, workload_lbs in self.machine_workload_lbs.items():
                 # Assume machine capacity is ~616 lbs/day and calculate utilization
                 daily_capacity = self.default_capacity
                 days_of_work = workload_lbs / daily_capacity
-                
+
                 # Convert days of work to utilization percentage (cap at 100%)
                 # More than 5 days = 100% utilization
                 utilization = min(100.0, (days_of_work / 5.0) * 100.0)
                 self.machine_utilization[machine_id] = utilization
-            
+
+            # Log summary
+            total_assigned = len([m for m in self.machine_workload_lbs if m not in self.machine_suggested_workload_lbs])
+            total_suggested = len(self.machine_suggested_workload_lbs)
             logger.info(f"Loaded workloads for {len(self.machine_workload_lbs)} machines from knit orders")
-            
+            logger.info(f"  - {total_assigned} machines with direct assignments")
+            logger.info(f"  - {total_suggested} machines with distributed/suggested workload")
+
         except Exception as e:
             logger.error(f"Error loading machine workloads: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             # Continue with default behavior
     
     def load_capacity_data(self, file_path: str) -> bool:
@@ -449,19 +528,32 @@ class ProductionCapacityManager:
         
         return summaries
     
-    def get_machine_level_status(self) -> Dict[str, Any]:
-        """Get complete machine-level status overview"""
+    def get_machine_level_status(self, active_only: bool = False) -> Dict[str, Any]:
+        """Get complete machine-level status overview
+
+        Args:
+            active_only: If True, only return machines with workload > 0 or forecasted demand
+        """
         if not self.machine_mapper:
             return {'error': 'Machine mapper not available'}
-        
+
         machine_status = []
         work_center_status = []
-        
+
         # Collect machine-level data
         for machine_id, machine_info in self.machine_mapper.machine_info.items():
             utilization = self.get_machine_utilization(machine_id)
             workload_lbs = self.machine_workload_lbs.get(machine_id, 0)
-            
+            suggested_workload_lbs = self.machine_suggested_workload_lbs.get(machine_id, 0)
+            forecasted_workload_lbs = self.machine_forecasted_workload_lbs.get(machine_id, 0)
+
+            # Calculate total potential workload
+            total_workload = workload_lbs + suggested_workload_lbs + forecasted_workload_lbs
+
+            # Skip machines with no workload if active_only is True
+            if active_only and total_workload <= 0:
+                continue
+
             status = {
                 'machine_id': machine_id,
                 'work_center': self.machine_mapper.get_work_center_for_machine(machine_id),
@@ -471,30 +563,41 @@ class ProductionCapacityManager:
                     self.get_machine_assignment(machine_id) or 'default'
                 ),
                 'workload_lbs': workload_lbs,
-                'days_of_work': round(workload_lbs / self.default_capacity, 1) if workload_lbs > 0 else 0,
-                'status': 'RUNNING' if utilization > 20 else 'IDLE'
+                'suggested_workload_lbs': suggested_workload_lbs,
+                'forecasted_workload_lbs': forecasted_workload_lbs,
+                'total_workload_lbs': total_workload,
+                'days_of_work': round(total_workload / self.default_capacity, 1) if total_workload > 0 else 0,
+                'status': 'RUNNING' if workload_lbs > 0 else ('PENDING' if suggested_workload_lbs > 0 else 'IDLE')
             }
             machine_status.append(status)
-        
-        # Collect work center summaries
+
+        # Collect work center summaries (filter if active_only)
         for work_center, summary in self.get_all_work_centers_summary().items():
+            if active_only:
+                # Check if work center has any active machines
+                wc_machines = [m for m in machine_status if m['work_center'] == work_center]
+                if not wc_machines:
+                    continue
             work_center_status.append(summary)
-        
+
         # Overall statistics
         total_machines = len(machine_status)
         running_machines = len([m for m in machine_status if m['status'] == 'RUNNING'])
+        pending_machines = len([m for m in machine_status if m['status'] == 'PENDING'])
         total_capacity = sum(m['capacity_lbs_day'] for m in machine_status)
         avg_utilization = np.mean([m['utilization'] for m in machine_status]) if machine_status else 0
-        
+
         return {
             'total_machines': total_machines,
             'running_machines': running_machines,
-            'idle_machines': total_machines - running_machines,
+            'pending_machines': pending_machines,
+            'idle_machines': total_machines - running_machines - pending_machines,
             'total_work_centers': len(work_center_status),
             'total_capacity_lbs_day': total_capacity,
             'avg_utilization_percent': avg_utilization,
             'machine_status': machine_status,
             'work_center_status': work_center_status,
+            'filtered': active_only,
             'last_updated': datetime.now().isoformat()
         }
     

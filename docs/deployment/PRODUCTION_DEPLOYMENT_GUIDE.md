@@ -11,8 +11,8 @@
 
 ### Current Setup Status
 Your Beverly Knits ERP is running in Docker on your local machine:
-- **Local Access**: http://localhost:5005/consolidated
-- **Network Access**: http://[YOUR-IP]:5005/consolidated
+- **Local Access**: http://localhost:5006/consolidated
+- **Network Access**: http://[YOUR-IP]:5006/consolidated
 - **Container**: `bki-erp-minimal`
 
 ### Basic Docker Commands
@@ -47,7 +47,7 @@ https://ngrok.com/signup
 ngrok authtoken YOUR_TOKEN
 
 # Start tunnel
-ngrok http 5005
+ngrok http 5006
 
 # Share the generated URL (e.g., https://abc123.ngrok.io)
 ```
@@ -55,7 +55,7 @@ ngrok http 5005
 ### Option 2: Custom Domain (Paid)
 ```bash
 # Reserve custom domain
-ngrok http 5005 --domain=erp.yourcompany.com
+ngrok http 5006 --domain=erp.yourcompany.com
 ```
 
 ## Cloud Deployment
@@ -114,7 +114,7 @@ server {
     server_name erp.yourdomain.com;
     
     location / {
-        proxy_pass http://localhost:5005;
+        proxy_pass http://localhost:5006;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -142,7 +142,7 @@ certbot --nginx -d erp.yourdomain.com
 # Instance type: t3.medium (2 vCPU, 4GB RAM)
 # AMI: Amazon Linux 2023
 # Storage: 30GB gp3
-# Security Group: Allow 80, 443, 22, 5005
+# Security Group: Allow 80, 443, 22, 5006
 ```
 
 2. **Install Dependencies**
@@ -200,7 +200,7 @@ az container create \
   --name bki-erp \
   --image beverlyknitsacr.azurecr.io/bki-erp:latest \
   --cpu 2 --memory 4 \
-  --ports 5005 \
+  --ports 5006 \
   --dns-name-label beverly-knits-erp
 ```
 
@@ -250,7 +250,7 @@ API_RATE_LIMIT=100/minute
 # Create health check script
 cat > /opt/bki/health_check.sh << 'EOF'
 #!/bin/bash
-response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5005/api/comprehensive-kpis)
+response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5006/api/comprehensive-kpis)
 if [ $response -eq 200 ]; then
     echo "Health check passed"
 else
@@ -318,7 +318,7 @@ df -h
 du -sh /var/lib/docker/
 
 # Monitor network
-netstat -tuln | grep 5005
+netstat -tuln | grep 5006
 ```
 
 ## Scaling Considerations
@@ -362,7 +362,7 @@ docker logs bki-erp-minimal
 # Check disk space
 df -h
 # Verify ports
-netstat -tuln | grep 5005
+netstat -tuln | grep 5006
 ```
 
 2. **Data not loading**
@@ -402,7 +402,7 @@ docker logs -f bki-erp-minimal
 docker exec -it bki-erp-minimal bash
 
 # Check API health
-curl http://localhost:5005/api/comprehensive-kpis
+curl http://localhost:5006/api/comprehensive-kpis
 
 # Restart application
 docker-compose -f docker-compose.minimal.yml restart

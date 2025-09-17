@@ -1,32 +1,30 @@
-# AI Supply Chain Framework - Deployment Guide
+# Beverly Knits ERP v2 - Deployment Guide
 
-Complete guide for deploying the AI Supply Chain Optimization Framework in production environments, covering single-tenant and multi-tenant deployments across various infrastructure platforms.
+Complete guide for deploying Beverly Knits ERP v2 in production environments, covering Docker deployment, API integration setup, and monitoring configuration.
 
 ## 📋 Prerequisites
 
 ### System Requirements
 
-#### Minimum Requirements (Single Tenant)
+#### Minimum Requirements (Single Instance)
 - **CPU**: 4 cores, 2.4 GHz
-- **Memory**: 16 GB RAM
-- **Storage**: 100 GB SSD
+- **Memory**: 8 GB RAM
+- **Storage**: 50 GB SSD
 - **Network**: 1 Gbps connection
 - **OS**: Ubuntu 20.04 LTS, CentOS 8, or RHEL 8
 
-#### Recommended Requirements (Multi-Tenant)
-- **CPU**: 16 cores, 3.0 GHz
-- **Memory**: 64 GB RAM
-- **Storage**: 500 GB NVMe SSD
+#### Recommended Requirements (Production)
+- **CPU**: 8 cores, 3.0 GHz
+- **Memory**: 16 GB RAM
+- **Storage**: 100 GB NVMe SSD
 - **Network**: 10 Gbps connection
 - **OS**: Ubuntu 22.04 LTS
 
 #### Software Dependencies
-- **Python**: 3.9+ (3.11 recommended)
-- **PostgreSQL**: 14+ (15 recommended)
-- **Redis**: 7.0+
-- **Docker**: 20.10+ (optional)
-- **Kubernetes**: 1.24+ (for orchestrated deployments)
-- **Nginx**: 1.20+ (reverse proxy)
+- **Python**: 3.10+ (3.11 recommended)
+- **Docker**: 20.10+ (recommended for deployment)
+- **Redis**: 7.0+ (optional for caching)
+- **Nginx**: 1.20+ (reverse proxy for production)
 
 ---
 
@@ -35,9 +33,9 @@ Complete guide for deploying the AI Supply Chain Optimization Framework in produ
 ### Local Development Setup
 
 ```bash
-# Clone the framework
-git clone https://github.com/your-org/ai-supply-chain-framework.git
-cd ai-supply-chain-framework
+# Clone the repository
+git clone https://github.com/your-org/beverly_knits_erp_v2.git
+cd beverly_knits_erp_v2
 
 # Create virtual environment
 python3.11 -m venv venv
@@ -49,22 +47,18 @@ pip install -r requirements.txt
 
 # Set up environment variables
 cp .env.example .env
-nano .env  # Configure your settings
-
-# Initialize database
-python -m framework db init
-python -m framework db migrate
+nano .env  # Configure your eFab/QuadS credentials
 
 # Start development server
-python -m framework run --dev
+python3 src/core/beverly_comprehensive_erp.py
 ```
 
 ### Docker Development Setup
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/ai-supply-chain-framework.git
-cd ai-supply-chain-framework
+git clone https://github.com/your-org/beverly_knits_erp_v2.git
+cd beverly_knits_erp_v2
 
 # Start with Docker Compose
 docker-compose up -d
@@ -73,14 +67,14 @@ docker-compose up -d
 docker-compose ps
 
 # View logs
-docker-compose logs -f framework
+docker-compose logs -f beverly-erp
 ```
 
 ---
 
 ## 🏗️ Production Deployment
 
-### Single-Tenant Production Deployment
+### Docker Production Deployment (Recommended)
 
 #### 1. Infrastructure Setup
 
@@ -88,821 +82,469 @@ docker-compose logs -f framework
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install required packages
-sudo apt install -y python3.11 python3.11-venv python3-pip postgresql-14 redis-server nginx git
+# Install Docker and Docker Compose
+sudo apt install -y docker.io docker-compose nginx git
 
-# Create framework user
-sudo useradd -m -s /bin/bash framework
-sudo usermod -aG sudo framework
+# Create beverly user
+sudo useradd -m -s /bin/bash beverly
+sudo usermod -aG docker beverly
 ```
 
-#### 2. Database Configuration
+#### 2. Environment Configuration
 
-```sql
--- Connect to PostgreSQL as postgres user
-sudo -u postgres psql
-
--- Create database and user
-CREATE DATABASE ai_supply_chain;
-CREATE USER framework WITH ENCRYPTED PASSWORD 'your_secure_password';
-GRANT ALL PRIVILEGES ON DATABASE ai_supply_chain TO framework;
-
--- Enable required extensions
-\c ai_supply_chain
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
-\q
-```
-
-#### 3. Redis Configuration
+Create production environment file:
 
 ```bash
-# Configure Redis
-sudo nano /etc/redis/redis.conf
+# Create .env.production
+cat > .env.production << 'EOF'
+# eFab ERP Configuration
+ERP_BASE_URL=https://efab.bkiapps.com
+ERP_LOGIN_URL=https://efab.bkiapps.com/login
+ERP_API_PREFIX=/api
+ERP_USERNAME=psytz
+ERP_PASSWORD=big$cat
+EFAB_SESSION=aMdcwNLa0ov0pcbWcQ_zb5wyPLSkYF_B
 
-# Key settings:
-# maxmemory 4gb
-# maxmemory-policy allkeys-lru
-# save 900 1
-# save 300 10
-# save 60 10000
+# QuadS Configuration
+QUADS_BASE_URL=https://quads.bkiapps.com
+QUADS_LOGIN_URL=https://quads.bkiapps.com/LOGIN
 
-# Restart Redis
-sudo systemctl restart redis-server
-sudo systemctl enable redis-server
-```
+# Session Management
+SESSION_COOKIE_NAME=dancer.session
+SESSION_STATE_PATH=/tmp/erp_session.json
 
-#### 4. Framework Installation
-
-```bash
-# Switch to framework user
-sudo su - framework
-
-# Clone and setup
-git clone https://github.com/your-org/ai-supply-chain-framework.git
-cd ai-supply-chain-framework
-
-# Create virtual environment
-python3.11 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements-prod.txt
-
-# Configure environment
-cp .env.production .env
-nano .env
-```
-
-#### 5. Environment Configuration
-
-```bash
-# .env file
-DATABASE_URL=postgresql://framework:your_secure_password@localhost/ai_supply_chain
-REDIS_URL=redis://localhost:6379/0
-SECRET_KEY=your_very_secure_secret_key_here
+# Beverly ERP Settings
 FLASK_ENV=production
-LOG_LEVEL=INFO
+DEBUG=False
+PORT=5006
+HOST=0.0.0.0
+
+# Yarn Demand Scheduler
+ENABLE_YARN_SCHEDULER=true
+FILTER_NONPRODUCTION_YARNS=true
+SCHEDULER_INTERVAL_HOURS=2
+
+# Performance Settings
 WORKERS=4
-
-# Security settings
-SSL_REQUIRED=True
-CSRF_PROTECTION=True
-RATE_LIMITING=True
-
-# Framework settings
-DEFAULT_INDUSTRY=GENERIC_MANUFACTURING
-MAX_CONCURRENT_IMPLEMENTATIONS=10
 CACHE_TTL=3600
+MAX_CONCURRENT_REQUESTS=100
 
-# External integrations
-SAP_CONNECTOR_ENABLED=True
-ORACLE_CONNECTOR_ENABLED=True
-QUICKBOOKS_CONNECTOR_ENABLED=True
+# Logging
+LOG_LEVEL=INFO
+LOG_TO_FILE=true
+LOG_FILE_PATH=/app/logs/beverly_erp.log
 
-# Monitoring
-PROMETHEUS_ENABLED=True
-GRAFANA_ENABLED=True
-LOG_TO_FILE=True
+# Security
+SECRET_KEY=your_very_secure_secret_key_here
+CORS_ORIGINS=*
+RATE_LIMITING=true
+EOF
 ```
 
-#### 6. Database Migration
+#### 3. Docker Compose Configuration
 
-```bash
-# Initialize database
-python -m framework db init
+Create `docker-compose.prod.yml`:
 
-# Run migrations
-python -m framework db migrate
+```yaml
+version: '3.8'
 
-# Create initial data
-python -m framework db seed --production
+services:
+  beverly-erp:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    ports:
+      - "5006:5006"
+    environment:
+      - FLASK_ENV=production
+    env_file:
+      - .env.production
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - /tmp:/tmp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5006/api/comprehensive-kpis"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - redis
+    networks:
+      - beverly-network
 
-# Verify setup
-python -m framework db verify
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru
+    networks:
+      - beverly-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - beverly-erp
+    restart: unless-stopped
+    networks:
+      - beverly-network
+
+volumes:
+  redis_data:
+
+networks:
+  beverly-network:
+    driver: bridge
 ```
 
-#### 7. Systemd Service Configuration
+#### 4. Production Dockerfile
 
-```bash
-# Create systemd service
-sudo nano /etc/systemd/system/ai-supply-chain.service
+Create `Dockerfile.production`:
+
+```dockerfile
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY web/ ./web/
+COPY data/ ./data/
+COPY scripts/ ./scripts/
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# Create non-root user
+RUN useradd -m -u 1000 beverly && chown -R beverly:beverly /app
+USER beverly
+
+# Expose port
+EXPOSE 5006
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:5006/api/comprehensive-kpis || exit 1
+
+# Start application
+CMD ["python3", "src/core/beverly_comprehensive_erp.py"]
 ```
 
-```ini
-[Unit]
-Description=AI Supply Chain Optimization Framework
-After=network.target postgresql.service redis.service
+#### 5. Nginx Configuration
 
-[Service]
-Type=exec
-User=framework
-Group=framework
-WorkingDirectory=/home/framework/ai-supply-chain-framework
-Environment=PATH=/home/framework/ai-supply-chain-framework/venv/bin
-ExecStart=/home/framework/ai-supply-chain-framework/venv/bin/python -m framework run --production
-Restart=always
-RestartSec=5
-KillMode=mixed
-TimeoutStopSec=5
-
-# Security settings
-NoNewPrivileges=yes
-PrivateTmp=yes
-ProtectSystem=strict
-ReadWritePaths=/home/framework/ai-supply-chain-framework/logs
-ReadWritePaths=/home/framework/ai-supply-chain-framework/uploads
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-# Enable and start service
-sudo systemctl daemon-reload
-sudo systemctl enable ai-supply-chain
-sudo systemctl start ai-supply-chain
-
-# Check status
-sudo systemctl status ai-supply-chain
-```
-
-#### 8. Nginx Configuration
-
-```bash
-# Create Nginx configuration
-sudo nano /etc/nginx/sites-available/ai-supply-chain
-```
+Create `nginx.conf`:
 
 ```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    return 301 https://$server_name$request_uri;
+events {
+    worker_connections 1024;
 }
 
-server {
-    listen 443 ssl http2;
-    server_name your-domain.com;
+http {
+    upstream beverly_erp {
+        server beverly-erp:5006;
+    }
 
-    ssl_certificate /path/to/ssl/certificate.crt;
-    ssl_certificate_key /path/to/ssl/private.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
+    server {
+        listen 80;
+        server_name your-domain.com;
+        return 301 https://$server_name$request_uri;
+    }
 
-    client_max_body_size 100M;
-    
-    location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # WebSocket support
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        
-        # Timeouts
-        proxy_connect_timeout 300s;
-        proxy_send_timeout 300s;
+    server {
+        listen 443 ssl http2;
+        server_name your-domain.com;
+
+        ssl_certificate /etc/nginx/ssl/certificate.crt;
+        ssl_certificate_key /etc/nginx/ssl/private.key;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        client_max_body_size 100M;
         proxy_read_timeout 300s;
-    }
+        proxy_connect_timeout 75s;
 
-    location /static/ {
-        alias /home/framework/ai-supply-chain-framework/static/;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
+        location / {
+            proxy_pass http://beverly_erp;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
 
-    location /uploads/ {
-        alias /home/framework/ai-supply-chain-framework/uploads/;
-        expires 1d;
-    }
-}
-```
+            # WebSocket support for real-time updates
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
 
-```bash
-# Enable site
-sudo ln -s /etc/nginx/sites-available/ai-supply-chain /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
+        location /api/ {
+            proxy_pass http://beverly_erp;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
 
----
+            # API-specific timeouts
+            proxy_read_timeout 300s;
+            proxy_send_timeout 300s;
+        }
 
-## ☸️ Kubernetes Deployment
-
-### Multi-Tenant Production with Kubernetes
-
-#### 1. Namespace Setup
-
-```yaml
-# namespace.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: ai-supply-chain
-  labels:
-    name: ai-supply-chain
-```
-
-#### 2. Database Configuration
-
-```yaml
-# postgres-secret.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: postgres-secret
-  namespace: ai-supply-chain
-type: Opaque
-data:
-  username: ZnJhbWV3b3Jr  # framework (base64)
-  password: eW91cl9zZWN1cmVfcGFzc3dvcmQ=  # your_secure_password (base64)
-
----
-# postgres-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: postgres
-  namespace: ai-supply-chain
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:15
-        env:
-        - name: POSTGRES_DB
-          value: "ai_supply_chain"
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: username
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: password
-        ports:
-        - containerPort: 5432
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-      volumes:
-      - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-service
-  namespace: ai-supply-chain
-spec:
-  selector:
-    app: postgres
-  ports:
-  - protocol: TCP
-    port: 5432
-    targetPort: 5432
-```
-
-#### 3. Redis Configuration
-
-```yaml
-# redis-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis
-  namespace: ai-supply-chain
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: redis
-  template:
-    metadata:
-      labels:
-        app: redis
-    spec:
-      containers:
-      - name: redis
-        image: redis:7-alpine
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-        - name: redis-storage
-          mountPath: /data
-      volumes:
-      - name: redis-storage
-        persistentVolumeClaim:
-          claimName: redis-pvc
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis-service
-  namespace: ai-supply-chain
-spec:
-  selector:
-    app: redis
-  ports:
-  - protocol: TCP
-    port: 6379
-    targetPort: 6379
-```
-
-#### 4. Framework Application
-
-```yaml
-# framework-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: framework-config
-  namespace: ai-supply-chain
-data:
-  FLASK_ENV: "production"
-  LOG_LEVEL: "INFO"
-  WORKERS: "4"
-  MAX_CONCURRENT_IMPLEMENTATIONS: "50"
-  CACHE_TTL: "3600"
-  PROMETHEUS_ENABLED: "true"
-
----
-# framework-secret.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: framework-secret
-  namespace: ai-supply-chain
-type: Opaque
-data:
-  secret_key: eW91cl92ZXJ5X3NlY3VyZV9zZWNyZXRfa2V5X2hlcmU=
-  database_url: cG9zdGdyZXNxbDovL2ZyYW1ld29yazp5b3VyX3NlY3VyZV9wYXNzd29yZEBwb3N0Z3Jlcy1zZXJ2aWNlL2FpX3N1cHBseV9jaGFpbg==
-
----
-# framework-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: framework
-  namespace: ai-supply-chain
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: framework
-  template:
-    metadata:
-      labels:
-        app: framework
-    spec:
-      containers:
-      - name: framework
-        image: ai-supply-chain-framework:latest
-        ports:
-        - containerPort: 5000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: framework-secret
-              key: database_url
-        - name: REDIS_URL
-          value: "redis://redis-service:6379/0"
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: framework-secret
-              key: secret_key
-        envFrom:
-        - configMapRef:
-            name: framework-config
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 5000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 5000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "1000m"
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: framework-service
-  namespace: ai-supply-chain
-spec:
-  selector:
-    app: framework
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 5000
-  type: LoadBalancer
-```
-
-#### 5. Ingress Configuration
-
-```yaml
-# ingress.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: framework-ingress
-  namespace: ai-supply-chain
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-spec:
-  tls:
-  - hosts:
-    - api.your-domain.com
-    secretName: framework-tls
-  rules:
-  - host: api.your-domain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: framework-service
-            port:
-              number: 80
-```
-
-#### 6. Horizontal Pod Autoscaler
-
-```yaml
-# hpa.yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: framework-hpa
-  namespace: ai-supply-chain
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: framework
-  minReplicas: 3
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-```
-
-#### 7. Deploy to Kubernetes
-
-```bash
-# Apply configurations
-kubectl apply -f namespace.yaml
-kubectl apply -f postgres-secret.yaml
-kubectl apply -f postgres-deployment.yaml
-kubectl apply -f redis-deployment.yaml
-kubectl apply -f framework-configmap.yaml
-kubectl apply -f framework-secret.yaml
-kubectl apply -f framework-deployment.yaml
-kubectl apply -f ingress.yaml
-kubectl apply -f hpa.yaml
-
-# Check deployment status
-kubectl get all -n ai-supply-chain
-
-# Check logs
-kubectl logs -f deployment/framework -n ai-supply-chain
-```
-
----
-
-## 🏢 Multi-Tenant Configuration
-
-### Tenant Isolation Strategy
-
-#### Database-per-Tenant (Recommended)
-
-```python
-# tenant_config.py
-TENANT_CONFIG = {
-    "isolation_level": "database",  # database, schema, row
-    "auto_provisioning": True,
-    "max_tenants_per_cluster": 100,
-    "tenant_resources": {
-        "small": {
-            "max_users": 25,
-            "max_implementations": 3,
-            "storage_gb": 10
-        },
-        "medium": {
-            "max_users": 100, 
-            "max_implementations": 10,
-            "storage_gb": 50
-        },
-        "large": {
-            "max_users": 500,
-            "max_implementations": 25,
-            "storage_gb": 200
+        location /static/ {
+            alias /app/web/static/;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
         }
     }
 }
 ```
 
-#### Tenant Provisioning
+#### 6. Deploy and Start Services
 
 ```bash
-# Create new tenant
-python -m framework tenant create \
-  --tenant-id "customer_123" \
-  --plan "medium" \
-  --industry "FURNITURE" \
-  --admin-email "admin@customer.com"
+# Switch to beverly user
+sudo su - beverly
 
-# Verify tenant
-python -m framework tenant verify --tenant-id "customer_123"
+# Clone and setup
+git clone https://github.com/your-org/beverly_knits_erp_v2.git
+cd beverly_knits_erp_v2
 
-# List tenants
-python -m framework tenant list --active-only
+# Build and start services
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# Check status
+docker-compose -f docker-compose.prod.yml ps
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f beverly-erp
+```
+
+---
+
+## 🔧 Configuration Management
+
+### eFab API Integration
+
+#### Session Management
+The system requires valid eFab session cookies. Update these regularly:
+
+```bash
+# Check current session status
+curl -s http://localhost:5006/api/comprehensive-kpis | jq '.efab_connection_status'
+
+# Update session cookie
+docker-compose -f docker-compose.prod.yml exec beverly-erp \
+  python3 -c "
+import os
+os.environ['EFAB_SESSION'] = 'new_session_cookie_value'
+print('Session updated')
+"
+
+# Restart service to apply new session
+docker-compose -f docker-compose.prod.yml restart beverly-erp
+```
+
+#### API Endpoint Verification
+Verify all wrapper endpoints are working:
+
+```bash
+# Test primary endpoints
+curl -s http://localhost:5006/api/yarn/active | jq '.status'
+curl -s http://localhost:5006/api/knitorder/list | jq '.status'
+curl -s http://localhost:5006/api/sales-order/plan/list | jq '.status'
+curl -s http://localhost:5006/api/styles | jq '.status'
+
+# Test QuadS endpoints
+curl -s http://localhost:5006/api/styles/greige/active | jq '.status'
+curl -s http://localhost:5006/api/styles/finished/active | jq '.status'
+
+# Test reporting endpoints
+curl -s http://localhost:5006/api/report/yarn_demand | jq '.status'
+curl -s http://localhost:5006/api/yarn-po | jq '.status'
+```
+
+### Yarn Demand Scheduler Configuration
+
+The system includes automated yarn demand report downloading:
+
+```bash
+# Enable scheduler
+export ENABLE_YARN_SCHEDULER=true
+export FILTER_NONPRODUCTION_YARNS=true
+
+# Manual refresh trigger
+curl -X POST http://localhost:5006/api/manual-yarn-refresh
+
+# Check scheduler status in logs
+docker-compose -f docker-compose.prod.yml logs beverly-erp | grep SCHEDULER
 ```
 
 ---
 
 ## 📊 Monitoring & Observability
 
-### Prometheus Configuration
+### Health Monitoring
 
-```yaml
-# prometheus-config.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-config
-  namespace: ai-supply-chain
-data:
-  prometheus.yml: |
-    global:
-      scrape_interval: 15s
-    scrape_configs:
-    - job_name: 'framework'
-      static_configs:
-      - targets: ['framework-service:80']
-      metrics_path: '/metrics'
-      scrape_interval: 10s
-    - job_name: 'postgres'
-      static_configs:
-      - targets: ['postgres-exporter:9187']
-    - job_name: 'redis'
-      static_configs:
-      - targets: ['redis-exporter:9121']
+#### System Health Endpoint
+```bash
+# Check overall system health
+curl -s http://localhost:5006/api/comprehensive-kpis | jq '.'
 ```
 
-### Grafana Dashboard
+#### Docker Container Monitoring
+```bash
+# Monitor container resources
+docker stats
 
-```json
-{
-  "dashboard": {
-    "title": "AI Supply Chain Framework",
-    "panels": [
-      {
-        "title": "Active Implementations",
-        "type": "singlestat",
-        "targets": [
-          {
-            "expr": "framework_active_implementations_total",
-            "refId": "A"
-          }
-        ]
-      },
-      {
-        "title": "Success Rate",
-        "type": "singlestat", 
-        "targets": [
-          {
-            "expr": "rate(framework_implementations_success_total[1h]) / rate(framework_implementations_total[1h])",
-            "refId": "A"
-          }
-        ]
-      },
-      {
-        "title": "Response Time",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, framework_request_duration_seconds_bucket)",
-            "refId": "A"
-          }
-        ]
-      }
-    ]
-  }
-}
+# Check container health
+docker-compose -f docker-compose.prod.yml ps
+
+# View container logs
+docker-compose -f docker-compose.prod.yml logs --tail=100 beverly-erp
+```
+
+### Performance Metrics
+
+#### Key Performance Indicators
+- **API Response Time**: <200ms for most endpoints
+- **Data Load Time**: <2 seconds for inventory data
+- **Cache Hit Rate**: >80% for optimal performance
+- **Memory Usage**: <2GB per container
+- **Yarn Shortage Detection**: Real-time updates
+
+#### Monitoring Commands
+```bash
+# Check API performance
+curl -w "@curl-format.txt" -o /dev/null -s http://localhost:5006/api/inventory-intelligence-enhanced
+
+# Monitor cache performance
+curl -s http://localhost:5006/api/consolidation-metrics | jq '.cache_metrics'
+
+# Check memory usage
+docker exec beverly-erp ps aux --sort=-%mem | head -10
 ```
 
 ---
 
-## 🔒 Security Hardening
+## 🔒 Security Configuration
 
-### Application Security
+### SSL/TLS Setup
 
-```python
-# security_config.py
-SECURITY_CONFIG = {
-    # Authentication
-    "jwt_secret_rotation": True,
-    "jwt_expiry_hours": 24,
-    "mfa_required": True,
-    
-    # Authorization
-    "rbac_enabled": True,
-    "api_key_rotation_days": 90,
-    
-    # Data Protection
-    "encryption_at_rest": True,
-    "encryption_algorithm": "AES-256-GCM",
-    "field_level_encryption": ["passwords", "api_keys", "pii"],
-    
-    # Network Security
-    "tls_version": "1.3",
-    "hsts_enabled": True,
-    "csrf_protection": True,
-    
-    # Rate Limiting
-    "rate_limiting": {
-        "per_ip": "1000/hour",
-        "per_user": "5000/hour",
-        "per_tenant": "50000/hour"
-    },
-    
-    # Audit Logging
-    "audit_all_requests": True,
-    "log_retention_days": 90,
-    "log_encryption": True
-}
+#### Let's Encrypt Certificate (Recommended)
+```bash
+# Install Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# Obtain certificate
+sudo certbot --nginx -d your-domain.com
+
+# Auto-renewal setup
+sudo crontab -e
+# Add: 0 12 * * * /usr/bin/certbot renew --quiet
 ```
 
-### Network Security
-
+### Firewall Configuration
 ```bash
-# Firewall rules (Ubuntu UFW)
+# Configure UFW firewall
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow 22/tcp    # SSH
 sudo ufw allow 80/tcp    # HTTP
 sudo ufw allow 443/tcp   # HTTPS
-sudo ufw allow from 10.0.0.0/8 to any port 5432  # PostgreSQL (internal)
-sudo ufw allow from 10.0.0.0/8 to any port 6379  # Redis (internal)
 sudo ufw enable
 ```
 
----
-
-## 🔧 Performance Tuning
-
-### PostgreSQL Optimization
-
-```sql
--- postgresql.conf optimizations
-shared_buffers = 256MB
-effective_cache_size = 1GB
-maintenance_work_mem = 64MB
-checkpoint_completion_target = 0.9
-wal_buffers = 16MB
-default_statistics_target = 100
-random_page_cost = 1.1
-effective_io_concurrency = 200
-work_mem = 4MB
-min_wal_size = 1GB
-max_wal_size = 4GB
-```
-
-### Application Performance
-
-```python
-# performance_config.py
-PERFORMANCE_CONFIG = {
-    # Caching
-    "redis_max_connections": 100,
-    "cache_default_ttl": 3600,
-    "query_cache_enabled": True,
-    
-    # Database
-    "db_pool_size": 20,
-    "db_max_overflow": 30,
-    "db_pool_timeout": 30,
-    
-    # Async Processing
-    "celery_workers": 8,
-    "celery_max_tasks_per_child": 1000,
-    
-    # Resource Limits
-    "max_file_upload_mb": 100,
-    "request_timeout_seconds": 300,
-    "max_concurrent_implementations": 50
-}
-```
+### API Security
+- **Session-based authentication** via eFab cookies
+- **CORS protection** configured for specific origins
+- **Rate limiting** enabled for API endpoints
+- **Secure headers** included in all responses
 
 ---
 
 ## 🔄 Backup & Recovery
 
-### Database Backup
+### Data Backup Strategy
 
+#### Automated Backup Script
 ```bash
 #!/bin/bash
 # backup_script.sh
 
-BACKUP_DIR="/backup/ai-supply-chain"
+BACKUP_DIR="/backup/beverly-erp"
 DATE=$(date +%Y%m%d_%H%M%S)
-DB_NAME="ai_supply_chain"
 
 # Create backup directory
 mkdir -p $BACKUP_DIR
 
-# Database backup
-pg_dump -h localhost -U framework -d $DB_NAME -f $BACKUP_DIR/db_backup_$DATE.sql
+# Backup application data
+docker run --rm \
+  -v beverly_knits_erp_v2_data:/data \
+  -v $BACKUP_DIR:/backup \
+  alpine tar czf /backup/data_backup_$DATE.tar.gz -C /data .
 
-# Compress backup
-gzip $BACKUP_DIR/db_backup_$DATE.sql
-
-# Upload to S3 (optional)
-aws s3 cp $BACKUP_DIR/db_backup_$DATE.sql.gz s3://your-backup-bucket/
+# Backup Redis data
+docker exec beverly_knits_erp_v2_redis_1 redis-cli BGSAVE
+docker cp beverly_knits_erp_v2_redis_1:/data/dump.rdb $BACKUP_DIR/redis_backup_$DATE.rdb
 
 # Clean old backups (keep 30 days)
-find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
+find $BACKUP_DIR -name "*.tar.gz" -mtime +30 -delete
+find $BACKUP_DIR -name "*.rdb" -mtime +30 -delete
+
+echo "Backup completed: $DATE"
 ```
 
-### Automated Backup with Cron
-
+#### Automated Backup with Cron
 ```bash
 # Add to crontab
 crontab -e
 
 # Daily backup at 2 AM
-0 2 * * * /home/framework/backup_script.sh
+0 2 * * * /home/beverly/backup_script.sh
 
-# Weekly full backup at 1 AM Sunday
-0 1 * * 0 /home/framework/full_backup_script.sh
+# Weekly full system backup
+0 1 * * 0 /home/beverly/full_backup_script.sh
+```
+
+### Disaster Recovery
+
+#### Recovery Procedure
+```bash
+# Stop services
+docker-compose -f docker-compose.prod.yml down
+
+# Restore data
+tar xzf /backup/data_backup_YYYYMMDD_HHMMSS.tar.gz -C ./data/
+
+# Restore Redis data
+docker-compose -f docker-compose.prod.yml up -d redis
+docker cp /backup/redis_backup_YYYYMMDD_HHMMSS.rdb beverly_knits_erp_v2_redis_1:/data/dump.rdb
+docker-compose -f docker-compose.prod.yml restart redis
+
+# Start all services
+docker-compose -f docker-compose.prod.yml up -d
+
+# Verify recovery
+curl -s http://localhost:5006/api/comprehensive-kpis
 ```
 
 ---
@@ -914,87 +556,103 @@ crontab -e
 #### High Memory Usage
 ```bash
 # Check memory usage
-free -h
-ps aux --sort=-%mem | head -10
+docker stats beverly-erp
 
-# PostgreSQL memory tuning
-sudo nano /etc/postgresql/14/main/postgresql.conf
-# Adjust shared_buffers, work_mem, maintenance_work_mem
+# Restart service to clear memory
+docker-compose -f docker-compose.prod.yml restart beverly-erp
+
+# Optimize memory settings
+# Edit docker-compose.prod.yml:
+# mem_limit: 2g
+# memswap_limit: 2g
 ```
 
 #### Slow API Responses
 ```bash
-# Check database queries
-sudo -u postgres psql ai_supply_chain -c "
-SELECT query, calls, total_time, mean_time 
-FROM pg_stat_statements 
-ORDER BY mean_time DESC 
-LIMIT 10;"
+# Check API performance
+curl -w "%{time_total}" -o /dev/null -s http://localhost:5006/api/yarn-intelligence
 
-# Check Redis performance
-redis-cli --latency -i 1
+# Enable Redis caching
+# Verify Redis is running:
+docker-compose -f docker-compose.prod.yml ps redis
 
-# Application profiling
-python -m framework profile --duration 60
+# Check cache hit rates
+curl -s http://localhost:5006/api/consolidation-metrics | jq '.cache_hit_rate'
 ```
 
-#### Agent Communication Issues
+#### eFab Session Expiration
 ```bash
-# Check Redis connectivity
-redis-cli ping
+# Check session status
+curl -s http://localhost:5006/api/comprehensive-kpis | jq '.efab_session_status'
 
-# Check message queue
-python -m framework queue status
+# Update session cookie
+# 1. Login to eFab in browser
+# 2. Copy session cookie from browser dev tools
+# 3. Update environment variable:
+docker-compose -f docker-compose.prod.yml exec beverly-erp \
+  bash -c 'export EFAB_SESSION="new_session_value"'
 
-# Restart agents
-python -m framework agents restart
+# Restart service
+docker-compose -f docker-compose.prod.yml restart beverly-erp
+```
+
+#### Yarn Scheduler Issues
+```bash
+# Check scheduler logs
+docker-compose -f docker-compose.prod.yml logs beverly-erp | grep SCHEDULER
+
+# Manual refresh
+curl -X POST http://localhost:5006/api/manual-yarn-refresh
+
+# Verify downloaded files
+docker-compose -f docker-compose.prod.yml exec beverly-erp \
+  ls -la /app/data/production/5/ERP\ Data/Expected_Yarn_Report.xlsx
 ```
 
 ---
 
 ## 📈 Scaling Guidelines
 
-### Vertical Scaling Triggers
-- CPU utilization > 70% for 15+ minutes
-- Memory utilization > 80% for 10+ minutes
-- Database connection pool > 80% utilized
-- Response time > 500ms for 95th percentile
+### Horizontal Scaling
 
-### Horizontal Scaling Triggers
-- Active implementations > 40 per instance
-- Queue depth > 100 messages
-- Request rate > 1000 requests/minute per instance
-- Success prediction accuracy < 90%
+#### Load Balancer Configuration
+```bash
+# Add multiple ERP instances
+# Update docker-compose.prod.yml:
+services:
+  beverly-erp-1:
+    # ... same config ...
+    ports:
+      - "5006:5006"
 
-### Auto-scaling Configuration
+  beverly-erp-2:
+    # ... same config ...
+    ports:
+      - "5007:5006"
 
+  nginx:
+    # Update upstream in nginx.conf:
+    upstream beverly_erp {
+        server beverly-erp-1:5006;
+        server beverly-erp-2:5006;
+    }
+```
+
+### Performance Optimization
+
+#### Redis Cluster Setup
 ```yaml
-# kubernetes-autoscaler.yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: framework-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: framework
-  minReplicas: 3
-  maxReplicas: 20
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Pods
-    pods:
-      metric:
-        name: active_implementations
-      target:
-        type: AverageValue
-        averageValue: "30"
+# For high-availability Redis
+services:
+  redis-master:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 4gb --maxmemory-policy allkeys-lru
+
+  redis-replica:
+    image: redis:7-alpine
+    command: redis-server --slaveof redis-master 6379
+    depends_on:
+      - redis-master
 ```
 
 ---
@@ -1002,29 +660,45 @@ spec:
 ## ✅ Production Checklist
 
 ### Pre-Deployment
-- [ ] Infrastructure provisioned and tested
+- [ ] eFab and QuadS credentials configured
 - [ ] SSL certificates installed and validated
-- [ ] Database migrations applied successfully
-- [ ] Environment variables configured
-- [ ] Security hardening applied
-- [ ] Monitoring and alerting configured
+- [ ] Environment variables properly set
+- [ ] Firewall rules configured
+- [ ] Docker containers build successfully
+- [ ] Health checks passing
 - [ ] Backup procedures tested
-- [ ] Load testing completed
-- [ ] Security scanning performed
-- [ ] Documentation updated
+- [ ] Monitoring configured
 
 ### Post-Deployment
-- [ ] Health checks passing
-- [ ] Metrics being collected
-- [ ] Logs being aggregated
-- [ ] Alerts configured and tested
-- [ ] Performance baselines established
+- [ ] All API endpoints responding correctly
+- [ ] eFab session authentication working
+- [ ] Yarn demand scheduler active
+- [ ] Cache performance optimized
+- [ ] Logs being collected
 - [ ] Backup schedules active
 - [ ] Security monitoring enabled
-- [ ] Team access provisioned
-- [ ] Runbook created
-- [ ] Disaster recovery plan tested
+- [ ] Performance baselines established
+
+### API Endpoint Validation
+```bash
+# Validate all primary wrapper endpoints
+endpoints=(
+  "/api/yarn/active"
+  "/api/knitorder/list"
+  "/api/sales-order/plan/list"
+  "/api/styles"
+  "/api/styles/greige/active"
+  "/api/styles/finished/active"
+  "/api/report/yarn_demand"
+  "/api/yarn-po"
+)
+
+for endpoint in "${endpoints[@]}"; do
+  status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:5006$endpoint")
+  echo "$endpoint: $status"
+done
+```
 
 ---
 
-*Deployment Guide v1.0.0 - AI Supply Chain Optimization Framework*
+*Deployment Guide v2.0.0 - Beverly Knits ERP System - Updated September 2025*
