@@ -60,7 +60,7 @@ class KnitOrderProcessor:
         efab_integration: Optional[eFabIntegration] = None,
         cache_manager: Optional[CacheManager] = None,
         api_base_url: Optional[str] = None,
-        use_efab_api: bool = True
+        use_efab_api: bool = True,
     ) -> None:
         """Initialize knit order processor.
 
@@ -80,13 +80,13 @@ class KnitOrderProcessor:
         self.suggested_workloads: Dict[str, float] = {}
         self.order_assignments: List[KnitOrderAssignment] = []
         self.processing_stats = {
-            'total_orders': 0,
-            'completed_filtered': 0,
-            'in_production_count': 0,
-            'active_count': 0,
-            'assigned_orders': 0,
-            'unassigned_orders': 0,
-            'suggested_assignments': 0
+            "total_orders": 0,
+            "completed_filtered": 0,
+            "in_production_count": 0,
+            "active_count": 0,
+            "assigned_orders": 0,
+            "unassigned_orders": 0,
+            "suggested_assignments": 0,
         }
 
         logger.info("KnitOrderProcessor initialized")
@@ -114,6 +114,7 @@ class KnitOrderProcessor:
             else:
                 # Use local API endpoint as fallback
                 import requests
+
                 endpoint = self.LOCAL_API_ENDPOINT
                 url = f"{self.api_base_url}{endpoint}"
                 logger.info(f"Fetching knit orders from local API: {url}")
@@ -126,12 +127,12 @@ class KnitOrderProcessor:
                     orders_data = response
                 elif isinstance(response, dict):
                     # Wrapped response from local API
-                    if 'data' in response:
-                        orders_data = response['data']
-                    elif 'orders' in response:
-                        orders_data = response['orders']
-                    elif 'results' in response:
-                        orders_data = response['results']
+                    if "data" in response:
+                        orders_data = response["data"]
+                    elif "orders" in response:
+                        orders_data = response["orders"]
+                    elif "results" in response:
+                        orders_data = response["results"]
                     else:
                         # Assume the response itself is the data
                         orders_data = [response] if response else []
@@ -147,22 +148,24 @@ class KnitOrderProcessor:
             if self.use_efab_api and not df.empty:
                 # Map eFab column names to expected names
                 column_mapping = {
-                    'order_number': 'Order #',
-                    'style_number': 'Style #',
-                    'machine_id': 'Machine',
-                    'balance': 'Balance (lbs)',
-                    'g00': 'G00 (lbs)',
-                    'shipped': 'Shipped (lbs)',
-                    'qty_ordered': 'Qty Ordered (lbs)',
-                    'start_date': 'Start Date',
-                    'quoted_date': 'Quoted Date'
+                    "order_number": "Order #",
+                    "style_number": "Style #",
+                    "machine_id": "Machine",
+                    "balance": "Balance (lbs)",
+                    "g00": "G00 (lbs)",
+                    "shipped": "Shipped (lbs)",
+                    "qty_ordered": "Qty Ordered (lbs)",
+                    "start_date": "Start Date",
+                    "quoted_date": "Quoted Date",
                 }
                 df = df.rename(columns=column_mapping)
 
             # Cache the data
-            self.cache.set(cache_key, df.to_dict('records'), ttl=300)  # 5 min cache
+            self.cache.set(cache_key, df.to_dict("records"), ttl=300)  # 5 min cache
 
-            logger.info(f"Fetched {len(df)} knit orders from {'eFab' if self.use_efab_api else 'local'} API")
+            logger.info(
+                f"Fetched {len(df)} knit orders from {'eFab' if self.use_efab_api else 'local'} API"
+            )
             return df
 
         except Exception as e:
@@ -196,19 +199,19 @@ class KnitOrderProcessor:
 
         # Identify columns
         balance_col = None
-        for col in ['Balance (lbs)', 'Balance_lbs', 'balance_lbs', 'Balance']:
+        for col in ["Balance (lbs)", "Balance_lbs", "balance_lbs", "Balance"]:
             if col in orders.columns:
                 balance_col = col
                 break
 
         g00_col = None
-        for col in ['G00 (lbs)', 'G00_lbs', 'g00_lbs', 'G00']:
+        for col in ["G00 (lbs)", "G00_lbs", "g00_lbs", "G00"]:
             if col in orders.columns:
                 g00_col = col
                 break
 
         shipped_col = None
-        for col in ['Shipped (lbs)', 'Shipped_lbs', 'shipped_lbs', 'Shipped']:
+        for col in ["Shipped (lbs)", "Shipped_lbs", "shipped_lbs", "Shipped"]:
             if col in orders.columns:
                 shipped_col = col
                 break
@@ -222,20 +225,22 @@ class KnitOrderProcessor:
             if pd.isna(val):
                 return 0.0
             if isinstance(val, str):
-                return float(val.replace(',', ''))
+                return float(val.replace(",", ""))
             return float(val)
 
         # Add cleaned columns
-        orders['_balance_clean'] = orders[balance_col].apply(clean_value)
-        orders['_g00_clean'] = orders[g00_col].apply(clean_value) if g00_col else 0
-        orders['_shipped_clean'] = orders[shipped_col].apply(clean_value) if shipped_col else 0
+        orders["_balance_clean"] = orders[balance_col].apply(clean_value)
+        orders["_g00_clean"] = orders[g00_col].apply(clean_value) if g00_col else 0
+        orders["_shipped_clean"] = (
+            orders[shipped_col].apply(clean_value) if shipped_col else 0
+        )
 
         # Determine order status
         # Priority: 1) Complete (balance <= 0), 2) In Production (G00+Shipped > 0), 3) Active
         def determine_status(row):
-            balance = row['_balance_clean']
-            g00 = row['_g00_clean']
-            shipped = row['_shipped_clean']
+            balance = row["_balance_clean"]
+            g00 = row["_g00_clean"]
+            shipped = row["_shipped_clean"]
 
             # Complete takes priority - if balance <= 0, order is complete
             if balance <= 0:
@@ -246,32 +251,33 @@ class KnitOrderProcessor:
             else:
                 return "Active"
 
-        orders['order_status'] = orders.apply(determine_status, axis=1)
+        orders["order_status"] = orders.apply(determine_status, axis=1)
 
         # Count by status
-        status_counts = orders['order_status'].value_counts()
-        completed_count = status_counts.get('Complete', 0)
-        in_production_count = status_counts.get('In Production', 0)
-        active_count = status_counts.get('Active', 0)
+        status_counts = orders["order_status"].value_counts()
+        completed_count = status_counts.get("Complete", 0)
+        in_production_count = status_counts.get("In Production", 0)
+        active_count = status_counts.get("Active", 0)
 
         # Filter out completed orders but keep their count
         initial_count = len(orders)
-        active_orders = orders[orders['order_status'] != 'Complete'].copy()
+        active_orders = orders[orders["order_status"] != "Complete"].copy()
 
         # Update stats
-        self.processing_stats['total_orders'] = initial_count
-        self.processing_stats['completed_filtered'] = completed_count
-        self.processing_stats['in_production_count'] = in_production_count
-        self.processing_stats['active_count'] = active_count
+        self.processing_stats["total_orders"] = initial_count
+        self.processing_stats["completed_filtered"] = completed_count
+        self.processing_stats["in_production_count"] = in_production_count
+        self.processing_stats["active_count"] = active_count
 
-        logger.info(f"Order Status: {completed_count} complete, {in_production_count} in production, "
-                   f"{active_count} active")
+        logger.info(
+            f"Order Status: {completed_count} complete, {in_production_count} in production, "
+            f"{active_count} active"
+        )
 
         return active_orders
 
     def assign_machines_intelligently(
-        self,
-        orders: pd.DataFrame
+        self, orders: pd.DataFrame
     ) -> Dict[str, List[KnitOrderAssignment]]:
         """Assign machines intelligently based on style patterns.
 
@@ -294,38 +300,40 @@ class KnitOrderProcessor:
 
         # Identify columns
         style_col = None
-        for col in ['Style #', 'Style', 'style']:
+        for col in ["Style #", "Style", "style"]:
             if col in orders.columns:
                 style_col = col
                 break
 
         machine_col = None
-        for col in ['Machine', 'machine', 'Machine_ID']:
+        for col in ["Machine", "machine", "Machine_ID"]:
             if col in orders.columns:
                 machine_col = col
                 break
 
         balance_col = None
-        for col in ['Balance (lbs)', 'Balance_lbs', 'balance_lbs']:
+        for col in ["Balance (lbs)", "Balance_lbs", "balance_lbs"]:
             if col in orders.columns:
                 balance_col = col
                 break
 
         g00_col = None
-        for col in ['G00 (lbs)', 'G00_lbs', 'g00_lbs', 'G00']:
+        for col in ["G00 (lbs)", "G00_lbs", "g00_lbs", "G00"]:
             if col in orders.columns:
                 g00_col = col
                 break
 
         shipped_col = None
-        for col in ['Shipped (lbs)', 'Shipped_lbs', 'shipped_lbs', 'Shipped']:
+        for col in ["Shipped (lbs)", "Shipped_lbs", "shipped_lbs", "Shipped"]:
             if col in orders.columns:
                 shipped_col = col
                 break
 
         if not all([style_col, machine_col, balance_col]):
-            logger.error(f"Missing required columns. Found: style={style_col}, "
-                        f"machine={machine_col}, balance={balance_col}")
+            logger.error(
+                f"Missing required columns. Found: style={style_col}, "
+                f"machine={machine_col}, balance={balance_col}"
+            )
             return {}
 
         # First pass: collect machine assignments by style
@@ -356,14 +364,18 @@ class KnitOrderProcessor:
                 machine_id = str(int(order[machine_col]))
                 balance = self._clean_balance_value(order[balance_col])
                 g00 = self._clean_balance_value(order.get(g00_col, 0)) if g00_col else 0
-                shipped = self._clean_balance_value(order.get(shipped_col, 0)) if shipped_col else 0
-                order_status = order.get('order_status', 'Active')
+                shipped = (
+                    self._clean_balance_value(order.get(shipped_col, 0))
+                    if shipped_col
+                    else 0
+                )
+                order_status = order.get("order_status", "Active")
 
                 # Only process non-complete orders
-                if order_status != 'Complete' and balance > 0:
+                if order_status != "Complete" and balance > 0:
                     # Create assignment
                     assignment = KnitOrderAssignment(
-                        order_id=str(order.get('Order #', order.name)),
+                        order_id=str(order.get("Order #", order.name)),
                         style=str(style),
                         machine_id=machine_id,
                         balance_lbs=balance,
@@ -372,15 +384,16 @@ class KnitOrderProcessor:
                         order_status=order_status,
                         is_assigned=True,
                         is_suggested=False,
-                        assignment_reason="Original assignment"
+                        assignment_reason="Original assignment",
                     )
 
                     assignments[machine_id].append(assignment)
                     self.order_assignments.append(assignment)
 
                     # Update workloads
-                    self.machine_workloads[machine_id] = \
+                    self.machine_workloads[machine_id] = (
                         self.machine_workloads.get(machine_id, 0) + balance
+                    )
                     self.machine_assignments[machine_id] = str(style)
 
             # Process orders without machines - distribute across known machines
@@ -389,8 +402,8 @@ class KnitOrderProcessor:
                 unassigned_workload = sum(
                     self._clean_balance_value(order[balance_col])
                     for order in orders_without_machine
-                    if order.get('order_status', 'Active') != 'Complete' and
-                       self._clean_balance_value(order[balance_col]) > 0
+                    if order.get("order_status", "Active") != "Complete"
+                    and self._clean_balance_value(order[balance_col]) > 0
                 )
 
                 if unassigned_workload > 0:
@@ -399,11 +412,19 @@ class KnitOrderProcessor:
 
                     for order in orders_without_machine:
                         balance = self._clean_balance_value(order[balance_col])
-                        g00 = self._clean_balance_value(order.get(g00_col, 0)) if g00_col else 0
-                        shipped = self._clean_balance_value(order.get(shipped_col, 0)) if shipped_col else 0
-                        order_status = order.get('order_status', 'Active')
+                        g00 = (
+                            self._clean_balance_value(order.get(g00_col, 0))
+                            if g00_col
+                            else 0
+                        )
+                        shipped = (
+                            self._clean_balance_value(order.get(shipped_col, 0))
+                            if shipped_col
+                            else 0
+                        )
+                        order_status = order.get("order_status", "Active")
 
-                        if order_status != 'Complete' and balance > 0:
+                        if order_status != "Complete" and balance > 0:
                             # Assign proportionally to each machine
                             order_share = balance / unassigned_workload
 
@@ -411,7 +432,7 @@ class KnitOrderProcessor:
                                 machine_balance = workload_per_machine * order_share
 
                                 assignment = KnitOrderAssignment(
-                                    order_id=str(order.get('Order #', order.name)),
+                                    order_id=str(order.get("Order #", order.name)),
                                     style=str(style),
                                     machine_id=machine_id,
                                     balance_lbs=machine_balance,
@@ -420,32 +441,38 @@ class KnitOrderProcessor:
                                     order_status=order_status,
                                     is_assigned=False,
                                     is_suggested=True,
-                                    assignment_reason=f"Distributed from {len(machines)} machines"
+                                    assignment_reason=f"Distributed from {len(machines)} machines",
                                 )
 
                                 assignments[machine_id].append(assignment)
                                 self.order_assignments.append(assignment)
 
                                 # Update suggested workloads
-                                self.suggested_workloads[machine_id] = \
-                                    self.suggested_workloads.get(machine_id, 0) + machine_balance
+                                self.suggested_workloads[machine_id] = (
+                                    self.suggested_workloads.get(machine_id, 0)
+                                    + machine_balance
+                                )
 
                                 # Also add to main workload for utilization
-                                self.machine_workloads[machine_id] = \
-                                    self.machine_workloads.get(machine_id, 0) + machine_balance
+                                self.machine_workloads[machine_id] = (
+                                    self.machine_workloads.get(machine_id, 0)
+                                    + machine_balance
+                                )
                                 self.machine_assignments[machine_id] = str(style)
 
-                    logger.info(f"Distributed {unassigned_workload:.0f} lbs for style "
-                              f"{style} across {len(machines)} machines")
+                    logger.info(
+                        f"Distributed {unassigned_workload:.0f} lbs for style "
+                        f"{style} across {len(machines)} machines"
+                    )
 
         # Update stats
-        self.processing_stats['assigned_orders'] = sum(
+        self.processing_stats["assigned_orders"] = sum(
             1 for a in self.order_assignments if a.is_assigned
         )
-        self.processing_stats['unassigned_orders'] = sum(
+        self.processing_stats["unassigned_orders"] = sum(
             1 for a in self.order_assignments if not a.is_assigned
         )
-        self.processing_stats['suggested_assignments'] = sum(
+        self.processing_stats["suggested_assignments"] = sum(
             1 for a in self.order_assignments if a.is_suggested
         )
 
@@ -463,7 +490,7 @@ class KnitOrderProcessor:
         if pd.isna(val):
             return 0.0
         if isinstance(val, str):
-            return float(val.replace(',', ''))
+            return float(val.replace(",", ""))
         return float(val)
 
     def calculate_machine_workloads(self) -> Dict[str, Dict[str, float]]:
@@ -480,21 +507,19 @@ class KnitOrderProcessor:
             utilization = min(100.0, (days_of_work / self.UTILIZATION_DAYS) * 100.0)
 
             workloads[machine_id] = {
-                'total_lbs': total_lbs,
-                'assigned_lbs': total_lbs - self.suggested_workloads.get(machine_id, 0),
-                'suggested_lbs': self.suggested_workloads.get(machine_id, 0),
-                'days_of_work': days_of_work,
-                'utilization_percent': utilization,
-                'assigned_style': self.machine_assignments.get(machine_id, ''),
-                'is_overloaded': utilization > 85.0
+                "total_lbs": total_lbs,
+                "assigned_lbs": total_lbs - self.suggested_workloads.get(machine_id, 0),
+                "suggested_lbs": self.suggested_workloads.get(machine_id, 0),
+                "days_of_work": days_of_work,
+                "utilization_percent": utilization,
+                "assigned_style": self.machine_assignments.get(machine_id, ""),
+                "is_overloaded": utilization > 85.0,
             }
 
         return workloads
 
     def suggest_machine_assignments(
-        self,
-        style: str,
-        quantity_lbs: float
+        self, style: str, quantity_lbs: float
     ) -> List[Dict[str, Any]]:
         """Suggest machine assignments for a style and quantity.
 
@@ -508,10 +533,7 @@ class KnitOrderProcessor:
         suggestions = []
 
         # Find machines already assigned to this style
-        style_machines = [
-            m for m, s in self.machine_assignments.items()
-            if s == style
-        ]
+        style_machines = [m for m, s in self.machine_assignments.items() if s == style]
 
         if style_machines:
             # Prefer machines already working on this style
@@ -520,14 +542,20 @@ class KnitOrderProcessor:
                 days_of_work = workload / self.DEFAULT_DAILY_CAPACITY
                 utilization = (days_of_work / self.UTILIZATION_DAYS) * 100.0
 
-                suggestions.append({
-                    'machine_id': machine_id,
-                    'current_utilization': utilization,
-                    'available_capacity': max(0, self.DEFAULT_DAILY_CAPACITY *
-                                            self.UTILIZATION_DAYS - workload),
-                    'priority_score': 100 - abs(utilization - 50),  # Prefer 50% util
-                    'reason': 'Already assigned to this style'
-                })
+                suggestions.append(
+                    {
+                        "machine_id": machine_id,
+                        "current_utilization": utilization,
+                        "available_capacity": max(
+                            0,
+                            self.DEFAULT_DAILY_CAPACITY * self.UTILIZATION_DAYS
+                            - workload,
+                        ),
+                        "priority_score": 100
+                        - abs(utilization - 50),  # Prefer 50% util
+                        "reason": "Already assigned to this style",
+                    }
+                )
         else:
             # Find machines with lowest utilization
             for machine_id, workload in self.machine_workloads.items():
@@ -535,17 +563,22 @@ class KnitOrderProcessor:
                 utilization = (days_of_work / self.UTILIZATION_DAYS) * 100.0
 
                 if utilization < 85:  # Not overloaded
-                    suggestions.append({
-                        'machine_id': machine_id,
-                        'current_utilization': utilization,
-                        'available_capacity': max(0, self.DEFAULT_DAILY_CAPACITY *
-                                                self.UTILIZATION_DAYS - workload),
-                        'priority_score': 100 - utilization,  # Prefer lower util
-                        'reason': 'Available capacity'
-                    })
+                    suggestions.append(
+                        {
+                            "machine_id": machine_id,
+                            "current_utilization": utilization,
+                            "available_capacity": max(
+                                0,
+                                self.DEFAULT_DAILY_CAPACITY * self.UTILIZATION_DAYS
+                                - workload,
+                            ),
+                            "priority_score": 100 - utilization,  # Prefer lower util
+                            "reason": "Available capacity",
+                        }
+                    )
 
         # Sort by priority score
-        suggestions.sort(key=lambda x: x['priority_score'], reverse=True)
+        suggestions.sort(key=lambda x: x["priority_score"], reverse=True)
 
         return suggestions[:5]  # Top 5 suggestions
 
@@ -569,9 +602,9 @@ class KnitOrderProcessor:
         if orders.empty:
             logger.warning("No orders fetched from API")
             return {
-                'status': 'no_data',
-                'message': 'No knit orders available',
-                'stats': self.processing_stats
+                "status": "no_data",
+                "message": "No knit orders available",
+                "stats": self.processing_stats,
             }
 
         # Categorize orders by status and filter completed ones
@@ -580,9 +613,9 @@ class KnitOrderProcessor:
         if active_orders.empty:
             logger.info("All orders are completed")
             return {
-                'status': 'all_completed',
-                'message': 'All knit orders are completed',
-                'stats': self.processing_stats
+                "status": "all_completed",
+                "message": "All knit orders are completed",
+                "stats": self.processing_stats,
             }
 
         # Assign machines intelligently
@@ -592,13 +625,13 @@ class KnitOrderProcessor:
         workloads = self.calculate_machine_workloads()
 
         return {
-            'status': 'success',
-            'message': f'Processed {len(active_orders)} active orders',
-            'stats': self.processing_stats,
-            'machine_assignments': assignments,
-            'machine_workloads': workloads,
-            'total_machines': len(self.machine_workloads),
-            'total_workload_lbs': sum(self.machine_workloads.values())
+            "status": "success",
+            "message": f"Processed {len(active_orders)} active orders",
+            "stats": self.processing_stats,
+            "machine_assignments": assignments,
+            "machine_workloads": workloads,
+            "total_machines": len(self.machine_workloads),
+            "total_workload_lbs": sum(self.machine_workloads.values()),
         }
 
     def get_processing_summary(self) -> Dict[str, Any]:
@@ -609,37 +642,48 @@ class KnitOrderProcessor:
         """
         # Calculate production statistics
         in_production_lbs = sum(
-            a.balance_lbs for a in self.order_assignments
-            if a.order_status == 'In Production'
+            a.balance_lbs
+            for a in self.order_assignments
+            if a.order_status == "In Production"
         )
         active_lbs = sum(
-            a.balance_lbs for a in self.order_assignments
-            if a.order_status == 'Active'
+            a.balance_lbs for a in self.order_assignments if a.order_status == "Active"
         )
 
         return {
-            'processing_stats': self.processing_stats,
-            'machine_count': len(self.machine_workloads),
-            'total_workload_lbs': sum(self.machine_workloads.values()),
-            'assigned_workload_lbs': sum(self.machine_workloads.values()) -
-                                   sum(self.suggested_workloads.values()),
-            'suggested_workload_lbs': sum(self.suggested_workloads.values()),
-            'in_production_lbs': in_production_lbs,
-            'active_lbs': active_lbs,
-            'order_status_breakdown': {
-                'completed': self.processing_stats.get('completed_filtered', 0),
-                'in_production': self.processing_stats.get('in_production_count', 0),
-                'active': self.processing_stats.get('active_count', 0)
+            "processing_stats": self.processing_stats,
+            "machine_count": len(self.machine_workloads),
+            "total_workload_lbs": sum(self.machine_workloads.values()),
+            "assigned_workload_lbs": sum(self.machine_workloads.values())
+            - sum(self.suggested_workloads.values()),
+            "suggested_workload_lbs": sum(self.suggested_workloads.values()),
+            "in_production_lbs": in_production_lbs,
+            "active_lbs": active_lbs,
+            "order_status_breakdown": {
+                "completed": self.processing_stats.get("completed_filtered", 0),
+                "in_production": self.processing_stats.get("in_production_count", 0),
+                "active": self.processing_stats.get("active_count", 0),
             },
-            'average_utilization': np.mean([
-                min(100, (w / self.DEFAULT_DAILY_CAPACITY / self.UTILIZATION_DAYS) * 100)
+            "average_utilization": (
+                np.mean(
+                    [
+                        min(
+                            100,
+                            (w / self.DEFAULT_DAILY_CAPACITY / self.UTILIZATION_DAYS)
+                            * 100,
+                        )
+                        for w in self.machine_workloads.values()
+                    ]
+                )
+                if self.machine_workloads
+                else 0
+            ),
+            "overloaded_machines": sum(
+                1
                 for w in self.machine_workloads.values()
-            ]) if self.machine_workloads else 0,
-            'overloaded_machines': sum(
-                1 for w in self.machine_workloads.values()
                 if (w / self.DEFAULT_DAILY_CAPACITY / self.UTILIZATION_DAYS) * 100 > 85
             ),
-            'styles_processed': len(set(self.machine_assignments.values()))
+            "styles_processed": len(set(self.machine_assignments.values())),
         }
 
 
@@ -652,7 +696,7 @@ if __name__ == "__main__":
     print("-" * 50)
 
     # Check if eFab session is available
-    efab_session = os.getenv('EFAB_SESSION')
+    efab_session = os.getenv("EFAB_SESSION")
     if efab_session:
         print(f"eFab session cookie: Set ({len(efab_session)} chars)")
         use_efab = True

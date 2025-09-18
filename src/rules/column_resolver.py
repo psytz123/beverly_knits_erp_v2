@@ -25,82 +25,164 @@ class ColumnResolver:
     # Master column mappings
     COLUMN_MAPPINGS = {
         # Yarn related
-        'yarn_id': [
-            'YarnID', 'Desc#', 'desc_num', 'Yarn_ID', 'yarn_code',
-            'YarnCode', 'Yarn ID', 'YARNID', 'yarn_id', 'Yarn'
+        "yarn_id": [
+            "YarnID",
+            "Desc#",
+            "desc_num",
+            "Yarn_ID",
+            "yarn_code",
+            "YarnCode",
+            "Yarn ID",
+            "YARNID",
+            "yarn_id",
+            "Yarn",
         ],
-        'yarn_description': [
-            'YarnDescription', 'Yarn_Description', 'Description',
-            'Yarn Desc', 'YarnDesc', 'yarn_desc', 'Desc'
+        "yarn_description": [
+            "YarnDescription",
+            "Yarn_Description",
+            "Description",
+            "Yarn Desc",
+            "YarnDesc",
+            "yarn_desc",
+            "Desc",
         ],
-
         # Style related
-        'style': [
-            'Style#', 'fStyle#', 'style_num', 'StyleNumber',
-            'Style', 'style_code', 'StyleCode', 'STYLE', 'Style #'
+        "style": [
+            "Style#",
+            "fStyle#",
+            "style_num",
+            "StyleNumber",
+            "Style",
+            "style_code",
+            "StyleCode",
+            "STYLE",
+            "Style #",
         ],
-
         # Inventory related
-        'planning_balance': [
-            'Planning Balance', 'Planning_Balance', 'PlanningBalance',
-            'Plan Balance', 'plan_balance', 'PLANNING_BALANCE', 'Planning Bal'
+        "planning_balance": [
+            "Planning Balance",
+            "Planning_Balance",
+            "PlanningBalance",
+            "Plan Balance",
+            "plan_balance",
+            "PLANNING_BALANCE",
+            "Planning Bal",
         ],
-        'on_hand': [
-            'On Hand', 'On_Hand', 'OnHand', 'Balance (lbs)',
-            'Current Balance', 'on_hand', 'OH', 'On-Hand', 'Balance'
+        "on_hand": [
+            "On Hand",
+            "On_Hand",
+            "OnHand",
+            "Balance (lbs)",
+            "Current Balance",
+            "on_hand",
+            "OH",
+            "On-Hand",
+            "Balance",
         ],
-        'allocated': [
-            'Allocated', 'allocated', 'ALLOCATED', 'Reserved',
-            'Alloc', 'allocation', 'Allocated Qty'
+        "allocated": [
+            "Allocated",
+            "allocated",
+            "ALLOCATED",
+            "Reserved",
+            "Alloc",
+            "allocation",
+            "Allocated Qty",
         ],
-        'on_order': [
-            'On Order', 'On_Order', 'OnOrder', 'PO Qty',
-            'Purchase Order', 'on_order', 'OO', 'On-Order', 'PO'
+        "on_order": [
+            "On Order",
+            "On_Order",
+            "OnOrder",
+            "PO Qty",
+            "Purchase Order",
+            "on_order",
+            "OO",
+            "On-Order",
+            "PO",
         ],
-
         # BOM related
-        'usage': [
-            'Usage', 'Qty', 'Quantity', 'Amount', 'Required',
-            'Requirement', 'usage', 'QTY', 'Consumption'
+        "usage": [
+            "Usage",
+            "Qty",
+            "Quantity",
+            "Amount",
+            "Required",
+            "Requirement",
+            "usage",
+            "QTY",
+            "Consumption",
         ],
-        'uom': [
-            'UOM', 'Unit', 'UnitOfMeasure', 'Unit_of_Measure',
-            'Units', 'unit', 'UNIT', 'Unit of Measure'
+        "uom": [
+            "UOM",
+            "Unit",
+            "UnitOfMeasure",
+            "Unit_of_Measure",
+            "Units",
+            "unit",
+            "UNIT",
+            "Unit of Measure",
         ],
-
         # Machine related
-        'work_center': [
-            'Work Center', 'WorkCenter', 'WC', 'work_center',
-            'Work_Center', 'WORK_CENTER', 'Wc', 'Work-Center'
+        "work_center": [
+            "Work Center",
+            "WorkCenter",
+            "WC",
+            "work_center",
+            "Work_Center",
+            "WORK_CENTER",
+            "Wc",
+            "Work-Center",
         ],
-        'machine': [
-            'Machine', 'MACH', 'MachineID', 'machine_id',
-            'Machine_ID', 'machine', 'MACHINE', 'Machine #'
+        "machine": [
+            "Machine",
+            "MACH",
+            "MachineID",
+            "machine_id",
+            "Machine_ID",
+            "machine",
+            "MACHINE",
+            "Machine #",
         ],
-
         # Order related
-        'order_number': [
-            'Order#', 'OrderNumber', 'Order_Number', 'OrderID',
-            'Order ID', 'order_id', 'ORDER', 'Order #', 'Order'
+        "order_number": [
+            "Order#",
+            "OrderNumber",
+            "Order_Number",
+            "OrderID",
+            "Order ID",
+            "order_id",
+            "ORDER",
+            "Order #",
+            "Order",
         ],
-        'quantity': [
-            'Quantity', 'Qty', 'QTY', 'quantity', 'Amount',
-            'Quanity',  # Common typo
-            'Qty.', 'Quan'
+        "quantity": [
+            "Quantity",
+            "Qty",
+            "QTY",
+            "quantity",
+            "Amount",
+            "Quanity",  # Common typo
+            "Qty.",
+            "Quan",
         ],
-        'due_date': [
-            'Due Date', 'DueDate', 'Due_Date', 'due_date',
-            'Delivery Date', 'DeliveryDate', 'Due'
+        "due_date": [
+            "Due Date",
+            "DueDate",
+            "Due_Date",
+            "due_date",
+            "Delivery Date",
+            "DeliveryDate",
+            "Due",
         ],
-
         # Additional fields
-        'supplier': [
-            'Supplier', 'Vendor', 'supplier', 'SUPPLIER',
-            'Supplier Name', 'Vendor Name'
+        "supplier": [
+            "Supplier",
+            "Vendor",
+            "supplier",
+            "SUPPLIER",
+            "Supplier Name",
+            "Vendor Name",
         ],
-        'color': [
-            'Color', 'Colour', 'COLOR', 'color', 'Color Code'
-        ]
+        "color": ["Color", "Colour", "COLOR", "color", "Color Code"],
     }
 
     def __init__(self) -> None:
@@ -110,11 +192,7 @@ class ColumnResolver:
         logger.info("ColumnResolver initialized")
 
     @lru_cache(maxsize=128)
-    def resolve_column(
-        self,
-        df_columns: tuple,
-        standard_name: str
-    ) -> Optional[str]:
+    def resolve_column(self, df_columns: tuple, standard_name: str) -> Optional[str]:
         """Resolve standard name to actual column name.
 
         Args:
@@ -136,17 +214,14 @@ class ColumnResolver:
             if name in df_columns:
                 # Track statistics
                 stat_key = f"{standard_name}->{name}"
-                self.resolution_stats[stat_key] = \
+                self.resolution_stats[stat_key] = (
                     self.resolution_stats.get(stat_key, 0) + 1
+                )
                 return name
 
         return None
 
-    def resolve_required(
-        self,
-        df: pd.DataFrame,
-        standard_name: str
-    ) -> str:
+    def resolve_required(self, df: pd.DataFrame, standard_name: str) -> str:
         """Resolve column name, raising error if not found.
 
         Args:
@@ -172,9 +247,7 @@ class ColumnResolver:
         return column
 
     def standardize_dataframe(
-        self,
-        df: pd.DataFrame,
-        inplace: bool = False
+        self, df: pd.DataFrame, inplace: bool = False
     ) -> pd.DataFrame:
         """Standardize all column names in DataFrame.
 
@@ -207,11 +280,7 @@ class ColumnResolver:
         return df
 
     def safe_get(
-        self,
-        df: pd.DataFrame,
-        row_index: int,
-        standard_name: str,
-        default: Any = None
+        self, df: pd.DataFrame, row_index: int, standard_name: str, default: Any = None
     ) -> Any:
         """Safely get value from DataFrame.
 
@@ -237,13 +306,19 @@ class ColumnResolver:
 
             # Handle text in numeric fields
             if isinstance(value, str):
-                if value.upper() in ['N/A', 'NA', 'NULL', 'NONE', '-']:
+                if value.upper() in ["N/A", "NA", "NULL", "NONE", "-"]:
                     return default
 
                 # Remove currency symbols and commas
-                if standard_name in ['on_hand', 'on_order', 'allocated',
-                                     'planning_balance', 'quantity', 'usage']:
-                    value = value.replace('$', '').replace(',', '')
+                if standard_name in [
+                    "on_hand",
+                    "on_order",
+                    "allocated",
+                    "planning_balance",
+                    "quantity",
+                    "usage",
+                ]:
+                    value = value.replace("$", "").replace(",", "")
                     try:
                         return float(value)
                     except ValueError:
@@ -261,19 +336,15 @@ class ColumnResolver:
             Report of resolution statistics
         """
         return {
-            'total_resolutions': sum(self.resolution_stats.values()),
-            'unique_mappings': len(self.resolution_stats),
-            'top_mappings': sorted(
-                self.resolution_stats.items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:10]
+            "total_resolutions": sum(self.resolution_stats.values()),
+            "unique_mappings": len(self.resolution_stats),
+            "top_mappings": sorted(
+                self.resolution_stats.items(), key=lambda x: x[1], reverse=True
+            )[:10],
         }
 
     def validate_required_columns(
-        self,
-        df: pd.DataFrame,
-        required: List[str]
+        self, df: pd.DataFrame, required: List[str]
     ) -> tuple[bool, List[str]]:
         """Validate that required columns exist.
 
@@ -300,40 +371,41 @@ if __name__ == "__main__":
     resolver = ColumnResolver()
 
     # Test Case 1: Create sample DataFrame with variations
-    sample_df = pd.DataFrame({
-        'Desc#': ['Y001', 'Y002'],
-        'Planning_Balance': [100, -50],
-        'On-Hand': [200, 100],
-        'PO Qty': [50, 0],
-        'Allocated Qty': [150, 150]
-    })
+    sample_df = pd.DataFrame(
+        {
+            "Desc#": ["Y001", "Y002"],
+            "Planning_Balance": [100, -50],
+            "On-Hand": [200, 100],
+            "PO Qty": [50, 0],
+            "Allocated Qty": [150, 150],
+        }
+    )
 
     # Test column resolution
-    yarn_col = resolver.resolve_column(tuple(sample_df.columns), 'yarn_id')
-    assert yarn_col == 'Desc#'
+    yarn_col = resolver.resolve_column(tuple(sample_df.columns), "yarn_id")
+    assert yarn_col == "Desc#"
     logger.info(f"Test 1 passed: yarn_id -> {yarn_col}")
 
-    balance_col = resolver.resolve_column(tuple(sample_df.columns), 'planning_balance')
-    assert balance_col == 'Planning_Balance'
+    balance_col = resolver.resolve_column(tuple(sample_df.columns), "planning_balance")
+    assert balance_col == "Planning_Balance"
     logger.info(f"Test 2 passed: planning_balance -> {balance_col}")
 
     # Test standardization
     std_df = resolver.standardize_dataframe(sample_df)
-    assert 'YarnID' in std_df.columns  # Standardized to first variation
+    assert "YarnID" in std_df.columns  # Standardized to first variation
     logger.info("Test 3 passed: DataFrame standardized")
 
     # Test safe get
-    value = resolver.safe_get(sample_df, 0, 'on_hand', default=0)
+    value = resolver.safe_get(sample_df, 0, "on_hand", default=0)
     assert value == 200
     logger.info(f"Test 4 passed: Safe get value = {value}")
 
     # Test validation
     valid, missing = resolver.validate_required_columns(
-        sample_df,
-        ['yarn_id', 'planning_balance', 'style']  # style missing
+        sample_df, ["yarn_id", "planning_balance", "style"]  # style missing
     )
     assert valid is False
-    assert 'style' in missing
+    assert "style" in missing
     logger.info("Test 5 passed: Validation detected missing column")
 
     print("All validations passed!")

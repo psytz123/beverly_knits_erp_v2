@@ -28,39 +28,30 @@ from .rules_engine import BeverlyKnitsRulesEngine
 
 __all__ = [
     # Planning Balance
-    'PlanningBalanceAnalyzer',
-    'PlanningBalanceResult',
-
+    "PlanningBalanceAnalyzer",
+    "PlanningBalanceResult",
     # Work Center
-    'WorkCenterValidator',
-
+    "WorkCenterValidator",
     # BOM
-    'BOMVariantResolver',
-    'StyleVariant',
-
+    "BOMVariantResolver",
+    "StyleVariant",
     # Machine Assignment
-    'MachineAssignmentValidator',
-    'MachineAssignment',
-
+    "MachineAssignmentValidator",
+    "MachineAssignment",
     # Column Resolution
-    'ColumnResolver',
-
+    "ColumnResolver",
     # Caching
-    'CacheManager',
-
+    "CacheManager",
     # eFab Integration
-    'eFabIntegration',
-
+    "eFabIntegration",
     # Yarn Substitution
-    'YarnSubstitutionEngine',
-    'YarnSubstitute',
-
+    "YarnSubstitutionEngine",
+    "YarnSubstitute",
     # Knit Order Processing
-    'KnitOrderProcessor',
-    'KnitOrderAssignment',
-
+    "KnitOrderProcessor",
+    "KnitOrderAssignment",
     # Master Engine
-    'BeverlyKnitsRulesEngine',
+    "BeverlyKnitsRulesEngine",
 ]
 
-__version__ = '2.0.0'
+__version__ = "2.0.0"

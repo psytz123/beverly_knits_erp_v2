@@ -41,24 +41,24 @@ class MachineAssignmentValidator:
 
     # Machine capacity configuration
     CAPACITY_CONFIG = {
-        'shifts_per_day': 3,
-        'hours_per_shift': 8,
-        'efficiency_factor': 0.85,
-        'maintenance_hours_per_day': 2,
-        'max_utilization': 0.85
+        "shifts_per_day": 3,
+        "hours_per_shift": 8,
+        "efficiency_factor": 0.85,
+        "maintenance_hours_per_day": 2,
+        "max_utilization": 0.85,
     }
 
     # Production rates (units per hour by machine type)
     PRODUCTION_RATES = {
-        '1': 50,   # Single Jersey
-        '2': 45,   # Double Jersey
-        '3': 40,   # Rib
-        '4': 35,   # Interlock
-        '5': 30,   # Fleece
-        '6': 25,   # Terry
-        '7': 20,   # Jacquard
-        '8': 35,   # Special Knit
-        '9': 40    # Warp Knit
+        "1": 50,  # Single Jersey
+        "2": 45,  # Double Jersey
+        "3": 40,  # Rib
+        "4": 35,  # Interlock
+        "5": 30,  # Fleece
+        "6": 25,  # Terry
+        "7": 20,  # Jacquard
+        "8": 35,  # Special Knit
+        "9": 40,  # Warp Knit
     }
 
     def __init__(self) -> None:
@@ -74,7 +74,7 @@ class MachineAssignmentValidator:
         style: str,
         quantity: float,
         machine_mapping: pd.DataFrame,
-        work_center_validator: Optional[Any] = None
+        work_center_validator: Optional[Any] = None,
     ) -> Tuple[bool, List[str]]:
         """Validate a machine assignment.
 
@@ -92,17 +92,17 @@ class MachineAssignmentValidator:
         errors = []
 
         # Check machine exists
-        if machine_id not in machine_mapping['MACH'].values:
+        if machine_id not in machine_mapping["MACH"].values:
             errors.append(f"Machine {machine_id} not found in system")
             return False, errors
 
         # Get work center
-        machine_row = machine_mapping[machine_mapping['MACH'] == machine_id]
+        machine_row = machine_mapping[machine_mapping["MACH"] == machine_id]
         if machine_row.empty:
             errors.append(f"No work center mapping for machine {machine_id}")
             return False, errors
 
-        work_center = machine_row['WC'].iloc[0]
+        work_center = machine_row["WC"].iloc[0]
 
         # Validate work center format if validator provided
         if work_center_validator:
@@ -119,13 +119,15 @@ class MachineAssignmentValidator:
             errors.append(f"Style {style} incompatible with work center {work_center}")
 
         # Log validation
-        self.validation_log.append({
-            'timestamp': datetime.now(),
-            'order_id': order_id,
-            'machine_id': machine_id,
-            'valid': len(errors) == 0,
-            'errors': errors
-        })
+        self.validation_log.append(
+            {
+                "timestamp": datetime.now(),
+                "order_id": order_id,
+                "machine_id": machine_id,
+                "valid": len(errors) == 0,
+                "errors": errors,
+            }
+        )
 
         return len(errors) == 0, errors
 
@@ -134,7 +136,7 @@ class MachineAssignmentValidator:
         style: str,
         quantity: float,
         machine_mapping: pd.DataFrame,
-        preferred_work_center: Optional[str] = None
+        preferred_work_center: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Suggest alternative machines for an order.
 
@@ -150,11 +152,13 @@ class MachineAssignmentValidator:
         suggestions = []
 
         for _, row in machine_mapping.iterrows():
-            machine_id = str(row['MACH'])
-            work_center = row['WC']
+            machine_id = str(row["MACH"])
+            work_center = row["WC"]
 
             # Filter by preferred work center if specified
-            if preferred_work_center and not work_center.startswith(preferred_work_center):
+            if preferred_work_center and not work_center.startswith(
+                preferred_work_center
+            ):
                 continue
 
             # Check compatibility
@@ -169,25 +173,25 @@ class MachineAssignmentValidator:
             current_util = self._get_machine_utilization(machine_id)
             available_capacity = self._get_available_capacity(machine_id)
 
-            suggestions.append({
-                'machine_id': machine_id,
-                'work_center': work_center,
-                'current_utilization': current_util,
-                'available_capacity': available_capacity,
-                'estimated_hours': self._estimate_production_time(quantity, work_center),
-                'priority': self._calculate_priority(current_util, work_center)
-            })
+            suggestions.append(
+                {
+                    "machine_id": machine_id,
+                    "work_center": work_center,
+                    "current_utilization": current_util,
+                    "available_capacity": available_capacity,
+                    "estimated_hours": self._estimate_production_time(
+                        quantity, work_center
+                    ),
+                    "priority": self._calculate_priority(current_util, work_center),
+                }
+            )
 
         # Sort by priority
-        suggestions.sort(key=lambda x: x['priority'], reverse=True)
+        suggestions.sort(key=lambda x: x["priority"], reverse=True)
 
         return suggestions[:5]  # Top 5 suggestions
 
-    def _check_capacity(
-        self,
-        machine_id: str,
-        quantity: float
-    ) -> bool:
+    def _check_capacity(self, machine_id: str, quantity: float) -> bool:
         """Check if machine has capacity.
 
         Args:
@@ -198,15 +202,11 @@ class MachineAssignmentValidator:
             True if capacity available
         """
         current_util = self._get_machine_utilization(machine_id)
-        max_util = self.CAPACITY_CONFIG['max_utilization']
+        max_util = self.CAPACITY_CONFIG["max_utilization"]
 
         return current_util < max_util
 
-    def _check_style_compatibility(
-        self,
-        style: str,
-        work_center: str
-    ) -> bool:
+    def _check_style_compatibility(self, style: str, work_center: str) -> bool:
         """Check style compatibility with work center.
 
         Args:
@@ -222,13 +222,13 @@ class MachineAssignmentValidator:
 
             # Simple compatibility check (can be enhanced)
             # Certain styles work better on certain machine types
-            style_prefix = style[:2] if len(style) >= 2 else ''
+            style_prefix = style[:2] if len(style) >= 2 else ""
 
             compatibility_map = {
-                'ST': ['1', '2', '3'],  # Standard styles
-                'FL': ['5'],            # Fleece styles
-                'JQ': ['7'],            # Jacquard styles
-                'TR': ['6'],            # Terry styles
+                "ST": ["1", "2", "3"],  # Standard styles
+                "FL": ["5"],  # Fleece styles
+                "JQ": ["7"],  # Jacquard styles
+                "TR": ["6"],  # Terry styles
             }
 
             if style_prefix in compatibility_map:
@@ -257,9 +257,9 @@ class MachineAssignmentValidator:
 
         # Calculate available hours per day
         available_hours = (
-            self.CAPACITY_CONFIG['shifts_per_day'] *
-            self.CAPACITY_CONFIG['hours_per_shift'] -
-            self.CAPACITY_CONFIG['maintenance_hours_per_day']
+            self.CAPACITY_CONFIG["shifts_per_day"]
+            * self.CAPACITY_CONFIG["hours_per_shift"]
+            - self.CAPACITY_CONFIG["maintenance_hours_per_day"]
         )
 
         return min(total_hours / available_hours, 1.0)
@@ -274,22 +274,18 @@ class MachineAssignmentValidator:
             Available hours
         """
         current_util = self._get_machine_utilization(machine_id)
-        max_util = self.CAPACITY_CONFIG['max_utilization']
+        max_util = self.CAPACITY_CONFIG["max_utilization"]
 
         available_util = max_util - current_util
         available_hours = (
-            self.CAPACITY_CONFIG['shifts_per_day'] *
-            self.CAPACITY_CONFIG['hours_per_shift'] *
-            self.CAPACITY_CONFIG['efficiency_factor']
+            self.CAPACITY_CONFIG["shifts_per_day"]
+            * self.CAPACITY_CONFIG["hours_per_shift"]
+            * self.CAPACITY_CONFIG["efficiency_factor"]
         )
 
         return available_hours * available_util
 
-    def _estimate_production_time(
-        self,
-        quantity: float,
-        work_center: str
-    ) -> float:
+    def _estimate_production_time(self, quantity: float, work_center: str) -> float:
         """Estimate production time.
 
         Args:
@@ -300,19 +296,15 @@ class MachineAssignmentValidator:
             Estimated hours
         """
         # Get machine type from work center
-        machine_type = work_center[0] if work_center else '1'
+        machine_type = work_center[0] if work_center else "1"
 
         # Get production rate
         rate = self.PRODUCTION_RATES.get(machine_type, 40)
 
         # Calculate time
-        return quantity / rate / self.CAPACITY_CONFIG['efficiency_factor']
+        return quantity / rate / self.CAPACITY_CONFIG["efficiency_factor"]
 
-    def _calculate_priority(
-        self,
-        utilization: float,
-        work_center: str
-    ) -> float:
+    def _calculate_priority(self, utilization: float, work_center: str) -> float:
         """Calculate machine priority score.
 
         Args:
@@ -326,17 +318,17 @@ class MachineAssignmentValidator:
         util_score = 1.0 - abs(utilization - 0.5) * 2
 
         # Prefer certain machine types
-        machine_type = work_center[0] if work_center else '1'
+        machine_type = work_center[0] if work_center else "1"
         type_score = {
-            '1': 1.0,  # Single Jersey (most versatile)
-            '2': 0.9,  # Double Jersey
-            '3': 0.8,  # Rib
-            '4': 0.7,  # Interlock
-            '5': 0.6,  # Fleece
-            '6': 0.5,  # Terry
-            '7': 0.4,  # Jacquard
-            '8': 0.7,  # Special
-            '9': 0.8   # Warp
+            "1": 1.0,  # Single Jersey (most versatile)
+            "2": 0.9,  # Double Jersey
+            "3": 0.8,  # Rib
+            "4": 0.7,  # Interlock
+            "5": 0.6,  # Fleece
+            "6": 0.5,  # Terry
+            "7": 0.4,  # Jacquard
+            "8": 0.7,  # Special
+            "9": 0.8,  # Warp
         }.get(machine_type, 0.5)
 
         return util_score * 0.6 + type_score * 0.4
@@ -348,7 +340,7 @@ class MachineAssignmentValidator:
         work_center: str,
         style: str,
         quantity: float,
-        start_time: Optional[datetime] = None
+        start_time: Optional[datetime] = None,
     ) -> MachineAssignment:
         """Schedule an order on a machine.
 
@@ -381,7 +373,7 @@ class MachineAssignmentValidator:
             end_time=end_time,
             utilization=self._get_machine_utilization(machine_id),
             is_valid=True,
-            validation_errors=[]
+            validation_errors=[],
         )
 
         # Add to schedule
@@ -400,20 +392,20 @@ class MachineAssignmentValidator:
             Summary statistics
         """
         if not self.validation_log:
-            return {'total_validations': 0}
+            return {"total_validations": 0}
 
         total = len(self.validation_log)
-        valid = sum(1 for v in self.validation_log if v['valid'])
+        valid = sum(1 for v in self.validation_log if v["valid"])
 
         return {
-            'total_validations': total,
-            'valid': valid,
-            'invalid': total - valid,
-            'validity_rate': (valid / total * 100) if total > 0 else 0,
-            'scheduled_machines': len(self.machine_schedule),
-            'total_assignments': sum(
+            "total_validations": total,
+            "valid": valid,
+            "invalid": total - valid,
+            "validity_rate": (valid / total * 100) if total > 0 else 0,
+            "scheduled_machines": len(self.machine_schedule),
+            "total_assignments": sum(
                 len(assignments) for assignments in self.machine_schedule.values()
-            )
+            ),
         }
 
 
@@ -423,16 +415,18 @@ if __name__ == "__main__":
     validator = MachineAssignmentValidator()
 
     # Create sample machine mapping
-    machine_mapping = pd.DataFrame([
-        {'WC': '1.30.20.F', 'MACH': '161'},
-        {'WC': '1.30.20.M', 'MACH': '210'},
-        {'WC': '5.38.18.F', 'MACH': '177'},
-        {'WC': '7.26.16.J', 'MACH': '225'}
-    ])
+    machine_mapping = pd.DataFrame(
+        [
+            {"WC": "1.30.20.F", "MACH": "161"},
+            {"WC": "1.30.20.M", "MACH": "210"},
+            {"WC": "5.38.18.F", "MACH": "177"},
+            {"WC": "7.26.16.J", "MACH": "225"},
+        ]
+    )
 
     # Test Case 1: Valid assignment
     valid, errors = validator.validate_assignment(
-        'ORD001', '161', 'ST123', 1000, machine_mapping
+        "ORD001", "161", "ST123", 1000, machine_mapping
     )
     assert valid is True
     assert len(errors) == 0
@@ -440,30 +434,26 @@ if __name__ == "__main__":
 
     # Test Case 2: Invalid machine
     valid, errors = validator.validate_assignment(
-        'ORD002', '999', 'ST123', 1000, machine_mapping
+        "ORD002", "999", "ST123", 1000, machine_mapping
     )
     assert valid is False
-    assert 'not found' in errors[0]
+    assert "not found" in errors[0]
     logger.info("Test 2 passed: Invalid machine detected")
 
     # Test Case 3: Suggest alternatives
-    suggestions = validator.suggest_alternative_machines(
-        'ST456', 500, machine_mapping
-    )
+    suggestions = validator.suggest_alternative_machines("ST456", 500, machine_mapping)
     assert len(suggestions) > 0
     logger.info(f"Test 3 passed: Found {len(suggestions)} alternatives")
 
     # Test Case 4: Schedule order
-    assignment = validator.schedule_order(
-        'ORD003', '161', '1.30.20.F', 'ST789', 2000
-    )
+    assignment = validator.schedule_order("ORD003", "161", "1.30.20.F", "ST789", 2000)
     assert assignment.is_valid is True
-    assert assignment.machine_id == '161'
+    assert assignment.machine_id == "161"
     logger.info("Test 4 passed: Order scheduled")
 
     # Test Case 5: Get summary
     summary = validator.get_validation_summary()
-    assert summary['total_validations'] == 2
+    assert summary["total_validations"] == 2
     logger.info(f"Test 5 passed: Summary = {summary}")
 
     print("All validations passed!")

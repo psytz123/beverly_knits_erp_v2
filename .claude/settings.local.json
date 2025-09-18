@@ -19,7 +19,10 @@
       "mcp__thinking__sequentialthinking",
       "Read(//mnt/c/Users/psytz/Downloads/**)",
       "Read(//mnt/c/Users/psytz/OneDrive/Documents/Prompts/**)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__read_multiple_files"
     ],
     "deny": [],
     "ask": []

@@ -1,9 +1,11 @@
 """
 JSON Sanitizer - Cleans NaN and Infinity values from data before JSON serialization
 """
+
 import math
 import numpy as np
 from typing import Any, Dict, List, Union
+
 
 def sanitize_for_json(obj: Any) -> Any:
     """
@@ -24,11 +26,12 @@ def sanitize_for_json(obj: Any) -> Any:
         return int(obj)
     elif isinstance(obj, np.ndarray):
         return sanitize_for_json(obj.tolist())
-    elif hasattr(obj, 'to_dict'):
+    elif hasattr(obj, "to_dict"):
         # Handle pandas DataFrames and Series
         return sanitize_for_json(obj.to_dict())
     else:
         return obj
+
 
 def safe_float(value: Any, default: float = 0.0) -> float:
     """
@@ -41,6 +44,7 @@ def safe_float(value: Any, default: float = 0.0) -> float:
         return result
     except (TypeError, ValueError):
         return default
+
 
 def safe_int(value: Any, default: int = 0) -> int:
     """
@@ -55,18 +59,19 @@ def safe_int(value: Any, default: int = 0) -> int:
     except (TypeError, ValueError):
         return default
 
+
 def clean_dataframe_for_json(df) -> List[Dict]:
     """
     Clean a pandas DataFrame for JSON serialization.
     """
     if df is None or df.empty:
         return []
-    
+
     # Replace NaN values with None
     df_clean = df.replace({np.nan: None, np.inf: None, -np.inf: None})
-    
+
     # Convert to list of dicts
-    result = df_clean.to_dict('records')
-    
+    result = df_clean.to_dict("records")
+
     # Additional sanitization
     return sanitize_for_json(result)

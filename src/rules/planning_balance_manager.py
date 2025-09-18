@@ -66,12 +66,12 @@ class PlanningBalanceAnalyzer:
 
     # Shortage severity thresholds (in lbs)
     SHORTAGE_THRESHOLDS = {
-        'critical': -500,    # More than 500 lbs short
-        'high': -100,        # 100-500 lbs short
-        'medium': -50,       # 50-100 lbs short
-        'low': 0,           # Any shortage
-        'warning': 50,      # Getting low (positive but concerning)
-        'safe': 200         # Comfortable inventory level
+        "critical": -500,  # More than 500 lbs short
+        "high": -100,  # 100-500 lbs short
+        "medium": -50,  # 50-100 lbs short
+        "low": 0,  # Any shortage
+        "warning": 50,  # Getting low (positive but concerning)
+        "safe": 200,  # Comfortable inventory level
     }
 
     # Weekly usage estimate for coverage calculation
@@ -91,7 +91,7 @@ class PlanningBalanceAnalyzer:
         allocated: float,
         *,
         weekly_usage: Optional[float] = None,
-        log_shortage: bool = True
+        log_shortage: bool = True,
     ) -> PlanningBalanceResult:
         """Calculate planning balance with shortage detection.
 
@@ -143,7 +143,7 @@ class PlanningBalanceAnalyzer:
             is_shortage=is_shortage,
             shortage_amount=shortage_amount,
             action_required="OK",  # Will be set in __post_init__
-            weeks_coverage=weeks_coverage
+            weeks_coverage=weeks_coverage,
         )
 
         # Log if shortage detected
@@ -155,13 +155,15 @@ class PlanningBalanceAnalyzer:
             )
 
         # Track in history
-        self.analysis_history.append({
-            'timestamp': datetime.now(),
-            'yarn_id': yarn_id,
-            'planning_balance': planning_balance,
-            'is_shortage': is_shortage,
-            'action': result.action_required
-        })
+        self.analysis_history.append(
+            {
+                "timestamp": datetime.now(),
+                "yarn_id": yarn_id,
+                "planning_balance": planning_balance,
+                "is_shortage": is_shortage,
+                "action": result.action_required,
+            }
+        )
 
         return result
 
@@ -174,7 +176,7 @@ class PlanningBalanceAnalyzer:
         Returns:
             DataFrame with added shortage analysis columns
         """
-        required_cols = ['YarnID', 'On Hand', 'On Order', 'Allocated']
+        required_cols = ["YarnID", "On Hand", "On Order", "Allocated"]
         missing = set(required_cols) - set(df.columns)
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
@@ -183,25 +185,27 @@ class PlanningBalanceAnalyzer:
         results = []
         for _, row in df.iterrows():
             result = self.calculate_planning_balance(
-                yarn_id=row['YarnID'],
-                on_hand=row['On Hand'],
-                on_order=row['On Order'],
-                allocated=row['Allocated'],
-                log_shortage=False  # Don't log each one
+                yarn_id=row["YarnID"],
+                on_hand=row["On Hand"],
+                on_order=row["On Order"],
+                allocated=row["Allocated"],
+                log_shortage=False,  # Don't log each one
             )
-            results.append({
-                'YarnID': result.yarn_id,
-                'Planning Balance': result.planning_balance,
-                'Display Balance': result.format_display(),
-                'Has Shortage': result.is_shortage,
-                'Shortage Amount': result.shortage_amount,
-                'Action Required': result.action_required,
-                'Weeks Coverage': result.weeks_coverage
-            })
+            results.append(
+                {
+                    "YarnID": result.yarn_id,
+                    "Planning Balance": result.planning_balance,
+                    "Display Balance": result.format_display(),
+                    "Has Shortage": result.is_shortage,
+                    "Shortage Amount": result.shortage_amount,
+                    "Action Required": result.action_required,
+                    "Weeks Coverage": result.weeks_coverage,
+                }
+            )
 
         # Merge with original DataFrame
         result_df = pd.DataFrame(results)
-        return df.merge(result_df, on='YarnID', how='left')
+        return df.merge(result_df, on="YarnID", how="left")
 
     def get_shortage_summary(self) -> Dict[str, Any]:
         """Get summary of all logged shortages.
@@ -211,21 +215,16 @@ class PlanningBalanceAnalyzer:
         """
         if not self.shortage_log:
             return {
-                'total_shortages': 0,
-                'critical': 0,
-                'high': 0,
-                'medium': 0,
-                'low': 0,
-                'total_shortage_lbs': 0.0
+                "total_shortages": 0,
+                "critical": 0,
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "total_shortage_lbs": 0.0,
             }
 
         # Count by severity
-        severity_counts = {
-            'CRITICAL': 0,
-            'HIGH': 0,
-            'MEDIUM': 0,
-            'LOW': 0
-        }
+        severity_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
 
         total_shortage = 0.0
         for result in self.shortage_log:
@@ -233,13 +232,13 @@ class PlanningBalanceAnalyzer:
             total_shortage += result.shortage_amount
 
         return {
-            'total_shortages': len(self.shortage_log),
-            'critical': severity_counts['CRITICAL'],
-            'high': severity_counts['HIGH'],
-            'medium': severity_counts['MEDIUM'],
-            'low': severity_counts['LOW'],
-            'total_shortage_lbs': total_shortage,
-            'avg_shortage_lbs': total_shortage / len(self.shortage_log)
+            "total_shortages": len(self.shortage_log),
+            "critical": severity_counts["CRITICAL"],
+            "high": severity_counts["HIGH"],
+            "medium": severity_counts["MEDIUM"],
+            "low": severity_counts["LOW"],
+            "total_shortage_lbs": total_shortage,
+            "avg_shortage_lbs": total_shortage / len(self.shortage_log),
         }
 
     def get_critical_shortages(self) -> List[PlanningBalanceResult]:
@@ -249,8 +248,7 @@ class PlanningBalanceAnalyzer:
             List of PlanningBalanceResult with CRITICAL or HIGH severity
         """
         return [
-            r for r in self.shortage_log
-            if r.action_required in ['CRITICAL', 'HIGH']
+            r for r in self.shortage_log if r.action_required in ["CRITICAL", "HIGH"]
         ]
 
     def export_shortage_report(self) -> pd.DataFrame:
@@ -264,25 +262,28 @@ class PlanningBalanceAnalyzer:
 
         data = []
         for result in self.shortage_log:
-            data.append({
-                'YarnID': result.yarn_id,
-                'Planning Balance': result.planning_balance,
-                'Display': result.format_display(),
-                'Shortage Amount': result.shortage_amount,
-                'Action Required': result.action_required,
-                'On Hand': result.on_hand,
-                'On Order': result.on_order,
-                'Allocated': result.allocated,
-                'Weeks Coverage': result.weeks_coverage
-            })
+            data.append(
+                {
+                    "YarnID": result.yarn_id,
+                    "Planning Balance": result.planning_balance,
+                    "Display": result.format_display(),
+                    "Shortage Amount": result.shortage_amount,
+                    "Action Required": result.action_required,
+                    "On Hand": result.on_hand,
+                    "On Order": result.on_order,
+                    "Allocated": result.allocated,
+                    "Weeks Coverage": result.weeks_coverage,
+                }
+            )
 
         df = pd.DataFrame(data)
         # Sort by severity (most critical first)
-        severity_order = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
-        df['severity_rank'] = df['Action Required'].map(severity_order)
-        df = df.sort_values(['severity_rank', 'Shortage Amount'],
-                          ascending=[True, False])
-        df = df.drop('severity_rank', axis=1)
+        severity_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+        df["severity_rank"] = df["Action Required"].map(severity_order)
+        df = df.sort_values(
+            ["severity_rank", "Shortage Amount"], ascending=[True, False]
+        )
+        df = df.drop("severity_rank", axis=1)
 
         return df
 
@@ -294,10 +295,7 @@ if __name__ == "__main__":
 
     # Test Case 1: Normal shortage (as shown in screenshot)
     result1 = analyzer.calculate_planning_balance(
-        yarn_id="Y18771",
-        on_hand=1291.0,
-        on_order=0.0,
-        allocated=1450.0
+        yarn_id="Y18771", on_hand=1291.0, on_order=0.0, allocated=1450.0
     )
     assert result1.planning_balance == -159.0
     assert result1.is_shortage is True
@@ -306,10 +304,7 @@ if __name__ == "__main__":
 
     # Test Case 2: Positive balance
     result2 = analyzer.calculate_planning_balance(
-        yarn_id="Y14415",
-        on_hand=500.0,
-        on_order=100.0,
-        allocated=400.0
+        yarn_id="Y14415", on_hand=500.0, on_order=100.0, allocated=400.0
     )
     assert result2.planning_balance == 200.0
     assert result2.is_shortage is False
@@ -317,10 +312,7 @@ if __name__ == "__main__":
 
     # Test Case 3: Critical shortage
     result3 = analyzer.calculate_planning_balance(
-        yarn_id="Y19069",
-        on_hand=0.0,
-        on_order=0.0,
-        allocated=945.0
+        yarn_id="Y19069", on_hand=0.0, on_order=0.0, allocated=945.0
     )
     assert result3.planning_balance == -945.0
     assert result3.action_required == "CRITICAL"

@@ -37,13 +37,13 @@ class EFabReportDownloader:
 
         # Request headers matching browser request
         self.headers = {
-            'Accept': 'application/json, text/javascript, */*; q=0.01',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Cookie': f'dancer.session={session_cookie}',
-            'Referer': 'https://efab.bkiapps.com/reports/report_queue',
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36',
-            'X-Requested-With': 'XMLHttpRequest'
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cookie": f"dancer.session={session_cookie}",
+            "Referer": "https://efab.bkiapps.com/reports/report_queue",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36",
+            "X-Requested-With": "XMLHttpRequest",
         }
 
     def check_queue(self) -> Optional[Dict[str, Any]]:
@@ -57,12 +57,14 @@ class EFabReportDownloader:
             response = requests.get(
                 f"{self.base_url}{self.queue_endpoint}",
                 headers=self.headers,
-                timeout=30
+                timeout=30,
             )
 
             if response.status_code == 200:
                 queue_data = response.json()
-                logger.info(f"Queue check successful: {len(queue_data.get('reports', []))} reports found")
+                logger.info(
+                    f"Queue check successful: {len(queue_data.get('reports', []))} reports found"
+                )
                 return queue_data
             else:
                 logger.error(f"Queue check failed: HTTP {response.status_code}")
@@ -72,7 +74,9 @@ class EFabReportDownloader:
             logger.error(f"Error checking queue: {e}")
             return None
 
-    def find_yarn_demand_report(self, queue_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def find_yarn_demand_report(
+        self, queue_data: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """
         Find the latest Yarn Demand report in queue
 
@@ -85,17 +89,19 @@ class EFabReportDownloader:
         # Handle list response (direct list of reports)
         if isinstance(queue_data, list):
             reports = queue_data
-        elif isinstance(queue_data, dict) and 'reports' in queue_data:
-            reports = queue_data['reports']
+        elif isinstance(queue_data, dict) and "reports" in queue_data:
+            reports = queue_data["reports"]
         else:
             return None
 
         # Look for Yarn Demand reports
         yarn_reports = [
-            r for r in reports
-            if isinstance(r, dict) and (
-                'yarn_demand' in r.get('name', '').lower() or
-                'yarn demand' in r.get('name', '').lower()
+            r
+            for r in reports
+            if isinstance(r, dict)
+            and (
+                "yarn_demand" in r.get("name", "").lower()
+                or "yarn demand" in r.get("name", "").lower()
             )
         ]
 
@@ -121,16 +127,13 @@ class EFabReportDownloader:
         """
         try:
             # Ensure full URL
-            if not report_url.startswith('http'):
+            if not report_url.startswith("http"):
                 report_url = f"{self.base_url}{report_url}"
 
             logger.info(f"Downloading report from: {report_url}")
 
             response = requests.get(
-                report_url,
-                headers=self.headers,
-                stream=True,
-                timeout=60
+                report_url, headers=self.headers, stream=True, timeout=60
             )
 
             if response.status_code == 200:
@@ -138,7 +141,7 @@ class EFabReportDownloader:
                 target_path.parent.mkdir(parents=True, exist_ok=True)
 
                 # Write file in chunks
-                with open(target_path, 'wb') as f:
+                with open(target_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
 
@@ -178,7 +181,7 @@ class EFabReportDownloader:
             return False
 
         # Step 3: Get download URL
-        download_url = report.get('download_url') or report.get('url')
+        download_url = report.get("download_url") or report.get("url")
         if not download_url:
             logger.error("No download URL in report data")
             return False
@@ -196,6 +199,7 @@ class EFabReportDownloader:
             archive_path = archive_dir / archive_name
 
             import shutil
+
             shutil.copy2(target_path, archive_path)
             logger.info(f"Archived copy saved to {archive_path}")
 
@@ -207,12 +211,12 @@ def main():
     import os
 
     # Get session cookie from environment or use test value
-    session_cookie = os.environ.get('EFAB_SESSION', 'aMdcwNLa0ov0pcbWcQ_zb5wyPLSkYF_B')
+    session_cookie = os.environ.get("EFAB_SESSION", "aMdcwNLa0ov0pcbWcQ_zb5wyPLSkYF_B")
 
     downloader = EFabReportDownloader(session_cookie)
 
     # Test download
-    test_path = Path('/tmp/test_yarn_demand.xlsx')
+    test_path = Path("/tmp/test_yarn_demand.xlsx")
     success = downloader.download_latest(test_path)
 
     if success:

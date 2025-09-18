@@ -43,16 +43,14 @@ class eFabIntegration:
 
     # API endpoints
     ENDPOINTS = {
-        'yarn_demand': '/ExpectedYarnReport',
-        'knit_orders': '/api/knit-orders',
-        'machine_status': '/api/machine-status',
-        'production_update': '/api/production-update'
+        "yarn_demand": "/ExpectedYarnReport",
+        "knit_orders": "/api/knit-orders",
+        "machine_status": "/api/machine-status",
+        "production_update": "/api/production-update",
     }
 
     def __init__(
-        self,
-        base_url: Optional[str] = None,
-        session_cookie: Optional[str] = None
+        self, base_url: Optional[str] = None, session_cookie: Optional[str] = None
     ) -> None:
         """Initialize eFab integration.
 
@@ -61,7 +59,7 @@ class eFabIntegration:
             session_cookie: Session cookie for authentication
         """
         self.base_url = base_url or "https://efab.local"
-        self.session_cookie = session_cookie or os.getenv('EFAB_SESSION')
+        self.session_cookie = session_cookie or os.getenv("EFAB_SESSION")
 
         self.session = self._create_session()
         self.request_log: List[Dict[str, Any]] = []
@@ -84,7 +82,7 @@ class eFabIntegration:
             total=self.MAX_RETRIES,
             backoff_factor=self.BACKOFF_FACTOR,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["GET", "POST", "PUT", "DELETE"]
+            allowed_methods=["GET", "POST", "PUT", "DELETE"],
         )
 
         adapter = HTTPAdapter(max_retries=retry_strategy)
@@ -92,15 +90,17 @@ class eFabIntegration:
         session.mount("https://", adapter)
 
         # Set headers
-        session.headers.update({
-            'User-Agent': 'BeverlyKnitsERP/2.0',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        })
+        session.headers.update(
+            {
+                "User-Agent": "BeverlyKnitsERP/2.0",
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            }
+        )
 
         # Add session cookie if available
         if self.session_cookie:
-            session.cookies.set('session', self.session_cookie)
+            session.cookies.set("session", self.session_cookie)
 
         return session
 
@@ -109,7 +109,7 @@ class eFabIntegration:
         endpoint: str,
         method: str = "GET",
         params: Optional[Dict] = None,
-        data: Optional[Dict] = None
+        data: Optional[Dict] = None,
     ) -> Optional[Dict[str, Any]]:
         """Fetch data with exponential backoff retry.
 
@@ -143,7 +143,7 @@ class eFabIntegration:
                     url=url,
                     params=params,
                     json=data,
-                    timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT)
+                    timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT),
                 )
 
                 duration = time.time() - start_time
@@ -180,27 +180,24 @@ class eFabIntegration:
 
         try:
             # Fetch report
-            data = self.fetch_with_retry(
-                self.ENDPOINTS['yarn_demand'],
-                method="GET"
-            )
+            data = self.fetch_with_retry(self.ENDPOINTS["yarn_demand"], method="GET")
 
             if data is None:
                 logger.error("Failed to download yarn demand report")
-                return self._load_fallback_data('yarn_demand')
+                return self._load_fallback_data("yarn_demand")
 
             # Convert to DataFrame
             df = pd.DataFrame(data)
 
             # Save as fallback
-            self._save_fallback_data('yarn_demand', df)
+            self._save_fallback_data("yarn_demand", df)
 
             logger.info(f"Downloaded {len(df)} yarn demand records")
             return df
 
         except Exception as e:
             logger.exception(f"Error downloading yarn demand: {e}")
-            return self._load_fallback_data('yarn_demand')
+            return self._load_fallback_data("yarn_demand")
 
     def get_knit_orders(self) -> Optional[pd.DataFrame]:
         """Get knit orders from eFab.
@@ -211,29 +208,23 @@ class eFabIntegration:
         logger.info("Fetching knit orders from eFab...")
 
         try:
-            data = self.fetch_with_retry(
-                self.ENDPOINTS['knit_orders'],
-                method="GET"
-            )
+            data = self.fetch_with_retry(self.ENDPOINTS["knit_orders"], method="GET")
 
             if data is None:
-                return self._load_fallback_data('knit_orders')
+                return self._load_fallback_data("knit_orders")
 
             df = pd.DataFrame(data)
-            self._save_fallback_data('knit_orders', df)
+            self._save_fallback_data("knit_orders", df)
 
             logger.info(f"Fetched {len(df)} knit orders")
             return df
 
         except Exception as e:
             logger.exception(f"Error fetching knit orders: {e}")
-            return self._load_fallback_data('knit_orders')
+            return self._load_fallback_data("knit_orders")
 
     def update_production_status(
-        self,
-        order_id: str,
-        status: str,
-        quantity: Optional[float] = None
+        self, order_id: str, status: str, quantity: Optional[float] = None
     ) -> bool:
         """Update production status in eFab.
 
@@ -248,18 +239,16 @@ class eFabIntegration:
         logger.info(f"Updating production status for {order_id}")
 
         data = {
-            'order_id': order_id,
-            'status': status,
-            'timestamp': datetime.now().isoformat()
+            "order_id": order_id,
+            "status": status,
+            "timestamp": datetime.now().isoformat(),
         }
 
         if quantity is not None:
-            data['quantity'] = quantity
+            data["quantity"] = quantity
 
         result = self.fetch_with_retry(
-            self.ENDPOINTS['production_update'],
-            method="POST",
-            data=data
+            self.ENDPOINTS["production_update"], method="POST", data=data
         )
 
         success = result is not None
@@ -282,7 +271,7 @@ class eFabIntegration:
         logger.warning(f"Using fallback data for {endpoint}")
 
         # Load appropriate fallback
-        endpoint_key = endpoint.split('/')[-1]
+        endpoint_key = endpoint.split("/")[-1]
         return self._load_fallback_data(endpoint_key)
 
     def _save_fallback_data(self, key: str, df: pd.DataFrame) -> None:
@@ -320,12 +309,7 @@ class eFabIntegration:
         return None
 
     def _log_request(
-        self,
-        endpoint: str,
-        method: str,
-        attempt: int,
-        duration: float,
-        status: str
+        self, endpoint: str, method: str, attempt: int, duration: float, status: str
     ) -> None:
         """Log request details.
 
@@ -336,22 +320,18 @@ class eFabIntegration:
             duration: Request duration
             status: Request status
         """
-        self.request_log.append({
-            'timestamp': datetime.now(),
-            'endpoint': endpoint,
-            'method': method,
-            'attempt': attempt,
-            'duration': duration,
-            'status': status
-        })
+        self.request_log.append(
+            {
+                "timestamp": datetime.now(),
+                "endpoint": endpoint,
+                "method": method,
+                "attempt": attempt,
+                "duration": duration,
+                "status": status,
+            }
+        )
 
-    def _log_error(
-        self,
-        endpoint: str,
-        method: str,
-        attempt: int,
-        error: str
-    ) -> None:
+    def _log_error(self, endpoint: str, method: str, attempt: int, error: str) -> None:
         """Log error details.
 
         Args:
@@ -360,13 +340,15 @@ class eFabIntegration:
             attempt: Attempt number
             error: Error message
         """
-        self.error_log.append({
-            'timestamp': datetime.now(),
-            'endpoint': endpoint,
-            'method': method,
-            'attempt': attempt,
-            'error': error
-        })
+        self.error_log.append(
+            {
+                "timestamp": datetime.now(),
+                "endpoint": endpoint,
+                "method": method,
+                "attempt": attempt,
+                "error": error,
+            }
+        )
 
     def get_integration_status(self) -> Dict[str, Any]:
         """Get integration status summary.
@@ -375,17 +357,23 @@ class eFabIntegration:
             Status information
         """
         total_requests = len(self.request_log)
-        successful = sum(1 for r in self.request_log if r['status'] == 'success')
+        successful = sum(1 for r in self.request_log if r["status"] == "success")
         total_errors = len(self.error_log)
 
         return {
-            'connected': self.session_cookie is not None,
-            'total_requests': total_requests,
-            'successful_requests': successful,
-            'failed_requests': total_requests - successful,
-            'success_rate': (successful / total_requests * 100) if total_requests > 0 else 0,
-            'total_errors': total_errors,
-            'avg_attempts': sum(r['attempt'] for r in self.request_log) / total_requests if total_requests > 0 else 0
+            "connected": self.session_cookie is not None,
+            "total_requests": total_requests,
+            "successful_requests": successful,
+            "failed_requests": total_requests - successful,
+            "success_rate": (
+                (successful / total_requests * 100) if total_requests > 0 else 0
+            ),
+            "total_errors": total_errors,
+            "avg_attempts": (
+                sum(r["attempt"] for r in self.request_log) / total_requests
+                if total_requests > 0
+                else 0
+            ),
         }
 
     def test_connection(self) -> bool:

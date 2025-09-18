@@ -24,13 +24,13 @@ __author__ = "eFab AI Team"
 # Export main components
 __all__ = [
     "CentralOrchestrator",
-    "BaseAgent", 
+    "BaseAgent",
     "AgentMessage",
     "AgentCapability",
     "SystemState",
     "CustomerProfile",
     "ImplementationProjectManagerAgent",
-    "DataMigrationIntelligenceAgent", 
+    "DataMigrationIntelligenceAgent",
     "ConfigurationGenerationAgent",
     "FurnitureManufacturingAgent",
     "InjectionMoldingAgent",
@@ -38,5 +38,5 @@ __all__ = [
     "PerformanceOptimizationAgent",
     "LearningKnowledgeManagerAgent",
     "MessageRouter",
-    "AgentFactory"
+    "AgentFactory",
 ]

@@ -26,6 +26,7 @@ def retry_with_backoff(max_retries: int = 3, base_delay: float = 1.0):
         max_retries: Maximum number of retry attempts
         base_delay: Initial delay in seconds between retries
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -36,13 +37,17 @@ def retry_with_backoff(max_retries: int = 3, base_delay: float = 1.0):
                 except Exception as e:
                     last_exception = e
                     if attempt < max_retries - 1:
-                        delay = base_delay * (2 ** attempt)  # Exponential backoff
-                        logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay:.1f}s...")
+                        delay = base_delay * (2**attempt)  # Exponential backoff
+                        logger.warning(
+                            f"Attempt {attempt + 1} failed: {e}. Retrying in {delay:.1f}s..."
+                        )
                         time.sleep(delay)
                     else:
                         logger.error(f"All {max_retries} attempts failed: {e}")
             raise last_exception
+
         return wrapper
+
     return decorator
 
 
@@ -66,7 +71,7 @@ class SessionManager:
         """Load cached session data if available"""
         if self.cache_file.exists():
             try:
-                with open(self.cache_file, 'rb') as f:
+                with open(self.cache_file, "rb") as f:
                     self.session_data = pickle.load(f)
                 logger.info(f"Loaded session cache from {self.cache_file}")
             except Exception as e:
@@ -76,7 +81,7 @@ class SessionManager:
     def save_cache(self) -> None:
         """Save session data to cache"""
         try:
-            with open(self.cache_file, 'wb') as f:
+            with open(self.cache_file, "wb") as f:
                 pickle.dump(self.session_data, f)
             logger.debug(f"Saved session cache to {self.cache_file}")
         except Exception as e:
@@ -103,13 +108,13 @@ class SessionManager:
         # Test with a simple API call
         try:
             headers = {
-                'Cookie': f'dancer.session={cookie}',
-                'User-Agent': 'Mozilla/5.0'
+                "Cookie": f"dancer.session={cookie}",
+                "User-Agent": "Mozilla/5.0",
             }
             response = requests.get(
                 "https://efab.bkiapps.com/api/report/report_queue",
                 headers=headers,
-                timeout=10
+                timeout=10,
             )
 
             is_valid = response.status_code == 200
@@ -119,7 +124,9 @@ class SessionManager:
                 self.save_cache()
                 logger.info("Session cookie validated successfully")
             else:
-                logger.warning(f"Session validation failed: HTTP {response.status_code}")
+                logger.warning(
+                    f"Session validation failed: HTTP {response.status_code}"
+                )
 
             return is_valid
 
@@ -136,9 +143,11 @@ class SessionManager:
             New session cookie if available, None otherwise
         """
         # Check environment for updated cookie
-        env_cookie = os.environ.get('EFAB_SESSION_NEW')
+        env_cookie = os.environ.get("EFAB_SESSION_NEW")
         if env_cookie:
-            logger.info("Found new session cookie in EFAB_SESSION_NEW environment variable")
+            logger.info(
+                "Found new session cookie in EFAB_SESSION_NEW environment variable"
+            )
             return env_cookie
 
         # Check a file for updated cookie (for automation)
@@ -154,7 +163,9 @@ class SessionManager:
                 logger.error(f"Error reading cookie file: {e}")
 
         logger.warning("No new session cookie available. Manual login required.")
-        logger.warning("Please update EFAB_SESSION_NEW environment variable or create /tmp/efab_session_new.txt")
+        logger.warning(
+            "Please update EFAB_SESSION_NEW environment variable or create /tmp/efab_session_new.txt"
+        )
         return None
 
 
@@ -177,23 +188,23 @@ class EFabReportDownloaderEnhanced:
 
         # Health monitoring
         self.health_stats = {
-            'last_successful_download': None,
-            'last_failed_download': None,
-            'total_downloads': 0,
-            'failed_downloads': 0,
-            'session_refreshes': 0,
-            'last_session_refresh': None
+            "last_successful_download": None,
+            "last_failed_download": None,
+            "total_downloads": 0,
+            "failed_downloads": 0,
+            "session_refreshes": 0,
+            "last_session_refresh": None,
         }
 
         # Request headers
         self.headers = {
-            'Accept': 'application/json, text/javascript, */*; q=0.01',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Cookie': f'dancer.session={session_cookie}',
-            'Referer': 'https://efab.bkiapps.com/reports/report_queue',
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36',
-            'X-Requested-With': 'XMLHttpRequest'
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cookie": f"dancer.session={session_cookie}",
+            "Referer": "https://efab.bkiapps.com/reports/report_queue",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36",
+            "X-Requested-With": "XMLHttpRequest",
         }
 
     def refresh_session_if_needed(self) -> bool:
@@ -213,12 +224,12 @@ class EFabReportDownloaderEnhanced:
         new_cookie = self.session_manager.get_new_session()
         if new_cookie:
             self.session_cookie = new_cookie
-            self.headers['Cookie'] = f'dancer.session={new_cookie}'
-            self.health_stats['session_refreshes'] += 1
-            self.health_stats['last_session_refresh'] = datetime.now()
+            self.headers["Cookie"] = f"dancer.session={new_cookie}"
+            self.health_stats["session_refreshes"] += 1
+            self.health_stats["last_session_refresh"] = datetime.now()
 
             # Update environment variable for other processes
-            os.environ['EFAB_SESSION'] = new_cookie
+            os.environ["EFAB_SESSION"] = new_cookie
 
             logger.info("Session cookie refreshed successfully")
             return True
@@ -238,9 +249,7 @@ class EFabReportDownloaderEnhanced:
             raise Exception("Session expired and could not be refreshed")
 
         response = requests.get(
-            f"{self.base_url}{self.queue_endpoint}",
-            headers=self.headers,
-            timeout=30
+            f"{self.base_url}{self.queue_endpoint}", headers=self.headers, timeout=30
         )
 
         if response.status_code == 401:
@@ -253,10 +262,14 @@ class EFabReportDownloaderEnhanced:
             raise Exception(f"Queue check failed: HTTP {response.status_code}")
 
         queue_data = response.json()
-        logger.info(f"Queue check successful: {len(queue_data) if isinstance(queue_data, list) else len(queue_data.get('reports', []))} reports found")
+        logger.info(
+            f"Queue check successful: {len(queue_data) if isinstance(queue_data, list) else len(queue_data.get('reports', []))} reports found"
+        )
         return queue_data
 
-    def find_yarn_demand_report(self, queue_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def find_yarn_demand_report(
+        self, queue_data: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """
         Find the latest Yarn Demand report in queue
 
@@ -267,15 +280,21 @@ class EFabReportDownloaderEnhanced:
             Report info if found, None otherwise
         """
         # Handle both list and dict responses
-        reports = queue_data if isinstance(queue_data, list) else queue_data.get('reports', [])
+        reports = (
+            queue_data
+            if isinstance(queue_data, list)
+            else queue_data.get("reports", [])
+        )
 
         # Look for Yarn Demand reports
         yarn_reports = [
-            r for r in reports
-            if isinstance(r, dict) and (
-                'yarn_demand' in r.get('name', '').lower() or
-                'yarn demand' in r.get('name', '').lower() or
-                'expected_yarn' in r.get('name', '').lower()
+            r
+            for r in reports
+            if isinstance(r, dict)
+            and (
+                "yarn_demand" in r.get("name", "").lower()
+                or "yarn demand" in r.get("name", "").lower()
+                or "expected_yarn" in r.get("name", "").lower()
             )
         ]
 
@@ -284,8 +303,8 @@ class EFabReportDownloaderEnhanced:
             return None
 
         # Sort by date if available, otherwise assume list is ordered
-        if yarn_reports[0].get('created_at'):
-            yarn_reports.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        if yarn_reports[0].get("created_at"):
+            yarn_reports.sort(key=lambda x: x.get("created_at", ""), reverse=True)
 
         latest = yarn_reports[0]
         logger.info(f"Found Yarn Demand report: {latest.get('name')}")
@@ -308,16 +327,13 @@ class EFabReportDownloaderEnhanced:
             raise Exception("Session expired and could not be refreshed")
 
         # Ensure full URL
-        if not report_url.startswith('http'):
+        if not report_url.startswith("http"):
             report_url = f"{self.base_url}{report_url}"
 
         logger.info(f"Downloading report from: {report_url}")
 
         response = requests.get(
-            report_url,
-            headers=self.headers,
-            stream=True,
-            timeout=60
+            report_url, headers=self.headers, stream=True, timeout=60
         )
 
         if response.status_code == 401:
@@ -333,10 +349,10 @@ class EFabReportDownloaderEnhanced:
         target_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write file in chunks with progress
-        total_size = int(response.headers.get('content-length', 0))
+        total_size = int(response.headers.get("content-length", 0))
         downloaded = 0
 
-        with open(target_path, 'wb') as f:
+        with open(target_path, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
                 downloaded += len(chunk)
@@ -366,8 +382,8 @@ class EFabReportDownloaderEnhanced:
             # Step 1: Check queue
             queue_data = self.check_queue()
             if not queue_data:
-                self.health_stats['failed_downloads'] += 1
-                self.health_stats['last_failed_download'] = datetime.now()
+                self.health_stats["failed_downloads"] += 1
+                self.health_stats["last_failed_download"] = datetime.now()
                 logger.warning("Could not check report queue")
                 return False
 
@@ -378,7 +394,7 @@ class EFabReportDownloaderEnhanced:
                 return False
 
             # Step 3: Get download URL
-            download_url = report.get('download_url') or report.get('url')
+            download_url = report.get("download_url") or report.get("url")
             if not download_url:
                 logger.error("No download URL in report data")
                 return False
@@ -388,33 +404,38 @@ class EFabReportDownloaderEnhanced:
 
             if success:
                 # Update health stats
-                self.health_stats['total_downloads'] += 1
-                self.health_stats['last_successful_download'] = datetime.now()
+                self.health_stats["total_downloads"] += 1
+                self.health_stats["last_successful_download"] = datetime.now()
 
                 duration = (datetime.now() - start_time).total_seconds()
-                logger.info(f"[SUCCESS] Downloaded Yarn Demand report in {duration:.1f}s")
+                logger.info(
+                    f"[SUCCESS] Downloaded Yarn Demand report in {duration:.1f}s"
+                )
 
                 # Archive copy with timestamp
                 archive_dir = target_path.parent / "archive"
                 archive_dir.mkdir(exist_ok=True)
-                archive_name = f"Yarn_Demand_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+                archive_name = (
+                    f"Yarn_Demand_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+                )
                 archive_path = archive_dir / archive_name
 
                 import shutil
+
                 shutil.copy2(target_path, archive_path)
                 logger.info(f"Archived copy saved to {archive_path}")
 
                 # Clean old archives (keep last 30 days)
                 self._cleanup_old_archives(archive_dir)
             else:
-                self.health_stats['failed_downloads'] += 1
-                self.health_stats['last_failed_download'] = datetime.now()
+                self.health_stats["failed_downloads"] += 1
+                self.health_stats["last_failed_download"] = datetime.now()
 
             return success
 
         except Exception as e:
-            self.health_stats['failed_downloads'] += 1
-            self.health_stats['last_failed_download'] = datetime.now()
+            self.health_stats["failed_downloads"] += 1
+            self.health_stats["last_failed_download"] = datetime.now()
             logger.error(f"Download failed with error: {e}")
             return False
 
@@ -447,23 +468,27 @@ class EFabReportDownloaderEnhanced:
         status = self.health_stats.copy()
 
         # Add derived metrics
-        if status['total_downloads'] > 0:
-            status['success_rate'] = ((status['total_downloads'] - status['failed_downloads'])
-                                     / status['total_downloads']) * 100
+        if status["total_downloads"] > 0:
+            status["success_rate"] = (
+                (status["total_downloads"] - status["failed_downloads"])
+                / status["total_downloads"]
+            ) * 100
         else:
-            status['success_rate'] = 0
+            status["success_rate"] = 0
 
         # Check if recent download was successful
-        if status['last_successful_download']:
-            time_since_success = datetime.now() - status['last_successful_download']
-            status['healthy'] = time_since_success < timedelta(hours=24)
-            status['time_since_last_success'] = str(time_since_success)
+        if status["last_successful_download"]:
+            time_since_success = datetime.now() - status["last_successful_download"]
+            status["healthy"] = time_since_success < timedelta(hours=24)
+            status["time_since_last_success"] = str(time_since_success)
         else:
-            status['healthy'] = False
-            status['time_since_last_success'] = None
+            status["healthy"] = False
+            status["time_since_last_success"] = None
 
         # Session status
-        status['session_valid'] = self.session_manager.is_session_valid(self.session_cookie)
+        status["session_valid"] = self.session_manager.is_session_valid(
+            self.session_cookie
+        )
 
         return status
 
@@ -475,17 +500,17 @@ def main():
     # Setup logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Get session cookie
-    session_cookie = os.environ.get('EFAB_SESSION', 'aMdcwNLa0ov0pcbWcQ_zb5wyPLSkYF_B')
+    session_cookie = os.environ.get("EFAB_SESSION", "aMdcwNLa0ov0pcbWcQ_zb5wyPLSkYF_B")
 
     # Create enhanced downloader
     downloader = EFabReportDownloaderEnhanced(session_cookie)
 
     # Test download
-    test_path = Path('/tmp/test_yarn_demand_enhanced.xlsx')
+    test_path = Path("/tmp/test_yarn_demand_enhanced.xlsx")
     success = downloader.download_latest(test_path)
 
     # Show health status

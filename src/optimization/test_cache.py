@@ -7,12 +7,13 @@ import time
 # Simple cache test without imports
 print("Testing Cache Optimizer...")
 
+
 class SimpleLRUCache:
     def __init__(self, max_size=100):
         self.cache = {}
         self.max_size = max_size
         self.access_order = []
-    
+
     def get(self, key):
         if key in self.cache:
             # Move to end (most recently used)
@@ -20,7 +21,7 @@ class SimpleLRUCache:
             self.access_order.append(key)
             return self.cache[key]
         return None
-    
+
     def put(self, key, value):
         if key in self.cache:
             self.access_order.remove(key)
@@ -28,9 +29,10 @@ class SimpleLRUCache:
             # Remove least recently used
             lru_key = self.access_order.pop(0)
             del self.cache[lru_key]
-        
+
         self.cache[key] = value
         self.access_order.append(key)
+
 
 # Test the simple cache
 cache = SimpleLRUCache(max_size=3)

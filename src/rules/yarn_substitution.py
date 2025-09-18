@@ -43,13 +43,13 @@ class YarnSubstitutionEngine:
 
     # Compatibility rules
     COMPATIBILITY_RULES = {
-        'exact_match': 1.0,      # Same yarn different supplier
-        'same_weight': 0.9,      # Same weight/denier
-        'same_color': 0.8,       # Same color family
-        'same_material': 0.7,    # Same material composition
-        'similar_weight': 0.5,   # Within 10% weight
-        'similar_color': 0.4,    # Similar color
-        'different': 0.0        # Not compatible
+        "exact_match": 1.0,  # Same yarn different supplier
+        "same_weight": 0.9,  # Same weight/denier
+        "same_color": 0.8,  # Same color family
+        "same_material": 0.7,  # Same material composition
+        "similar_weight": 0.5,  # Within 10% weight
+        "similar_color": 0.4,  # Similar color
+        "different": 0.0,  # Not compatible
     }
 
     def __init__(self) -> None:
@@ -63,7 +63,7 @@ class YarnSubstitutionEngine:
         yarn_id: str,
         required_qty: float,
         yarn_inventory: pd.DataFrame,
-        compatibility_data: Optional[pd.DataFrame] = None
+        compatibility_data: Optional[pd.DataFrame] = None,
     ) -> List[YarnSubstitute]:
         """Find compatible yarn substitutes.
 
@@ -79,7 +79,7 @@ class YarnSubstitutionEngine:
         substitutes = []
 
         # Get original yarn properties
-        original = yarn_inventory[yarn_inventory['YarnID'] == yarn_id]
+        original = yarn_inventory[yarn_inventory["YarnID"] == yarn_id]
         if original.empty:
             logger.warning(f"Original yarn {yarn_id} not found")
             return []
@@ -88,7 +88,7 @@ class YarnSubstitutionEngine:
 
         # Check all other yarns
         for _, yarn in yarn_inventory.iterrows():
-            if yarn['YarnID'] == yarn_id:
+            if yarn["YarnID"] == yarn_id:
                 continue  # Skip original
 
             # Calculate compatibility
@@ -98,34 +98,35 @@ class YarnSubstitutionEngine:
 
             if score > 0:
                 # Calculate availability
-                available = yarn['On Hand'] + yarn['On Order'] - yarn['Allocated']
+                available = yarn["On Hand"] + yarn["On Order"] - yarn["Allocated"]
 
                 if available > 0:
                     substitute = YarnSubstitute(
                         original_yarn=yarn_id,
-                        substitute_yarn=yarn['YarnID'],
+                        substitute_yarn=yarn["YarnID"],
                         compatibility_score=score,
-                        on_hand=yarn['On Hand'],
-                        on_order=yarn['On Order'],
-                        allocated=yarn['Allocated'],
+                        on_hand=yarn["On Hand"],
+                        on_order=yarn["On Order"],
+                        allocated=yarn["Allocated"],
                         available=available,
-                        reason=reason
+                        reason=reason,
                     )
                     substitutes.append(substitute)
 
         # Sort by score and availability
         substitutes.sort(
-            key=lambda x: (x.compatibility_score, x.available),
-            reverse=True
+            key=lambda x: (x.compatibility_score, x.available), reverse=True
         )
 
         # Log substitution search
-        self.substitution_history.append({
-            'yarn_id': yarn_id,
-            'required_qty': required_qty,
-            'substitutes_found': len(substitutes),
-            'best_match': substitutes[0].substitute_yarn if substitutes else None
-        })
+        self.substitution_history.append(
+            {
+                "yarn_id": yarn_id,
+                "required_qty": required_qty,
+                "substitutes_found": len(substitutes),
+                "best_match": substitutes[0].substitute_yarn if substitutes else None,
+            }
+        )
 
         return substitutes
 
@@ -133,7 +134,7 @@ class YarnSubstitutionEngine:
         self,
         original: pd.Series,
         candidate: pd.Series,
-        compatibility_data: Optional[pd.DataFrame]
+        compatibility_data: Optional[pd.DataFrame],
     ) -> tuple[float, str]:
         """Calculate compatibility score between yarns.
 
@@ -148,9 +149,7 @@ class YarnSubstitutionEngine:
         # Check explicit compatibility matrix first
         if compatibility_data is not None:
             score = self._check_compatibility_matrix(
-                original['YarnID'],
-                candidate['YarnID'],
-                compatibility_data
+                original["YarnID"], candidate["YarnID"], compatibility_data
             )
             if score is not None:
                 return score, "Predefined compatibility"
@@ -160,27 +159,29 @@ class YarnSubstitutionEngine:
         reasons = []
 
         # Check weight/denier
-        if 'Weight' in original.index and 'Weight' in candidate.index:
-            if original['Weight'] == candidate['Weight']:
-                scores.append(self.COMPATIBILITY_RULES['same_weight'])
+        if "Weight" in original.index and "Weight" in candidate.index:
+            if original["Weight"] == candidate["Weight"]:
+                scores.append(self.COMPATIBILITY_RULES["same_weight"])
                 reasons.append("Same weight")
-            elif abs(original['Weight'] - candidate['Weight']) / original['Weight'] < 0.1:
-                scores.append(self.COMPATIBILITY_RULES['similar_weight'])
+            elif (
+                abs(original["Weight"] - candidate["Weight"]) / original["Weight"] < 0.1
+            ):
+                scores.append(self.COMPATIBILITY_RULES["similar_weight"])
                 reasons.append("Similar weight (±10%)")
 
         # Check color
-        if 'Color' in original.index and 'Color' in candidate.index:
-            if original['Color'] == candidate['Color']:
-                scores.append(self.COMPATIBILITY_RULES['same_color'])
+        if "Color" in original.index and "Color" in candidate.index:
+            if original["Color"] == candidate["Color"]:
+                scores.append(self.COMPATIBILITY_RULES["same_color"])
                 reasons.append("Same color")
-            elif self._similar_color(original['Color'], candidate['Color']):
-                scores.append(self.COMPATIBILITY_RULES['similar_color'])
+            elif self._similar_color(original["Color"], candidate["Color"]):
+                scores.append(self.COMPATIBILITY_RULES["similar_color"])
                 reasons.append("Similar color")
 
         # Check material
-        if 'Material' in original.index and 'Material' in candidate.index:
-            if original['Material'] == candidate['Material']:
-                scores.append(self.COMPATIBILITY_RULES['same_material'])
+        if "Material" in original.index and "Material" in candidate.index:
+            if original["Material"] == candidate["Material"]:
+                scores.append(self.COMPATIBILITY_RULES["same_material"])
                 reasons.append("Same material")
 
         # Return best score
@@ -191,10 +192,7 @@ class YarnSubstitutionEngine:
         return 0.0, "Not compatible"
 
     def _check_compatibility_matrix(
-        self,
-        yarn1: str,
-        yarn2: str,
-        compatibility_data: pd.DataFrame
+        self, yarn1: str, yarn2: str, compatibility_data: pd.DataFrame
     ) -> Optional[float]:
         """Check explicit compatibility matrix.
 
@@ -224,12 +222,12 @@ class YarnSubstitutionEngine:
         """
         # Simple color family matching
         color_families = {
-            'red': ['red', 'crimson', 'scarlet', 'burgundy'],
-            'blue': ['blue', 'navy', 'azure', 'cobalt'],
-            'green': ['green', 'olive', 'emerald', 'lime'],
-            'black': ['black', 'charcoal', 'ebony'],
-            'white': ['white', 'ivory', 'cream'],
-            'gray': ['gray', 'grey', 'silver', 'ash']
+            "red": ["red", "crimson", "scarlet", "burgundy"],
+            "blue": ["blue", "navy", "azure", "cobalt"],
+            "green": ["green", "olive", "emerald", "lime"],
+            "black": ["black", "charcoal", "ebony"],
+            "white": ["white", "ivory", "cream"],
+            "gray": ["gray", "grey", "silver", "ash"],
         }
 
         color1_lower = str(color1).lower()
@@ -242,9 +240,7 @@ class YarnSubstitutionEngine:
         return False
 
     def generate_substitution_report(
-        self,
-        shortages: List[Dict[str, Any]],
-        yarn_inventory: pd.DataFrame
+        self, shortages: List[Dict[str, Any]], yarn_inventory: pd.DataFrame
     ) -> pd.DataFrame:
         """Generate comprehensive substitution report.
 
@@ -258,38 +254,40 @@ class YarnSubstitutionEngine:
         report_data = []
 
         for shortage in shortages:
-            yarn_id = shortage['yarn_id']
-            required = shortage['required']
+            yarn_id = shortage["yarn_id"]
+            required = shortage["required"]
 
             # Find substitutes
-            substitutes = self.find_substitutes(
-                yarn_id, required, yarn_inventory
-            )
+            substitutes = self.find_substitutes(yarn_id, required, yarn_inventory)
 
             # Add to report
             if substitutes:
                 best = substitutes[0]
-                report_data.append({
-                    'Original_Yarn': yarn_id,
-                    'Required_Qty': required,
-                    'Best_Substitute': best.substitute_yarn,
-                    'Compatibility': best.compatibility_score,
-                    'Available': best.available,
-                    'Can_Fulfill': best.can_fulfill(required),
-                    'Reason': best.reason,
-                    'Alternative_Count': len(substitutes)
-                })
+                report_data.append(
+                    {
+                        "Original_Yarn": yarn_id,
+                        "Required_Qty": required,
+                        "Best_Substitute": best.substitute_yarn,
+                        "Compatibility": best.compatibility_score,
+                        "Available": best.available,
+                        "Can_Fulfill": best.can_fulfill(required),
+                        "Reason": best.reason,
+                        "Alternative_Count": len(substitutes),
+                    }
+                )
             else:
-                report_data.append({
-                    'Original_Yarn': yarn_id,
-                    'Required_Qty': required,
-                    'Best_Substitute': 'None',
-                    'Compatibility': 0.0,
-                    'Available': 0.0,
-                    'Can_Fulfill': False,
-                    'Reason': 'No substitutes found',
-                    'Alternative_Count': 0
-                })
+                report_data.append(
+                    {
+                        "Original_Yarn": yarn_id,
+                        "Required_Qty": required,
+                        "Best_Substitute": "None",
+                        "Compatibility": 0.0,
+                        "Available": 0.0,
+                        "Can_Fulfill": False,
+                        "Reason": "No substitutes found",
+                        "Alternative_Count": 0,
+                    }
+                )
 
         return pd.DataFrame(report_data)
 
@@ -300,22 +298,23 @@ class YarnSubstitutionEngine:
             Summary statistics
         """
         if not self.substitution_history:
-            return {'total_searches': 0}
+            return {"total_searches": 0}
 
         total = len(self.substitution_history)
         with_substitutes = sum(
-            1 for h in self.substitution_history
-            if h['substitutes_found'] > 0
+            1 for h in self.substitution_history if h["substitutes_found"] > 0
         )
 
         return {
-            'total_searches': total,
-            'with_substitutes': with_substitutes,
-            'without_substitutes': total - with_substitutes,
-            'success_rate': (with_substitutes / total * 100) if total > 0 else 0,
-            'avg_substitutes': sum(
-                h['substitutes_found'] for h in self.substitution_history
-            ) / total if total > 0 else 0
+            "total_searches": total,
+            "with_substitutes": with_substitutes,
+            "without_substitutes": total - with_substitutes,
+            "success_rate": (with_substitutes / total * 100) if total > 0 else 0,
+            "avg_substitutes": (
+                sum(h["substitutes_found"] for h in self.substitution_history) / total
+                if total > 0
+                else 0
+            ),
         }
 
 
@@ -325,42 +324,72 @@ if __name__ == "__main__":
     engine = YarnSubstitutionEngine()
 
     # Create sample inventory
-    inventory = pd.DataFrame([
-        {'YarnID': 'Y001', 'On Hand': 0, 'On Order': 0, 'Allocated': 100,
-         'Weight': 2.5, 'Color': 'Blue', 'Material': 'Cotton'},
-        {'YarnID': 'Y002', 'On Hand': 500, 'On Order': 100, 'Allocated': 200,
-         'Weight': 2.5, 'Color': 'Navy', 'Material': 'Cotton'},
-        {'YarnID': 'Y003', 'On Hand': 300, 'On Order': 0, 'Allocated': 100,
-         'Weight': 2.6, 'Color': 'Blue', 'Material': 'Cotton'},
-        {'YarnID': 'Y004', 'On Hand': 1000, 'On Order': 0, 'Allocated': 500,
-         'Weight': 3.0, 'Color': 'Red', 'Material': 'Polyester'}
-    ])
+    inventory = pd.DataFrame(
+        [
+            {
+                "YarnID": "Y001",
+                "On Hand": 0,
+                "On Order": 0,
+                "Allocated": 100,
+                "Weight": 2.5,
+                "Color": "Blue",
+                "Material": "Cotton",
+            },
+            {
+                "YarnID": "Y002",
+                "On Hand": 500,
+                "On Order": 100,
+                "Allocated": 200,
+                "Weight": 2.5,
+                "Color": "Navy",
+                "Material": "Cotton",
+            },
+            {
+                "YarnID": "Y003",
+                "On Hand": 300,
+                "On Order": 0,
+                "Allocated": 100,
+                "Weight": 2.6,
+                "Color": "Blue",
+                "Material": "Cotton",
+            },
+            {
+                "YarnID": "Y004",
+                "On Hand": 1000,
+                "On Order": 0,
+                "Allocated": 500,
+                "Weight": 3.0,
+                "Color": "Red",
+                "Material": "Polyester",
+            },
+        ]
+    )
 
     # Test Case 1: Find substitutes for Y001 (shortage)
-    substitutes = engine.find_substitutes('Y001', 100, inventory)
+    substitutes = engine.find_substitutes("Y001", 100, inventory)
     assert len(substitutes) > 0
-    assert substitutes[0].substitute_yarn == 'Y002'  # Same weight, similar color
+    assert substitutes[0].substitute_yarn == "Y002"  # Same weight, similar color
     logger.info(f"Test 1 passed: Found {len(substitutes)} substitutes")
 
     # Test Case 2: Check best substitute properties
     best = substitutes[0]
     assert best.compatibility_score > 0.5
     assert best.available > 0
-    logger.info(f"Test 2 passed: Best substitute = {best.substitute_yarn} (score={best.compatibility_score})")
+    logger.info(
+        f"Test 2 passed: Best substitute = {best.substitute_yarn} (score={best.compatibility_score})"
+    )
 
     # Test Case 3: Generate report
-    shortages = [
-        {'yarn_id': 'Y001', 'required': 100}
-    ]
+    shortages = [{"yarn_id": "Y001", "required": 100}]
     report = engine.generate_substitution_report(shortages, inventory)
     assert len(report) == 1
-    assert report.iloc[0]['Can_Fulfill'] is True
+    assert report.iloc[0]["Can_Fulfill"] is True
     logger.info("Test 3 passed: Report generated")
 
     # Test Case 4: Get summary
     summary = engine.get_substitution_summary()
-    assert summary['total_searches'] == 1
-    assert summary['with_substitutes'] == 1
+    assert summary["total_searches"] == 1
+    assert summary["with_substitutes"] == 1
     logger.info(f"Test 4 passed: Summary = {summary}")
 
     print("All validations passed!")

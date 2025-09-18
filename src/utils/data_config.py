@@ -6,12 +6,16 @@ import json
 from pathlib import Path
 
 # Load unified configuration
-config_path = Path(__file__).parent.parent / 'config' / 'unified_config.json'
+config_path = Path(__file__).parent.parent / "config" / "unified_config.json"
 if config_path.exists():
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         unified_config = json.load(f)
 else:
-    unified_config = {"data_source": {"files": {"primary_path": "/mnt/c/Users/psytz/sc data/ERP Data"}}}
+    unified_config = {
+        "data_source": {
+            "files": {"primary_path": "/mnt/c/Users/psytz/sc data/ERP Data"}
+        }
+    }
 
 # Base data directory - now points to centralized location
 DATA_BASE_DIR = unified_config["data_source"]["files"]["primary_path"]
@@ -19,7 +23,7 @@ DATA_BASE_DIR = unified_config["data_source"]["files"]["primary_path"]
 # Fallback to latest data if primary path doesn't have files
 if not os.path.exists(DATA_BASE_DIR) or not os.listdir(DATA_BASE_DIR):
     # Try to find most recent data folder
-    for date_folder in ['8-28-2025', '8-26-2025', '8-24-2025', '8-22-2025']:
+    for date_folder in ["8-28-2025", "8-26-2025", "8-24-2025", "8-22-2025"]:
         test_path = os.path.join(DATA_BASE_DIR, date_folder)
         if os.path.exists(test_path):
             DATA_BASE_DIR = test_path
@@ -38,7 +42,9 @@ DATA_FILES = {
     "yarn_id": os.path.join(DATA_BASE_DIR, "Yarn_ID_1.csv"),
     "inventory_f01": os.path.join(DATA_BASE_DIR, "eFab_Inventory_F01_20250810.xlsx"),
     "inventory_g02": os.path.join(DATA_BASE_DIR, "eFab_Inventory_G02_20250810.xlsx"),
-    "inventory_i01": os.path.join(DATA_BASE_DIR, "eFab_Inventory_I01_20250810 (1).xlsx")
+    "inventory_i01": os.path.join(
+        DATA_BASE_DIR, "eFab_Inventory_I01_20250810 (1).xlsx"
+    ),
 }
 
 # Column mappings for standardization
@@ -49,21 +55,21 @@ COLUMN_MAPPINGS = {
         "qty_shipped_col": "Picked/Shipped",
         "date_col": "Quoted Date",
         "price_col": "Unit Price",
-        "customer_col": "Sold To"
+        "customer_col": "Sold To",
     },
     "yarn_inventory": {
         "yarn_id_col": "Desc#",
         "balance_col": "Planning Balance",
         "on_order_col": "On Order",
         "cost_col": "Cost/Pound",
-        "supplier_col": "Supplier"
+        "supplier_col": "Supplier",
     },
     "bom": {
         "style_col": "Style#",
         "yarn_id_col": "desc#",
         "percentage_col": "BOM_Percentage",
-        "unit_col": "unit"
-    }
+        "unit_col": "unit",
+    },
 }
 
 print(f"Data configuration loaded from: {DATA_BASE_DIR}")

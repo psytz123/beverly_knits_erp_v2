@@ -51,7 +51,7 @@ class BeverlyKnitsRulesEngine:
         self.knit_order_processor = KnitOrderProcessor(
             efab_integration=self.efab_integration,
             cache_manager=self.cache_manager,
-            use_efab_api=True  # Use eFab API endpoint /api/knitorder/list
+            use_efab_api=True,  # Use eFab API endpoint /api/knitorder/list
         )
 
         # Tracking
@@ -61,9 +61,7 @@ class BeverlyKnitsRulesEngine:
         logger.info("BeverlyKnitsRulesEngine initialized")
 
     def validate_yarn_inventory(
-        self,
-        yarn_df: pd.DataFrame,
-        detect_shortages: bool = True
+        self, yarn_df: pd.DataFrame, detect_shortages: bool = True
     ) -> Dict[str, Any]:
         """Validate yarn inventory and detect shortages.
 
@@ -87,30 +85,23 @@ class BeverlyKnitsRulesEngine:
             critical = self.planning_balance.get_critical_shortages()
 
             result = {
-                'status': 'success',
-                'total_yarns': len(yarn_df),
-                'shortages': shortage_summary,
-                'critical_count': len(critical),
-                'critical_yarns': [r.yarn_id for r in critical[:5]],
-                'data': result_df
+                "status": "success",
+                "total_yarns": len(yarn_df),
+                "shortages": shortage_summary,
+                "critical_count": len(critical),
+                "critical_yarns": [r.yarn_id for r in critical[:5]],
+                "data": result_df,
             }
 
-            self._log_execution('validate_yarn_inventory', 'success', start_time)
+            self._log_execution("validate_yarn_inventory", "success", start_time)
             return result
 
         except Exception as e:
             logger.exception(f"Yarn inventory validation failed: {e}")
-            self._log_error('validate_yarn_inventory', str(e))
-            return {
-                'status': 'error',
-                'error': str(e),
-                'data': yarn_df
-            }
+            self._log_error("validate_yarn_inventory", str(e))
+            return {"status": "error", "error": str(e), "data": yarn_df}
 
-    def validate_machine_assignments(
-        self,
-        machine_df: pd.DataFrame
-    ) -> Dict[str, Any]:
+    def validate_machine_assignments(self, machine_df: pd.DataFrame) -> Dict[str, Any]:
         """Validate all machine work center assignments.
 
         Args:
@@ -129,34 +120,30 @@ class BeverlyKnitsRulesEngine:
             summary = self.work_center.get_validation_summary()
 
             # Find invalid assignments
-            invalid = result_df[result_df['Valid'] == False]
+            invalid = result_df[result_df["Valid"] == False]
 
             result = {
-                'status': 'success',
-                'total_machines': len(machine_df),
-                'validation_summary': summary,
-                'invalid_count': len(invalid),
-                'invalid_work_centers': invalid['WC'].unique().tolist()[:10],
-                'data': result_df
+                "status": "success",
+                "total_machines": len(machine_df),
+                "validation_summary": summary,
+                "invalid_count": len(invalid),
+                "invalid_work_centers": invalid["WC"].unique().tolist()[:10],
+                "data": result_df,
             }
 
-            self._log_execution('validate_machine_assignments', 'success', start_time)
+            self._log_execution("validate_machine_assignments", "success", start_time)
             return result
 
         except Exception as e:
             logger.exception(f"Machine assignment validation failed: {e}")
-            self._log_error('validate_machine_assignments', str(e))
-            return {
-                'status': 'error',
-                'error': str(e),
-                'data': machine_df
-            }
+            self._log_error("validate_machine_assignments", str(e))
+            return {"status": "error", "error": str(e), "data": machine_df}
 
     def resolve_order_requirements(
         self,
         orders_df: pd.DataFrame,
         bom_df: pd.DataFrame,
-        yarn_df: Optional[pd.DataFrame] = None
+        yarn_df: Optional[pd.DataFrame] = None,
     ) -> Dict[str, Any]:
         """Resolve yarn requirements for production orders.
 
@@ -172,14 +159,10 @@ class BeverlyKnitsRulesEngine:
 
         try:
             # Resolve BOM requirements
-            requirements_df = self.bom_resolver.merge_orders_with_bom(
-                orders_df, bom_df
-            )
+            requirements_df = self.bom_resolver.merge_orders_with_bom(orders_df, bom_df)
 
             # Validate BOM coverage
-            coverage = self.bom_resolver.validate_bom_coverage(
-                orders_df, bom_df
-            )
+            coverage = self.bom_resolver.validate_bom_coverage(orders_df, bom_df)
 
             # Check yarn availability if provided
             shortage_analysis = None
@@ -189,28 +172,22 @@ class BeverlyKnitsRulesEngine:
                 )
 
             result = {
-                'status': 'success',
-                'total_orders': len(orders_df),
-                'bom_coverage': coverage,
-                'requirements': requirements_df,
-                'shortage_analysis': shortage_analysis
+                "status": "success",
+                "total_orders": len(orders_df),
+                "bom_coverage": coverage,
+                "requirements": requirements_df,
+                "shortage_analysis": shortage_analysis,
             }
 
-            self._log_execution('resolve_order_requirements', 'success', start_time)
+            self._log_execution("resolve_order_requirements", "success", start_time)
             return result
 
         except Exception as e:
             logger.exception(f"Order requirements resolution failed: {e}")
-            self._log_error('resolve_order_requirements', str(e))
-            return {
-                'status': 'error',
-                'error': str(e)
-            }
+            self._log_error("resolve_order_requirements", str(e))
+            return {"status": "error", "error": str(e)}
 
-    def process_knit_orders(
-        self,
-        use_api: bool = True
-    ) -> Dict[str, Any]:
+    def process_knit_orders(self, use_api: bool = True) -> Dict[str, Any]:
         """Process knit orders with intelligent machine assignment.
 
         Args:
@@ -230,30 +207,25 @@ class BeverlyKnitsRulesEngine:
 
             # Combine results
             result = {
-                'status': results['status'],
-                'message': results['message'],
-                'stats': results['stats'],
-                'summary': summary,
-                'machine_workloads': results.get('machine_workloads', {}),
-                'total_machines': results.get('total_machines', 0),
-                'total_workload_lbs': results.get('total_workload_lbs', 0)
+                "status": results["status"],
+                "message": results["message"],
+                "stats": results["stats"],
+                "summary": summary,
+                "machine_workloads": results.get("machine_workloads", {}),
+                "total_machines": results.get("total_machines", 0),
+                "total_workload_lbs": results.get("total_workload_lbs", 0),
             }
 
-            self._log_execution('process_knit_orders', 'success', start_time)
+            self._log_execution("process_knit_orders", "success", start_time)
             return result
 
         except Exception as e:
             logger.exception(f"Knit order processing failed: {e}")
-            self._log_error('process_knit_orders', str(e))
-            return {
-                'status': 'error',
-                'error': str(e)
-            }
+            self._log_error("process_knit_orders", str(e))
+            return {"status": "error", "error": str(e)}
 
     def suggest_machine_assignments(
-        self,
-        style: str,
-        quantity_lbs: float
+        self, style: str, quantity_lbs: float
     ) -> List[Dict[str, Any]]:
         """Suggest machine assignments for a style and quantity.
 
@@ -275,9 +247,7 @@ class BeverlyKnitsRulesEngine:
             return []
 
     def _analyze_requirement_shortages(
-        self,
-        requirements_df: pd.DataFrame,
-        yarn_df: pd.DataFrame
+        self, requirements_df: pd.DataFrame, yarn_df: pd.DataFrame
     ) -> Dict[str, Any]:
         """Analyze shortages for yarn requirements.
 
@@ -289,45 +259,49 @@ class BeverlyKnitsRulesEngine:
             Shortage analysis
         """
         # Group requirements by yarn
-        yarn_totals = requirements_df.groupby('YarnID')['Total_Yarn_Required'].sum()
+        yarn_totals = requirements_df.groupby("YarnID")["Total_Yarn_Required"].sum()
 
         shortages = []
         for yarn_id, required in yarn_totals.items():
             # Get yarn inventory
-            yarn_row = yarn_df[yarn_df['YarnID'] == yarn_id]
+            yarn_row = yarn_df[yarn_df["YarnID"] == yarn_id]
 
             if yarn_row.empty:
-                shortages.append({
-                    'yarn_id': yarn_id,
-                    'required': required,
-                    'available': 0,
-                    'shortage': required,
-                    'status': 'NOT_FOUND'
-                })
+                shortages.append(
+                    {
+                        "yarn_id": yarn_id,
+                        "required": required,
+                        "available": 0,
+                        "shortage": required,
+                        "status": "NOT_FOUND",
+                    }
+                )
                 continue
 
             # Calculate availability
-            on_hand = yarn_row['On Hand'].iloc[0]
-            on_order = yarn_row['On Order'].iloc[0]
-            allocated = yarn_row['Allocated'].iloc[0]
+            on_hand = yarn_row["On Hand"].iloc[0]
+            on_order = yarn_row["On Order"].iloc[0]
+            allocated = yarn_row["Allocated"].iloc[0]
 
             available = on_hand + on_order - allocated
             shortage = max(0, required - available)
 
             if shortage > 0:
-                shortages.append({
-                    'yarn_id': yarn_id,
-                    'required': required,
-                    'available': available,
-                    'shortage': shortage,
-                    'status': 'SHORTAGE'
-                })
+                shortages.append(
+                    {
+                        "yarn_id": yarn_id,
+                        "required": required,
+                        "available": available,
+                        "shortage": shortage,
+                        "status": "SHORTAGE",
+                    }
+                )
 
         return {
-            'total_yarns_required': len(yarn_totals),
-            'yarns_with_shortage': len(shortages),
-            'total_shortage_amount': sum(s['shortage'] for s in shortages),
-            'shortages': shortages[:10]  # Top 10
+            "total_yarns_required": len(yarn_totals),
+            "yarns_with_shortage": len(shortages),
+            "total_shortage_amount": sum(s["shortage"] for s in shortages),
+            "shortages": shortages[:10],  # Top 10
         }
 
     def validate_all(
@@ -335,7 +309,7 @@ class BeverlyKnitsRulesEngine:
         yarn_df: Optional[pd.DataFrame] = None,
         machine_df: Optional[pd.DataFrame] = None,
         orders_df: Optional[pd.DataFrame] = None,
-        bom_df: Optional[pd.DataFrame] = None
+        bom_df: Optional[pd.DataFrame] = None,
     ) -> Dict[str, Any]:
         """Run all validations.
 
@@ -348,69 +322,61 @@ class BeverlyKnitsRulesEngine:
         Returns:
             Comprehensive validation results
         """
-        results = {
-            'timestamp': datetime.now().isoformat(),
-            'validations': {}
-        }
+        results = {"timestamp": datetime.now().isoformat(), "validations": {}}
 
         # Validate yarn inventory
         if yarn_df is not None:
-            results['validations']['yarn_inventory'] = self.validate_yarn_inventory(
+            results["validations"]["yarn_inventory"] = self.validate_yarn_inventory(
                 yarn_df
             )
 
         # Validate machine assignments
         if machine_df is not None:
-            results['validations']['machine_assignments'] = self.validate_machine_assignments(
-                machine_df
+            results["validations"]["machine_assignments"] = (
+                self.validate_machine_assignments(machine_df)
             )
 
         # Resolve order requirements
         if orders_df is not None and bom_df is not None:
-            results['validations']['order_requirements'] = self.resolve_order_requirements(
-                orders_df, bom_df, yarn_df
+            results["validations"]["order_requirements"] = (
+                self.resolve_order_requirements(orders_df, bom_df, yarn_df)
             )
 
         # Add execution summary
-        results['summary'] = {
-            'total_validations': len(results['validations']),
-            'successful': sum(
-                1 for v in results['validations'].values()
-                if v.get('status') == 'success'
+        results["summary"] = {
+            "total_validations": len(results["validations"]),
+            "successful": sum(
+                1
+                for v in results["validations"].values()
+                if v.get("status") == "success"
             ),
-            'errors': sum(
-                1 for v in results['validations'].values()
-                if v.get('status') == 'error'
-            )
+            "errors": sum(
+                1 for v in results["validations"].values() if v.get("status") == "error"
+            ),
         }
 
         return results
 
-    def _log_execution(
-        self,
-        operation: str,
-        status: str,
-        start_time: datetime
-    ) -> None:
+    def _log_execution(self, operation: str, status: str, start_time: datetime) -> None:
         """Log operation execution."""
         duration = (datetime.now() - start_time).total_seconds()
 
-        self.execution_log.append({
-            'timestamp': datetime.now(),
-            'operation': operation,
-            'status': status,
-            'duration_seconds': duration
-        })
+        self.execution_log.append(
+            {
+                "timestamp": datetime.now(),
+                "operation": operation,
+                "status": status,
+                "duration_seconds": duration,
+            }
+        )
 
         logger.info(f"{operation} completed in {duration:.2f}s")
 
     def _log_error(self, operation: str, error: str) -> None:
         """Log operation error."""
-        self.error_log.append({
-            'timestamp': datetime.now(),
-            'operation': operation,
-            'error': error
-        })
+        self.error_log.append(
+            {"timestamp": datetime.now(), "operation": operation, "error": error}
+        )
 
         logger.error(f"{operation} failed: {error}")
 
@@ -421,22 +387,24 @@ class BeverlyKnitsRulesEngine:
             Execution statistics
         """
         if not self.execution_log:
-            return {'total_executions': 0}
+            return {"total_executions": 0}
 
         total = len(self.execution_log)
-        successful = sum(1 for e in self.execution_log if e['status'] == 'success')
+        successful = sum(1 for e in self.execution_log if e["status"] == "success")
 
-        avg_duration = sum(
-            e['duration_seconds'] for e in self.execution_log
-        ) / total if total > 0 else 0
+        avg_duration = (
+            sum(e["duration_seconds"] for e in self.execution_log) / total
+            if total > 0
+            else 0
+        )
 
         return {
-            'total_executions': total,
-            'successful': successful,
-            'failed': total - successful,
-            'success_rate': (successful / total * 100) if total > 0 else 0,
-            'avg_duration_seconds': avg_duration,
-            'total_errors': len(self.error_log)
+            "total_executions": total,
+            "successful": successful,
+            "failed": total - successful,
+            "success_rate": (successful / total * 100) if total > 0 else 0,
+            "avg_duration_seconds": avg_duration,
+            "total_errors": len(self.error_log),
         }
 
 
@@ -446,33 +414,37 @@ if __name__ == "__main__":
     engine = BeverlyKnitsRulesEngine()
 
     # Create sample data
-    sample_yarn = pd.DataFrame([
-        {'YarnID': 'Y001', 'On Hand': 100, 'On Order': 50, 'Allocated': 200},
-        {'YarnID': 'Y002', 'On Hand': 500, 'On Order': 0, 'Allocated': 300}
-    ])
+    sample_yarn = pd.DataFrame(
+        [
+            {"YarnID": "Y001", "On Hand": 100, "On Order": 50, "Allocated": 200},
+            {"YarnID": "Y002", "On Hand": 500, "On Order": 0, "Allocated": 300},
+        ]
+    )
 
-    sample_machines = pd.DataFrame([
-        {'WC': '1.30.20.F', 'MACH': '161'},
-        {'WC': '1.30.20.M', 'MACH': '210'},
-        {'WC': 'INVALID', 'MACH': '999'}
-    ])
+    sample_machines = pd.DataFrame(
+        [
+            {"WC": "1.30.20.F", "MACH": "161"},
+            {"WC": "1.30.20.M", "MACH": "210"},
+            {"WC": "INVALID", "MACH": "999"},
+        ]
+    )
 
     # Test yarn validation
     yarn_result = engine.validate_yarn_inventory(sample_yarn)
-    assert yarn_result['status'] == 'success'
-    assert yarn_result['shortages']['total_shortages'] == 1
+    assert yarn_result["status"] == "success"
+    assert yarn_result["shortages"]["total_shortages"] == 1
     logger.info("Yarn validation test passed")
 
     # Test machine validation
     machine_result = engine.validate_machine_assignments(sample_machines)
-    assert machine_result['status'] == 'success'
-    assert machine_result['invalid_count'] == 1
+    assert machine_result["status"] == "success"
+    assert machine_result["invalid_count"] == 1
     logger.info("Machine validation test passed")
 
     # Get execution summary
     summary = engine.get_execution_summary()
-    assert summary['total_executions'] == 2
-    assert summary['successful'] == 2
+    assert summary["total_executions"] == 2
+    assert summary["successful"] == 2
     logger.info(f"Execution summary: {summary}")
 
     print("All validations passed!")

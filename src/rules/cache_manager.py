@@ -34,18 +34,16 @@ class CacheManager:
 
     # Watched data files
     WATCHED_FILES = [
-        'yarn_inventory.xlsx',
-        'BOM_updated.csv',
-        'eFab_Knit_Orders.csv',
-        'Expected_Yarn_Report.xlsx',
-        'Sales Activity Report.csv',
-        'Machine Report fin1.csv'
+        "yarn_inventory.xlsx",
+        "BOM_updated.csv",
+        "eFab_Knit_Orders.csv",
+        "Expected_Yarn_Report.xlsx",
+        "Sales Activity Report.csv",
+        "Machine Report fin1.csv",
     ]
 
     def __init__(
-        self,
-        cache_dir: Optional[Path] = None,
-        default_ttl: int = DEFAULT_TTL
+        self, cache_dir: Optional[Path] = None, default_ttl: int = DEFAULT_TTL
     ) -> None:
         """Initialize cache manager.
 
@@ -59,11 +57,7 @@ class CacheManager:
         self.default_ttl = default_ttl
         self.memory_cache: Dict[str, Dict[str, Any]] = {}
         self.file_mtimes: Dict[str, float] = {}
-        self.cache_stats = {
-            'hits': 0,
-            'misses': 0,
-            'invalidations': 0
-        }
+        self.cache_stats = {"hits": 0, "misses": 0, "invalidations": 0}
 
         logger.info(f"CacheManager initialized with TTL={default_ttl}s")
 
@@ -77,18 +71,12 @@ class CacheManager:
         Returns:
             Unique cache key
         """
-        key_data = {
-            'args': args,
-            'kwargs': sorted(kwargs.items())
-        }
+        key_data = {"args": args, "kwargs": sorted(kwargs.items())}
         key_str = json.dumps(key_data, sort_keys=True, default=str)
         return hashlib.md5(key_str.encode()).hexdigest()
 
     def get(
-        self,
-        key: str,
-        fetch_func: Optional[Callable] = None,
-        ttl: Optional[int] = None
+        self, key: str, fetch_func: Optional[Callable] = None, ttl: Optional[int] = None
     ) -> Optional[Any]:
         """Get value from cache or fetch if missing.
 
@@ -103,15 +91,15 @@ class CacheManager:
         # Check memory cache
         if key in self.memory_cache:
             entry = self.memory_cache[key]
-            if datetime.now() < entry['expires']:
-                self.cache_stats['hits'] += 1
+            if datetime.now() < entry["expires"]:
+                self.cache_stats["hits"] += 1
                 logger.debug(f"Cache hit: {key}")
-                return entry['value']
+                return entry["value"]
             else:
                 # Expired
                 del self.memory_cache[key]
 
-        self.cache_stats['misses'] += 1
+        self.cache_stats["misses"] += 1
         logger.debug(f"Cache miss: {key}")
 
         # Fetch new value if function provided
@@ -122,12 +110,7 @@ class CacheManager:
 
         return None
 
-    def set(
-        self,
-        key: str,
-        value: Any,
-        ttl: Optional[int] = None
-    ) -> None:
+    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         """Set value in cache.
 
         Args:
@@ -142,9 +125,9 @@ class CacheManager:
             self._evict_oldest()
 
         self.memory_cache[key] = {
-            'value': value,
-            'expires': datetime.now() + timedelta(seconds=ttl),
-            'created': datetime.now()
+            "value": value,
+            "expires": datetime.now() + timedelta(seconds=ttl),
+            "created": datetime.now(),
         }
 
         logger.debug(f"Cached {key} with TTL={ttl}s")
@@ -162,20 +145,17 @@ class CacheManager:
             # Clear all
             count = len(self.memory_cache)
             self.memory_cache.clear()
-            self.cache_stats['invalidations'] += count
+            self.cache_stats["invalidations"] += count
             logger.info(f"Invalidated all {count} cache entries")
             return count
 
         # Clear matching pattern
-        to_remove = [
-            k for k in self.memory_cache.keys()
-            if pattern in k
-        ]
+        to_remove = [k for k in self.memory_cache.keys() if pattern in k]
 
         for key in to_remove:
             del self.memory_cache[key]
 
-        self.cache_stats['invalidations'] += len(to_remove)
+        self.cache_stats["invalidations"] += len(to_remove)
         logger.info(f"Invalidated {len(to_remove)} entries matching '{pattern}'")
 
         return len(to_remove)
@@ -216,18 +196,13 @@ class CacheManager:
             return
 
         oldest_key = min(
-            self.memory_cache.keys(),
-            key=lambda k: self.memory_cache[k]['created']
+            self.memory_cache.keys(), key=lambda k: self.memory_cache[k]["created"]
         )
 
         del self.memory_cache[oldest_key]
         logger.debug(f"Evicted oldest cache entry: {oldest_key}")
 
-    def cached_api(
-        self,
-        ttl: Optional[int] = None,
-        key_prefix: Optional[str] = None
-    ):
+    def cached_api(self, ttl: Optional[int] = None, key_prefix: Optional[str] = None):
         """Decorator for caching API responses.
 
         Args:
@@ -237,6 +212,7 @@ class CacheManager:
         Returns:
             Decorated function
         """
+
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
@@ -255,6 +231,7 @@ class CacheManager:
                 return result
 
             return wrapper
+
         return decorator
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -263,20 +240,19 @@ class CacheManager:
         Returns:
             Cache performance statistics
         """
-        total_requests = self.cache_stats['hits'] + self.cache_stats['misses']
+        total_requests = self.cache_stats["hits"] + self.cache_stats["misses"]
         hit_rate = (
-            self.cache_stats['hits'] / total_requests * 100
-            if total_requests > 0 else 0
+            self.cache_stats["hits"] / total_requests * 100 if total_requests > 0 else 0
         )
 
         return {
-            'total_requests': total_requests,
-            'hits': self.cache_stats['hits'],
-            'misses': self.cache_stats['misses'],
-            'hit_rate': hit_rate,
-            'invalidations': self.cache_stats['invalidations'],
-            'current_size': len(self.memory_cache),
-            'max_size': self.MAX_CACHE_SIZE
+            "total_requests": total_requests,
+            "hits": self.cache_stats["hits"],
+            "misses": self.cache_stats["misses"],
+            "hit_rate": hit_rate,
+            "invalidations": self.cache_stats["invalidations"],
+            "current_size": len(self.memory_cache),
+            "max_size": self.MAX_CACHE_SIZE,
         }
 
     def save_to_disk(self, key: str, value: Any) -> None:
@@ -289,7 +265,7 @@ class CacheManager:
         cache_file = self.cache_dir / f"{key}.pkl"
 
         try:
-            with open(cache_file, 'wb') as f:
+            with open(cache_file, "wb") as f:
                 pickle.dump(value, f)
             logger.debug(f"Saved to disk: {key}")
         except Exception as e:
@@ -310,7 +286,7 @@ class CacheManager:
             return None
 
         try:
-            with open(cache_file, 'rb') as f:
+            with open(cache_file, "rb") as f:
                 value = pickle.load(f)
             logger.debug(f"Loaded from disk: {key}")
             return value
@@ -363,8 +339,8 @@ if __name__ == "__main__":
 
     # Test Case 4: Cache statistics
     stats = cache.get_statistics()
-    assert stats['hits'] > 0
-    assert stats['misses'] > 0
+    assert stats["hits"] > 0
+    assert stats["misses"] > 0
     logger.info(f"Test 4 passed: Statistics = {stats}")
 
     # Test Case 5: Decorator

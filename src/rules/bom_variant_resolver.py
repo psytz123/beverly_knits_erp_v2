@@ -67,8 +67,8 @@ class BOMVariantResolver:
         style_string = str(style_string).strip()
 
         # Parse style/variant
-        if '/' in style_string:
-            parts = style_string.split('/', 1)
+        if "/" in style_string:
+            parts = style_string.split("/", 1)
             base_style = parts[0].strip()
             variant = parts[1].strip() if len(parts) > 1 else None
             has_variant = True
@@ -82,7 +82,7 @@ class BOMVariantResolver:
             full_style=style_string,
             base_style=base_style,
             variant=variant,
-            has_variant=has_variant
+            has_variant=has_variant,
         )
 
         # Cache result
@@ -91,10 +91,7 @@ class BOMVariantResolver:
         return result
 
     def resolve_bom_entries(
-        self,
-        style_string: str,
-        bom_df: pd.DataFrame,
-        style_column: str = 'Style#'
+        self, style_string: str, bom_df: pd.DataFrame, style_column: str = "Style#"
     ) -> pd.DataFrame:
         """Resolve BOM entries for a style/variant.
 
@@ -122,10 +119,10 @@ class BOMVariantResolver:
                 return exact_match
 
             # Try variant as separate column if exists
-            if 'Variant' in bom_df.columns:
+            if "Variant" in bom_df.columns:
                 variant_match = bom_df[
-                    (bom_df[style_column] == style_variant.base_style) &
-                    (bom_df['Variant'] == style_variant.variant)
+                    (bom_df[style_column] == style_variant.base_style)
+                    & (bom_df["Variant"] == style_variant.variant)
                 ]
                 if not variant_match.empty:
                     logger.debug(f"Found variant match for {style_variant}")
@@ -142,10 +139,7 @@ class BOMVariantResolver:
         return pd.DataFrame()
 
     def get_yarn_requirements(
-        self,
-        style_string: str,
-        bom_df: pd.DataFrame,
-        quantity: float = 1.0
+        self, style_string: str, bom_df: pd.DataFrame, quantity: float = 1.0
     ) -> List[Dict[str, Any]]:
         """Get yarn requirements for a style/variant.
 
@@ -166,17 +160,19 @@ class BOMVariantResolver:
         # Build requirements list
         requirements = []
         for _, row in bom_entries.iterrows():
-            yarn_id = row.get('YarnID') or row.get('Desc#')
-            usage = row.get('Usage') or row.get('Qty') or 0
+            yarn_id = row.get("YarnID") or row.get("Desc#")
+            usage = row.get("Usage") or row.get("Qty") or 0
 
-            requirements.append({
-                'style': style_string,
-                'yarn_id': yarn_id,
-                'usage_per_unit': float(usage),
-                'total_required': float(usage) * quantity,
-                'uom': row.get('UOM', 'LBS'),
-                'description': row.get('Description', '')
-            })
+            requirements.append(
+                {
+                    "style": style_string,
+                    "yarn_id": yarn_id,
+                    "usage_per_unit": float(usage),
+                    "total_required": float(usage) * quantity,
+                    "uom": row.get("UOM", "LBS"),
+                    "description": row.get("Description", ""),
+                }
+            )
 
         return requirements
 
@@ -184,7 +180,7 @@ class BOMVariantResolver:
         self,
         orders_df: pd.DataFrame,
         bom_df: pd.DataFrame,
-        style_column: str = 'Style#'
+        style_column: str = "Style#",
     ) -> Dict[str, Any]:
         """Validate BOM coverage for all orders.
 
@@ -221,20 +217,20 @@ class BOMVariantResolver:
         coverage_rate = (len(covered) / total * 100) if total > 0 else 0
 
         return {
-            'total_styles': total,
-            'covered': len(covered),
-            'missing': len(missing),
-            'partial': len(partial),
-            'coverage_rate': coverage_rate,
-            'missing_styles': missing[:10],  # First 10 missing
-            'partial_styles': partial[:10]   # First 10 partial
+            "total_styles": total,
+            "covered": len(covered),
+            "missing": len(missing),
+            "partial": len(partial),
+            "coverage_rate": coverage_rate,
+            "missing_styles": missing[:10],  # First 10 missing
+            "partial_styles": partial[:10],  # First 10 partial
         }
 
     def merge_orders_with_bom(
         self,
         orders_df: pd.DataFrame,
         bom_df: pd.DataFrame,
-        quantity_column: str = 'Qty'
+        quantity_column: str = "Qty",
     ) -> pd.DataFrame:
         """Merge orders with BOM to get yarn requirements.
 
@@ -249,7 +245,7 @@ class BOMVariantResolver:
         results = []
 
         for _, order in orders_df.iterrows():
-            style = order.get('Style#')
+            style = order.get("Style#")
             quantity = order.get(quantity_column, 0)
 
             if pd.isna(style):
@@ -262,15 +258,17 @@ class BOMVariantResolver:
 
             # Add to results
             for req in requirements:
-                results.append({
-                    'Order#': order.get('Order#'),
-                    'Style': style,
-                    'Order_Qty': quantity,
-                    'YarnID': req['yarn_id'],
-                    'Usage_Per_Unit': req['usage_per_unit'],
-                    'Total_Yarn_Required': req['total_required'],
-                    'UOM': req['uom']
-                })
+                results.append(
+                    {
+                        "Order#": order.get("Order#"),
+                        "Style": style,
+                        "Order_Qty": quantity,
+                        "YarnID": req["yarn_id"],
+                        "Usage_Per_Unit": req["usage_per_unit"],
+                        "Total_Yarn_Required": req["total_required"],
+                        "UOM": req["uom"],
+                    }
+                )
 
         return pd.DataFrame(results)
 
@@ -281,15 +279,14 @@ class BOMVariantResolver:
             Summary statistics
         """
         total = len(self.resolution_cache)
-        with_variant = sum(1 for sv in self.resolution_cache.values()
-                          if sv.has_variant)
+        with_variant = sum(1 for sv in self.resolution_cache.values() if sv.has_variant)
         without_variant = total - with_variant
 
         return {
-            'total_resolved': total,
-            'with_variant': with_variant,
-            'without_variant': without_variant,
-            'variant_rate': (with_variant / total * 100) if total > 0 else 0
+            "total_resolved": total,
+            "with_variant": with_variant,
+            "without_variant": without_variant,
+            "variant_rate": (with_variant / total * 100) if total > 0 else 0,
         }
 
 
@@ -319,17 +316,19 @@ if __name__ == "__main__":
     logger.info(f"Test 3 passed: {sv3}")
 
     # Test Case 4: BOM resolution with sample data
-    sample_bom = pd.DataFrame([
-        {'Style#': 'ST123', 'YarnID': 'Y001', 'Usage': 2.5, 'UOM': 'LBS'},
-        {'Style#': 'ST123', 'YarnID': 'Y002', 'Usage': 1.0, 'UOM': 'LBS'},
-        {'Style#': 'ST123/A', 'YarnID': 'Y003', 'Usage': 0.5, 'UOM': 'LBS'},
-        {'Style#': 'ST456', 'YarnID': 'Y001', 'Usage': 3.0, 'UOM': 'LBS'}
-    ])
+    sample_bom = pd.DataFrame(
+        [
+            {"Style#": "ST123", "YarnID": "Y001", "Usage": 2.5, "UOM": "LBS"},
+            {"Style#": "ST123", "YarnID": "Y002", "Usage": 1.0, "UOM": "LBS"},
+            {"Style#": "ST123/A", "YarnID": "Y003", "Usage": 0.5, "UOM": "LBS"},
+            {"Style#": "ST456", "YarnID": "Y001", "Usage": 3.0, "UOM": "LBS"},
+        ]
+    )
 
     # Test exact variant match
     entries1 = resolver.resolve_bom_entries("ST123/A", sample_bom)
     assert len(entries1) == 1
-    assert entries1.iloc[0]['YarnID'] == 'Y003'
+    assert entries1.iloc[0]["YarnID"] == "Y003"
     logger.info("Test 4a passed: Exact variant match")
 
     # Test fallback to base style
@@ -340,7 +339,7 @@ if __name__ == "__main__":
     # Test yarn requirements calculation
     reqs = resolver.get_yarn_requirements("ST456", sample_bom, quantity=10.0)
     assert len(reqs) == 1
-    assert reqs[0]['total_required'] == 30.0  # 3.0 * 10
+    assert reqs[0]["total_required"] == 30.0  # 3.0 * 10
     logger.info("Test 5 passed: Yarn requirements calculation")
 
     print("All validations passed!")

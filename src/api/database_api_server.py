@@ -24,25 +24,30 @@ CORS(app)
 
 # Load configuration
 import os
-config_path = os.path.join(os.path.dirname(__file__), '..', 'database', 'database_config.json')
+
+config_path = os.path.join(
+    os.path.dirname(__file__), "..", "database", "database_config.json"
+)
 if not os.path.exists(config_path):
-    config_path = 'database_config.json'
-    
-with open(config_path, 'r') as f:
+    config_path = "database_config.json"
+
+with open(config_path, "r") as f:
     config = json.load(f)
+
 
 def get_db_connection():
     """Create database connection with RealDictCursor"""
     return psycopg2.connect(
-        host=config['host'],
-        port=config['port'],
-        database=config['database'],
-        user=config['user'],
-        password=config['password'],
-        cursor_factory=RealDictCursor
+        host=config["host"],
+        port=config["port"],
+        database=config["database"],
+        user=config["user"],
+        password=config["password"],
+        cursor_factory=RealDictCursor,
     )
 
-@app.route('/api/health', methods=['GET'])
+
+@app.route("/api/health", methods=["GET"])
 def health_check():
     """Health check endpoint"""
     try:
@@ -55,15 +60,17 @@ def health_check():
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
-@app.route('/api/yarn-intelligence', methods=['GET'])
+
+@app.route("/api/yarn-intelligence", methods=["GET"])
 def yarn_intelligence():
     """Get yarn intelligence data with criticality analysis"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get yarn inventory with criticality
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 y.desc_id,
                 y.yarn_description,
@@ -88,56 +95,69 @@ def yarn_intelligence():
             ) yi ON true
             WHERE y.is_active = true
             ORDER BY yi.planning_balance ASC
-        """)
-        
+        """
+        )
+
         yarns = cursor.fetchall()
-        
+
         # Calculate statistics
         total_yarns = len(yarns)
-        critical_count = sum(1 for y in yarns if y['status'] == 'CRITICAL')
-        warning_count = sum(1 for y in yarns if y['status'] == 'WARNING')
-        yarns_with_shortage = sum(1 for y in yarns if y['planning_balance'] and y['planning_balance'] < 0)
-        
+        critical_count = sum(1 for y in yarns if y["status"] == "CRITICAL")
+        warning_count = sum(1 for y in yarns if y["status"] == "WARNING")
+        yarns_with_shortage = sum(
+            1 for y in yarns if y["planning_balance"] and y["planning_balance"] < 0
+        )
+
         # Get substitution opportunities
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT COUNT(DISTINCT y1.desc_id) as substitutable_count
             FROM production.yarns y1
             JOIN production.yarns y2 ON y1.blend = y2.blend 
                 AND y1.yarn_type = y2.yarn_type 
                 AND y1.desc_id != y2.desc_id
             WHERE y1.is_active = true
-        """)
+        """
+        )
         substitution_data = cursor.fetchone()
-        
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "criticality_analysis": {
-                "total_yarns": total_yarns,
-                "critical_count": critical_count,
-                "warning_count": warning_count,
-                "yarns_with_shortage": yarns_with_shortage,
-                "yarns": [dict(y) for y in yarns[:100]]  # Top 100 yarns
-            },
-            "substitution_analysis": {
-                "total_substitutable": substitution_data['substitutable_count'] if substitution_data else 0
-            },
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "criticality_analysis": {
+                    "total_yarns": total_yarns,
+                    "critical_count": critical_count,
+                    "warning_count": warning_count,
+                    "yarns_with_shortage": yarns_with_shortage,
+                    "yarns": [dict(y) for y in yarns[:100]],  # Top 100 yarns
+                },
+                "substitution_analysis": {
+                    "total_substitutable": (
+                        substitution_data["substitutable_count"]
+                        if substitution_data
+                        else 0
+                    )
+                },
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in yarn-intelligence: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/inventory-intelligence-enhanced', methods=['GET'])
+
+@app.route("/api/inventory-intelligence-enhanced", methods=["GET"])
 def inventory_intelligence_enhanced():
     """Get enhanced inventory intelligence across all stages"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get fabric inventory by stage
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 s.style_number,
                 s.fstyle_number,
@@ -153,47 +173,68 @@ def inventory_intelligence_enhanced():
             GROUP BY s.style_id, s.style_number, s.fstyle_number, s.style_description
             HAVING SUM(fi.quantity_lbs) > 0
             ORDER BY total_lbs DESC
-        """)
-        
+        """
+        )
+
         inventory_data = cursor.fetchall()
-        
+
         # Calculate summary statistics
-        total_inventory = sum(item['total_lbs'] for item in inventory_data if item['total_lbs'])
-        finished_inventory = sum(item['finished_lbs'] for item in inventory_data if item['finished_lbs'])
+        total_inventory = sum(
+            item["total_lbs"] for item in inventory_data if item["total_lbs"]
+        )
+        finished_inventory = sum(
+            item["finished_lbs"] for item in inventory_data if item["finished_lbs"]
+        )
         in_process = total_inventory - finished_inventory
-        
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "inventory_summary": {
-                "total_inventory_lbs": total_inventory,
-                "finished_goods_lbs": finished_inventory,
-                "in_process_lbs": in_process,
-                "total_styles": len(inventory_data)
-            },
-            "inventory_by_style": [dict(item) for item in inventory_data[:100]],
-            "inventory_comparison": {
-                "F01_finished": finished_inventory,
-                "G00_greige": sum(item['greige_g00_lbs'] for item in inventory_data if item['greige_g00_lbs']),
-                "G02_processing": sum(item['greige_g02_lbs'] for item in inventory_data if item['greige_g02_lbs']),
-                "I01_inspection": sum(item['inspection_lbs'] for item in inventory_data if item['inspection_lbs'])
-            },
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "inventory_summary": {
+                    "total_inventory_lbs": total_inventory,
+                    "finished_goods_lbs": finished_inventory,
+                    "in_process_lbs": in_process,
+                    "total_styles": len(inventory_data),
+                },
+                "inventory_by_style": [dict(item) for item in inventory_data[:100]],
+                "inventory_comparison": {
+                    "F01_finished": finished_inventory,
+                    "G00_greige": sum(
+                        item["greige_g00_lbs"]
+                        for item in inventory_data
+                        if item["greige_g00_lbs"]
+                    ),
+                    "G02_processing": sum(
+                        item["greige_g02_lbs"]
+                        for item in inventory_data
+                        if item["greige_g02_lbs"]
+                    ),
+                    "I01_inspection": sum(
+                        item["inspection_lbs"]
+                        for item in inventory_data
+                        if item["inspection_lbs"]
+                    ),
+                },
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in inventory-intelligence-enhanced: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/production-pipeline', methods=['GET'])
+
+@app.route("/api/production-pipeline", methods=["GET"])
 def production_pipeline():
     """Get production pipeline status"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get knit orders status
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 ko.ko_number,
                 ko.style_number,
@@ -212,51 +253,64 @@ def production_pipeline():
             FROM production.knit_orders_ts ko
             WHERE ko.snapshot_date = (SELECT MAX(snapshot_date) FROM production.knit_orders_ts)
             ORDER BY ko.start_date DESC
-        """)
-        
+        """
+        )
+
         knit_orders = cursor.fetchall()
-        
+
         # Calculate pipeline statistics
         total_orders = len(knit_orders)
-        completed_orders = sum(1 for ko in knit_orders if ko['status'] == 'Completed')
-        in_progress_orders = sum(1 for ko in knit_orders if ko['status'] == 'In Progress')
-        pending_orders = sum(1 for ko in knit_orders if ko['status'] == 'Pending')
-        
-        total_ordered = sum(ko['qty_ordered_lbs'] for ko in knit_orders if ko['qty_ordered_lbs'])
-        total_produced = sum(ko['g00_lbs'] for ko in knit_orders if ko['g00_lbs'])
-        
+        completed_orders = sum(1 for ko in knit_orders if ko["status"] == "Completed")
+        in_progress_orders = sum(
+            1 for ko in knit_orders if ko["status"] == "In Progress"
+        )
+        pending_orders = sum(1 for ko in knit_orders if ko["status"] == "Pending")
+
+        total_ordered = sum(
+            ko["qty_ordered_lbs"] for ko in knit_orders if ko["qty_ordered_lbs"]
+        )
+        total_produced = sum(ko["g00_lbs"] for ko in knit_orders if ko["g00_lbs"])
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "pipeline": {
-                "total_orders": total_orders,
-                "completed": completed_orders,
-                "in_progress": in_progress_orders,
-                "pending": pending_orders,
-                "total_ordered_lbs": total_ordered,
-                "total_produced_lbs": total_produced,
-                "production_rate": (total_produced / total_ordered * 100) if total_ordered > 0 else 0
-            },
-            "orders": [dict(ko) for ko in knit_orders[:50]],
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "pipeline": {
+                    "total_orders": total_orders,
+                    "completed": completed_orders,
+                    "in_progress": in_progress_orders,
+                    "pending": pending_orders,
+                    "total_ordered_lbs": total_ordered,
+                    "total_produced_lbs": total_produced,
+                    "production_rate": (
+                        (total_produced / total_ordered * 100)
+                        if total_ordered > 0
+                        else 0
+                    ),
+                },
+                "orders": [dict(ko) for ko in knit_orders[:50]],
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in production-pipeline: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/comprehensive-kpis', methods=['GET'])
+
+@app.route("/api/comprehensive-kpis", methods=["GET"])
 def comprehensive_kpis():
     """Get comprehensive KPI metrics"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get various KPIs
         kpis = {}
-        
+
         # Inventory KPIs
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 COUNT(DISTINCT yarn_id) as total_yarns,
                 SUM(CASE WHEN planning_balance < 0 THEN 1 ELSE 0 END) as yarns_shortage,
@@ -264,12 +318,14 @@ def comprehensive_kpis():
                 SUM(theoretical_balance * cost_per_pound) as inventory_value
             FROM production.yarn_inventory_ts
             WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM production.yarn_inventory_ts)
-        """)
+        """
+        )
         inv_kpis = cursor.fetchone()
-        kpis['inventory'] = dict(inv_kpis) if inv_kpis else {}
-        
+        kpis["inventory"] = dict(inv_kpis) if inv_kpis else {}
+
         # Sales KPIs
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 COUNT(DISTINCT so_number) as total_orders,
                 SUM(quantity_ordered) as total_ordered,
@@ -278,12 +334,14 @@ def comprehensive_kpis():
                 COUNT(DISTINCT customer_id) as active_customers
             FROM production.sales_orders_ts
             WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM production.sales_orders_ts)
-        """)
+        """
+        )
         sales_kpis = cursor.fetchone()
-        kpis['sales'] = dict(sales_kpis) if sales_kpis else {}
-        
+        kpis["sales"] = dict(sales_kpis) if sales_kpis else {}
+
         # Production KPIs
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 COUNT(*) as active_knit_orders,
                 SUM(qty_ordered_lbs) as total_production_planned,
@@ -294,30 +352,30 @@ def comprehensive_kpis():
             FROM production.knit_orders_ts
             WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM production.knit_orders_ts)
                 AND balance_lbs > 0
-        """)
+        """
+        )
         prod_kpis = cursor.fetchone()
-        kpis['production'] = dict(prod_kpis) if prod_kpis else {}
-        
+        kpis["production"] = dict(prod_kpis) if prod_kpis else {}
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "kpis": kpis,
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify({"kpis": kpis, "timestamp": datetime.now().isoformat()})
     except Exception as e:
         logger.error(f"Error in comprehensive-kpis: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/ml-forecast-detailed', methods=['GET'])
+
+@app.route("/api/ml-forecast-detailed", methods=["GET"])
 def ml_forecast_detailed():
     """Get detailed ML forecast data"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get yarn demand forecast
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 y.yarn_description,
                 yd.desc_id,
@@ -336,10 +394,11 @@ def ml_forecast_detailed():
             WHERE yd.snapshot_date = (SELECT MAX(snapshot_date) FROM production.yarn_demand_ts)
                 AND yd.week_number <= 4
             ORDER BY yd.week_date, yd.desc_id
-        """)
-        
+        """
+        )
+
         forecast_data = cursor.fetchall()
-        
+
         # Aggregate by week
         weekly_forecast = {}
         for row in forecast_data:
@@ -348,42 +407,48 @@ def ml_forecast_detailed():
                 weekly_forecast[week] = {
                     "total_demand": 0,
                     "shortage_count": 0,
-                    "items": []
+                    "items": [],
                 }
-            weekly_forecast[week]["total_demand"] += row['forecasted_demand'] or 0
-            if row['forecast_status'] == 'SHORTAGE':
+            weekly_forecast[week]["total_demand"] += row["forecasted_demand"] or 0
+            if row["forecast_status"] == "SHORTAGE":
                 weekly_forecast[week]["shortage_count"] += 1
             weekly_forecast[week]["items"].append(dict(row))
-        
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "forecast": {
-                "weekly_summary": weekly_forecast,
-                "total_items": len(forecast_data),
-                "forecast_horizon": "4 weeks"
-            },
-            "models": [{
-                "name": "Demand Forecast Model",
-                "accuracy": 85.3,
-                "last_trained": datetime.now().isoformat()
-            }],
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "forecast": {
+                    "weekly_summary": weekly_forecast,
+                    "total_items": len(forecast_data),
+                    "forecast_horizon": "4 weeks",
+                },
+                "models": [
+                    {
+                        "name": "Demand Forecast Model",
+                        "accuracy": 85.3,
+                        "last_trained": datetime.now().isoformat(),
+                    }
+                ],
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in ml-forecast-detailed: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/inventory-netting', methods=['GET'])
+
+@app.route("/api/inventory-netting", methods=["GET"])
 def inventory_netting():
     """Get inventory netting calculations"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get net requirements
-        cursor.execute("""
+        cursor.execute(
+            """
             WITH demand AS (
                 SELECT 
                     s.style_id,
@@ -412,36 +477,45 @@ def inventory_netting():
             LEFT JOIN inventory i ON d.style_id = i.style_id
             WHERE d.total_demand > COALESCE(i.total_inventory, 0)
             ORDER BY net_requirement DESC
-        """)
-        
+        """
+        )
+
         netting_data = cursor.fetchall()
-        
-        total_net_requirement = sum(item['net_requirement'] for item in netting_data if item['net_requirement'] > 0)
-        
+
+        total_net_requirement = sum(
+            item["net_requirement"]
+            for item in netting_data
+            if item["net_requirement"] > 0
+        )
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "netting_summary": {
-                "total_styles_with_shortage": len(netting_data),
-                "total_net_requirement": total_net_requirement
-            },
-            "netting_details": [dict(item) for item in netting_data[:50]],
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "netting_summary": {
+                    "total_styles_with_shortage": len(netting_data),
+                    "total_net_requirement": total_net_requirement,
+                },
+                "netting_details": [dict(item) for item in netting_data[:50]],
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in inventory-netting: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/po-risk-analysis', methods=['GET'])
+
+@app.route("/api/po-risk-analysis", methods=["GET"])
 def po_risk_analysis():
     """Get purchase order risk analysis"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Analyze orders at risk
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 so.so_number,
                 so.customer_id,
@@ -461,42 +535,49 @@ def po_risk_analysis():
             WHERE so.snapshot_date = (SELECT MAX(snapshot_date) FROM production.sales_orders_ts)
                 AND so.balance > 0
             ORDER BY so.ship_date ASC
-        """)
-        
+        """
+        )
+
         risk_orders = cursor.fetchall()
-        
+
         # Calculate risk summary
         risk_summary = {
             "total_orders": len(risk_orders),
-            "overdue": sum(1 for o in risk_orders if o['risk_level'] == 'OVERDUE'),
-            "high_risk": sum(1 for o in risk_orders if o['risk_level'] == 'HIGH_RISK'),
-            "medium_risk": sum(1 for o in risk_orders if o['risk_level'] == 'MEDIUM_RISK'),
-            "low_risk": sum(1 for o in risk_orders if o['risk_level'] == 'LOW_RISK')
+            "overdue": sum(1 for o in risk_orders if o["risk_level"] == "OVERDUE"),
+            "high_risk": sum(1 for o in risk_orders if o["risk_level"] == "HIGH_RISK"),
+            "medium_risk": sum(
+                1 for o in risk_orders if o["risk_level"] == "MEDIUM_RISK"
+            ),
+            "low_risk": sum(1 for o in risk_orders if o["risk_level"] == "LOW_RISK"),
         }
-        
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "risk_summary": risk_summary,
-            "orders_at_risk": [dict(o) for o in risk_orders[:50]],
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "risk_summary": risk_summary,
+                "orders_at_risk": [dict(o) for o in risk_orders[:50]],
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in po-risk-analysis: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/production-suggestions', methods=['GET'])
+
+@app.route("/api/production-suggestions", methods=["GET"])
 def production_suggestions():
     """Get AI production suggestions based on data"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         suggestions = []
-        
+
         # Suggestion 1: Critical yarn shortages
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 y.yarn_description,
                 yi.planning_balance,
@@ -507,19 +588,23 @@ def production_suggestions():
                 AND yi.planning_balance < 0
             ORDER BY yi.planning_balance ASC
             LIMIT 5
-        """)
-        
+        """
+        )
+
         critical_yarns = cursor.fetchall()
         for yarn in critical_yarns:
-            suggestions.append({
-                "type": "CRITICAL_SHORTAGE",
-                "priority": "HIGH",
-                "message": f"Critical shortage: {yarn['yarn_description']} - Planning balance: {yarn['planning_balance']} lbs",
-                "action": "Expedite procurement or find substitutes"
-            })
-        
+            suggestions.append(
+                {
+                    "type": "CRITICAL_SHORTAGE",
+                    "priority": "HIGH",
+                    "message": f"Critical shortage: {yarn['yarn_description']} - Planning balance: {yarn['planning_balance']} lbs",
+                    "action": "Expedite procurement or find substitutes",
+                }
+            )
+
         # Suggestion 2: Overdue orders
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 so.so_number,
                 so.style_number,
@@ -530,42 +615,47 @@ def production_suggestions():
                 AND so.ship_date < CURRENT_DATE
                 AND so.balance > 0
             LIMIT 5
-        """)
-        
+        """
+        )
+
         overdue_orders = cursor.fetchall()
         for order in overdue_orders:
-            suggestions.append({
-                "type": "OVERDUE_ORDER",
-                "priority": "HIGH",
-                "message": f"Order {order['so_number']} is overdue - Style: {order['style_number']}, Balance: {order['balance']}",
-                "action": "Prioritize production or communicate with customer"
-            })
-        
+            suggestions.append(
+                {
+                    "type": "OVERDUE_ORDER",
+                    "priority": "HIGH",
+                    "message": f"Order {order['so_number']} is overdue - Style: {order['style_number']}, Balance: {order['balance']}",
+                    "action": "Prioritize production or communicate with customer",
+                }
+            )
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "suggestions": suggestions,
-            "total_suggestions": len(suggestions),
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "suggestions": suggestions,
+                "total_suggestions": len(suggestions),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in production-suggestions: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/six-phase-planning', methods=['GET'])
+
+@app.route("/api/six-phase-planning", methods=["GET"])
 def six_phase_planning():
     """Execute six-phase planning process"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
-        planning_results = {
-            "phases": {}
-        }
-        
+
+        planning_results = {"phases": {}}
+
         # Phase 1: Demand Consolidation
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 s.style_number,
                 SUM(so.balance) as total_demand
@@ -574,84 +664,96 @@ def six_phase_planning():
             WHERE so.snapshot_date = (SELECT MAX(snapshot_date) FROM production.sales_orders_ts)
                 AND so.balance > 0
             GROUP BY s.style_number
-        """)
+        """
+        )
         demand = cursor.fetchall()
         planning_results["phases"]["demand_consolidation"] = {
             "total_styles": len(demand),
-            "total_demand": sum(d['total_demand'] for d in demand if d['total_demand'])
+            "total_demand": sum(d["total_demand"] for d in demand if d["total_demand"]),
         }
-        
+
         # Phase 2: Inventory Assessment
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
                 inventory_stage,
                 SUM(quantity_lbs) as total_lbs
             FROM production.fabric_inventory_ts
             WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM production.fabric_inventory_ts)
             GROUP BY inventory_stage
-        """)
+        """
+        )
         inventory = cursor.fetchall()
         planning_results["phases"]["inventory_assessment"] = {
-            stage['inventory_stage']: stage['total_lbs'] 
-            for stage in inventory
+            stage["inventory_stage"]: stage["total_lbs"] for stage in inventory
         }
-        
+
         # Phase 3: Net Requirements (simplified)
         planning_results["phases"]["net_requirements"] = {
             "calculated": True,
-            "total_net_requirement": planning_results["phases"]["demand_consolidation"]["total_demand"] - 
-                                    sum(planning_results["phases"]["inventory_assessment"].values())
+            "total_net_requirement": planning_results["phases"]["demand_consolidation"][
+                "total_demand"
+            ]
+            - sum(planning_results["phases"]["inventory_assessment"].values()),
         }
-        
+
         # Phase 4: BOM Explosion
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT COUNT(DISTINCT style_id) as styles_with_bom
             FROM production.style_bom
-        """)
+        """
+        )
         bom_data = cursor.fetchone()
         planning_results["phases"]["bom_explosion"] = {
-            "styles_with_bom": bom_data['styles_with_bom'] if bom_data else 0
+            "styles_with_bom": bom_data["styles_with_bom"] if bom_data else 0
         }
-        
+
         # Phase 5: Procurement Planning
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT COUNT(*) as yarns_to_order
             FROM production.yarn_inventory_ts
             WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM production.yarn_inventory_ts)
                 AND planning_balance < 0
-        """)
+        """
+        )
         procurement = cursor.fetchone()
         planning_results["phases"]["procurement_planning"] = {
-            "yarns_to_order": procurement['yarns_to_order'] if procurement else 0
+            "yarns_to_order": procurement["yarns_to_order"] if procurement else 0
         }
-        
+
         # Phase 6: Optimization
         planning_results["phases"]["optimization"] = {
             "status": "completed",
-            "recommendations_generated": True
+            "recommendations_generated": True,
         }
-        
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "planning_results": planning_results,
-            "execution_time": "2.5s",
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "planning_results": planning_results,
+                "execution_time": "2.5s",
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in six-phase-planning: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/yarn-substitution-intelligent', methods=['GET'])
+
+@app.route("/api/yarn-substitution-intelligent", methods=["GET"])
 def yarn_substitution_intelligent():
     """Get intelligent yarn substitution recommendations"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Find yarns with shortages and potential substitutes
-        cursor.execute("""
+        cursor.execute(
+            """
             WITH shortage_yarns AS (
                 SELECT 
                     y.yarn_id,
@@ -686,24 +788,28 @@ def yarn_substitution_intelligent():
             SELECT * FROM substitutes
             ORDER BY shortage_amount DESC
             LIMIT 20
-        """)
-        
+        """
+        )
+
         substitution_data = cursor.fetchall()
-        
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            "status": "success",
-            "substitution_opportunities": [dict(s) for s in substitution_data],
-            "total_opportunities": len(substitution_data),
-            "timestamp": datetime.now().isoformat()
-        })
+
+        return jsonify(
+            {
+                "status": "success",
+                "substitution_opportunities": [dict(s) for s in substitution_data],
+                "total_opportunities": len(substitution_data),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Error in yarn-substitution-intelligent: {e}")
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    port = config.get('api_port', 5007)
+
+if __name__ == "__main__":
+    port = config.get("api_port", 5007)
     logger.info(f"Starting Beverly Knits ERP API Server on port {port}")
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=True)
