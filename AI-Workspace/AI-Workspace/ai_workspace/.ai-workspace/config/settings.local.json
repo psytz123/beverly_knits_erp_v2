@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs:*)",
+      "Bash(crontab:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enabledMcpjsonServers": [
+    "_development_tools",
+    "_ai_frameworks",
+    "langchain",
+    "autogen",
+    "_ml_libraries",
+    "scikit-learn",
+    "pandas",
+    "numpy",
+    "_deep_learning",
+    "huggingface-transformers",
+    "tensorflow",
+    "pytorch",
+    "_web_frameworks",
+    "fastapi",
+    "django",
+    "flask",
+    "react",
+    "nextjs",
+    "_databases",
+    "postgresql",
+    "mongodb",
+    "redis",
+    "_cloud_platforms",
+    "aws",
+    "azure",
+    "docker",
+    "kubernetes",
+    "_monitoring",
+    "prometheus",
+    "grafana",
+    "_search",
+    "_thinking",
+    "_browsers",
+    "_utilities"
+  ]
+}

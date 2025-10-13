@@ -1,0 +1,37 @@
+{
+  "handoff": {
+    "id": "a01b4eef-d92d-4de0-a4f5-1d78c7c52c39",
+    "timestamp": "2025-10-13T08:41:43Z",
+    "from": "tech-lead-orchestrator",
+    "to": "technical-writer",
+    "status": "pending"
+  },
+  "context": {
+    "task": "Reconcile documentation and release governance",
+    "phase": "planning",
+    "summary": "Update documentation to reflect real status, release process, and KPIs."
+  },
+  "outputs": {
+    "created": [
+      ".agent-workspace/outputs/design/2025-10-13-orchestration-plan.md"
+    ]
+  },
+  "next_steps": {
+    "required": [
+      "Audit existing docs vs implementation reality",
+      "Publish release checklist incorporating security and testing gates",
+      "Summarize KPI dashboard expectations for stakeholders"
+    ]
+  },
+  "dependencies": [
+    "backend-developer",
+    "microservices-architect",
+    "security-engineer",
+    "qa-expert"
+  ],
+  "workspace_info": {
+    "structure": "Standard v1.0",
+    "location": ".agent-workspace/",
+    "status": "ready"
+  }
+}

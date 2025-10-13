@@ -26,8 +26,11 @@ cd "$SCRIPT_DIR"
 echo "Starting Backend API Server on port 5006..."
 echo ""
 
-# Start the backend API server in the background (lightweight version)
-python3 src/api/lightweight_api_server.py > logs/api_server.log 2>&1 &
+# Ensure log directory exists before launching services
+mkdir -p logs
+
+# Start the backend API server in the background (production eFab proxy)
+python3 src/api/efab_api_server.py > logs/api_server.log 2>&1 &
 API_PID=$!
 echo "API Server PID: $API_PID"
 
@@ -45,6 +48,23 @@ echo "Web Server PID: $WEB_PID"
 
 # Wait a moment
 sleep 3
+
+echo ""
+echo "Validating service health..."
+echo ""
+
+# Run consolidated health checks (ensures efab_direct is active)
+python3 scripts/system_health_check.py --retries 5 --interval 2
+HEALTH_STATUS=$?
+
+if [ $HEALTH_STATUS -ne 0 ]; then
+    echo "============================================================================"
+    echo "⚠️  Health check failed. Review logs/api_server.log and logs/web_server.log."
+    echo "    Stopping newly launched processes..."
+    echo "============================================================================"
+    kill $API_PID $WEB_PID 2>/dev/null
+    exit 1
+fi
 
 echo ""
 echo "============================================================================"
@@ -66,7 +86,6 @@ echo "==========================================================================
 echo ""
 
 # Save PIDs to a file for easy stopping
-mkdir -p logs
 echo "$API_PID" > logs/api_server.pid
 echo "$WEB_PID" > logs/web_server.pid
 

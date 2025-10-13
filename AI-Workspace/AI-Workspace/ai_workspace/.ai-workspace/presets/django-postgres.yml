@@ -1,0 +1,111 @@
+# Django PostgreSQL Preset
+# Enterprise Python web development with Django, Celery, and PostgreSQL
+
+name: "Django PostgreSQL Stack"
+description: "Enterprise-grade Python web development with Django, Celery, Redis, and PostgreSQL"
+version: "1.0.0"
+
+# Stack configuration
+stack:
+  languages:
+    - Python
+  frameworks:
+    - Django
+    - Django REST Framework
+    - Celery
+  databases:
+    - PostgreSQL
+    - Redis
+  tools:
+    - pytest
+    - black
+    - mypy
+    - flake8
+    - coverage
+    - gunicorn
+
+# Quality settings
+quality:
+  level: "strict"
+  max_complexity: 8
+  max_duplication: 2.5
+  max_file_loc: 400
+  max_function_loc: 40
+  min_test_coverage: 90
+  type_checking: "enabled"
+
+# Recommended agents (loaded on init)
+recommended_agents:
+  core:
+    - backend-developer
+    - python-pro
+  frameworks:
+    - django-developer
+  quality:
+    - code-reviewer
+    - test-automator
+    - security-auditor
+  data:
+    - database-optimizer
+    - postgres-pro
+    - data-engineer
+  infrastructure:
+    - devops-engineer
+    - deployment-engineer
+    - platform-engineer
+
+# Pre-commit hooks
+pre_commit:
+  enabled: true
+  checks:
+    - file_size
+    - duplication
+    - type_coverage
+    - formatting
+    - complexity
+    - security
+
+# Documentation
+documentation:
+  adr_required: true
+  api_docs: "DRF Spectacular"
+  docstrings: "Google style"
+  admin_docs: true
+
+# Testing strategy
+testing:
+  framework: "pytest-django"
+  coverage_tool: "coverage.py"
+  integration_tests: true
+  load_tests: true
+  security_tests: true
+  min_coverage: 90
+
+# Project structure
+recommended_structure:
+  - "project/"
+  - "apps/"
+  - "static/"
+  - "media/"
+  - "templates/"
+  - "tests/"
+  - "celery_app/"
+  - "requirements/"
+  - "requirements/base.txt"
+  - "requirements/dev.txt"
+  - "requirements/prod.txt"
+  - "manage.py"
+  - ".env.example"
+
+# Optional features
+features:
+  admin_panel: true
+  background_tasks: true
+  websockets: "Django Channels"
+  graphql: false
+  auth: "Django Auth + JWT"
+  rate_limiting: true
+  caching: "Redis"
+  monitoring: "Sentry"
+  celery_beat: true
+  migrations: true

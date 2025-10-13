@@ -43,17 +43,27 @@ class DatabasePool:
             config = SecureConfig.get_database_config()
 
         try:
+            min_conn = max(1, config.get("min_pool_size", 2))
+            max_conn = max(min_conn, config.get("connection_pool_size", 10))
+
             DatabasePool._pool = psycopg2.pool.ThreadedConnectionPool(
-                minconn=2,
-                maxconn=config.get("connection_pool_size", 10),
-                host=config["localhost"],
-                port=config["5432"],
-                database=config["beverly_knits_erp"],
-                user=config["erp_user"],
-                password=config["erp_password"],
+                minconn=min_conn,
+                maxconn=max_conn,
+                host=config["host"],
+                port=config["port"],
+                database=config["database"],
+                user=config["user"],
+                password=config["password"],
+                connect_timeout=config.get("connect_timeout", 10),
+                options=config.get("connection_options", ""),
             )
             logger.info(
-                f"Database connection pool initialized with {config.get('connection_pool_size', 10)} connections"
+                "Database connection pool initialized "
+                "host=%s db=%s min=%s max=%s",
+                config["host"],
+                config["database"],
+                min_conn,
+                max_conn,
             )
         except Exception as e:
             logger.error(f"Failed to initialize connection pool: {e}")

@@ -1,0 +1,105 @@
+# Rust Actix Preset
+# High-performance systems programming with Actix-web and PostgreSQL
+
+name: "Rust Actix Stack"
+description: "High-performance async Rust API development with Actix-web, SQLx, and PostgreSQL"
+version: "1.0.0"
+
+# Stack configuration
+stack:
+  languages:
+    - Rust
+  frameworks:
+    - Actix-web
+    - SQLx
+    - Tokio
+  databases:
+    - PostgreSQL
+  tools:
+    - cargo
+    - rustc
+    - clippy
+    - rustfmt
+    - cargo-test
+    - cargo-bench
+
+# Quality settings
+quality:
+  level: "strict"
+  max_complexity: 8
+  max_duplication: 2.0
+  max_file_loc: 500
+  max_function_loc: 40
+  min_test_coverage: 85
+  type_checking: "strict"  # Rust enforces this
+
+# Recommended agents (loaded on init)
+recommended_agents:
+  core:
+    - backend-developer
+    - rust-engineer
+    - api-designer
+  quality:
+    - code-reviewer
+    - performance-engineer
+    - security-auditor
+  data:
+    - database-optimizer
+    - postgres-pro
+  infrastructure:
+    - devops-engineer
+    - deployment-engineer
+    - kubernetes-specialist
+
+# Pre-commit hooks
+pre_commit:
+  enabled: true
+  checks:
+    - file_size
+    - formatting  # rustfmt
+    - clippy  # Rust linter
+    - tests
+
+# Documentation
+documentation:
+  adr_required: true
+  api_docs: "OpenAPI via utoipa"
+  code_docs: "rustdoc"
+
+# Testing strategy
+testing:
+  framework: "cargo test"
+  coverage_tool: "tarpaulin"
+  integration_tests: true
+  load_tests: true
+  benchmark_tests: true
+  min_coverage: 85
+
+# Project structure
+recommended_structure:
+  - "src/"
+  - "src/main.rs"
+  - "src/lib.rs"
+  - "src/api/"
+  - "src/models/"
+  - "src/db/"
+  - "src/middleware/"
+  - "tests/"
+  - "benches/"
+  - "Cargo.toml"
+  - "Cargo.lock"
+  - ".env.example"
+  - "diesel.toml"  # or sqlx-data.json
+
+# Optional features
+features:
+  async_runtime: "Tokio"
+  orm: "SQLx"  # or Diesel
+  serialization: "serde"
+  validation: "validator"
+  auth: "JWT via jsonwebtoken"
+  rate_limiting: true
+  caching: "Redis"
+  monitoring: "Prometheus"
+  tracing: "tracing + tracing-subscriber"
+  tls: true

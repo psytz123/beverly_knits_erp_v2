@@ -1,0 +1,127 @@
+<!-- Search Bar Component -->
+<div class="bg-white rounded-lg shadow-md p-4 mb-6" role="search" aria-labelledby="search-heading">
+    <h3 id="search-heading" class="sr-only">Search</h3>
+
+    <!-- Search Input Container -->
+    <div class="relative">
+        <!-- Search Icon -->
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+
+        <!-- Search Input Field -->
+        <input
+            type="search"
+            id="search-input"
+            class="block w-full pl-10 pr-24 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            placeholder="Search by description, file, or task... (Ctrl+K)"
+            autocomplete="off"
+            aria-label="Search workspace data"
+            aria-describedby="search-help"
+            aria-controls="search-results">
+
+        <!-- Loading Spinner -->
+        <div id="search-spinner" class="hidden absolute inset-y-0 right-12 flex items-center pr-3">
+            <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+
+        <!-- Clear Button -->
+        <button
+            id="search-clear"
+            class="hidden absolute inset-y-0 right-3 flex items-center px-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-colors"
+            aria-label="Clear search">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        <!-- Search History Dropdown -->
+        <div
+            id="search-history"
+            class="hidden absolute z-10 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+            role="listbox"
+            aria-label="Recent searches">
+            <!-- History items will be inserted here dynamically -->
+        </div>
+    </div>
+
+    <!-- Search Help Text -->
+    <p id="search-help" class="text-xs text-gray-500 mt-2 flex items-center space-x-4">
+        <span>
+            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Ctrl+K</kbd>
+            to focus
+        </span>
+        <span>
+            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Esc</kbd>
+            to clear
+        </span>
+    </p>
+</div>
+
+<!-- Active Filters Display -->
+<div id="active-filters" class="mb-4" aria-live="polite" aria-atomic="false">
+    <!-- Active filter tags will be inserted here -->
+</div>
+
+<!-- Search Results Container -->
+<div id="search-results" aria-live="polite" aria-atomic="false">
+    <!-- Results will be inserted here dynamically -->
+</div>
+
+<!-- Pagination Container -->
+<div id="search-pagination">
+    <!-- Pagination controls will be inserted here -->
+</div>
+
+<!-- Accessibility: Screen reader only styles -->
+<style>
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+    }
+
+    /* Search input focus styles */
+    #search-input:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* History dropdown animation */
+    #search-history {
+        animation: slideDown 0.2s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Highlight marks */
+    mark {
+        background-color: #fef08a;
+        padding: 0 2px;
+        border-radius: 2px;
+    }
+
+    /* Keyboard shortcuts styling */
+    kbd {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+</style>

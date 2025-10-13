@@ -1,0 +1,448 @@
+/**
+ * AI Workspace Dashboard - Component Styles
+ *
+ * Following UI Design System and Component Library specifications
+ * Version: 1.2.0
+ */
+
+/* ===================================
+   Screen Reader Only (Accessibility)
+   =================================== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.sr-only:focus,
+.sr-only:active {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
+/* ===================================
+   Toast Notifications
+   =================================== */
+.toast {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+                0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    min-width: 300px;
+    max-width: 400px;
+    z-index: 1000;
+    animation: toast-slide-in 0.3s ease-out;
+}
+
+@keyframes toast-slide-in {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast-exit {
+    animation: toast-slide-out 0.3s ease-in;
+}
+
+@keyframes toast-slide-out {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Toast Variants */
+.toast-success {
+    border-left: 4px solid #10B981;
+}
+
+.toast-error {
+    border-left: 4px solid #EF4444;
+}
+
+.toast-warning {
+    border-left: 4px solid #F59E0B;
+}
+
+.toast-info {
+    border-left: 4px solid #3B82F6;
+}
+
+.toast__icon {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+}
+
+.toast-success .toast__icon {
+    color: #10B981;
+}
+
+.toast-error .toast__icon {
+    color: #EF4444;
+}
+
+.toast-warning .toast__icon {
+    color: #F59E0B;
+}
+
+.toast-info .toast__icon {
+    color: #3B82F6;
+}
+
+.toast__content {
+    flex: 1;
+}
+
+.toast__message {
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.toast__dismiss {
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    color: #6B7280;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.toast__dismiss:hover {
+    color: #1F2937;
+}
+
+/* ===================================
+   Card Hover Effects
+   =================================== */
+.card-hover {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ===================================
+   Loading Skeletons
+   =================================== */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        #F3F4F6 25%,
+        #E5E7EB 50%,
+        #F3F4F6 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 0.25rem;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-line {
+    height: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-line--short {
+    width: 60%;
+}
+
+.skeleton-line--medium {
+    width: 80%;
+}
+
+/* ===================================
+   Empty States
+   =================================== */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-state__icon {
+    width: 4rem;
+    height: 4rem;
+    color: #9CA3AF;
+    margin: 0 auto 1rem;
+}
+
+.empty-state__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state__message {
+    font-size: 0.875rem;
+    color: #6B7280;
+    max-width: 28rem;
+    margin: 0 auto;
+}
+
+/* ===================================
+   Progress Bar Animations
+   =================================== */
+.progress-bar {
+    transition: width 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===================================
+   Connection Status Animations
+   =================================== */
+.pulse-animation {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ===================================
+   Focus Styles (Accessibility)
+   =================================== */
+*:focus-visible {
+    outline: 2px solid #3B82F6;
+    outline-offset: 2px;
+    border-radius: 0.125rem;
+}
+
+/* Skip focus outline for mouse users */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ===================================
+   Reduced Motion (Accessibility)
+   =================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===================================
+   Error Boundary
+   =================================== */
+.error-boundary {
+    background-color: #FEF2F2;
+    border: 1px solid #FEE2E2;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 2rem;
+}
+
+.error-boundary h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #991B1B;
+    margin-bottom: 0.5rem;
+}
+
+.error-boundary p {
+    color: #B91C1C;
+    margin-bottom: 1rem;
+}
+
+.error-boundary button {
+    padding: 0.5rem 1rem;
+    background-color: #DC2626;
+    color: white;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.15s;
+}
+
+.error-boundary button:hover {
+    background-color: #B91C1C;
+}
+
+/* ===================================
+   Chart Container Styles
+   =================================== */
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.chart-container canvas {
+    max-height: 100%;
+}
+
+/* ===================================
+   Activity Feed Styles
+   =================================== */
+.activity-item {
+    transition: background-color 0.15s ease;
+}
+
+.activity-item:hover {
+    background-color: #F9FAFB;
+}
+
+/* ===================================
+   Badge Styles
+   =================================== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-success {
+    background-color: #D1FAE5;
+    color: #065F46;
+}
+
+.badge-warning {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+.badge-danger {
+    background-color: #FEE2E2;
+    color: #991B1B;
+}
+
+.badge-info {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+}
+
+/* ===================================
+   Alert Styles
+   =================================== */
+.alert {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid;
+    margin-bottom: 1rem;
+}
+
+.alert-error {
+    background-color: #FEF2F2;
+    border-color: #EF4444;
+    color: #7F1D1D;
+}
+
+.alert-warning {
+    background-color: #FFFBEB;
+    border-color: #F59E0B;
+    color: #78350F;
+}
+
+.alert-info {
+    background-color: #EFF6FF;
+    border-color: #3B82F6;
+    color: #1E3A8A;
+}
+
+.alert-success {
+    background-color: #F0FDF4;
+    border-color: #10B981;
+    color: #14532D;
+}
+
+.alert__icon {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.alert__content {
+    flex: 1;
+}
+
+.alert__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.alert__message {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* ===================================
+   Utility Classes
+   =================================== */
+.transition-smooth {
+    transition: all 0.2s ease-in-out;
+}
+
+.shadow-hover:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ===================================
+   Responsive Utilities
+   =================================== */
+@media (max-width: 640px) {
+    .toast {
+        min-width: calc(100vw - 2rem);
+        left: 1rem;
+        right: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+}

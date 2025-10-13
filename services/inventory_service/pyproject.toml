@@ -1,0 +1,22 @@
+[project]
+name = "inventory-service"
+version = "0.1.0"
+description = "Inventory analytics microservice for Beverly Knits ERP"
+authors = [ { name = "Beverly Knits Engineering" } ]
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic>=2.5.0",
+  "sqlalchemy>=2.0.0",
+  "httpx"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-asyncio"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

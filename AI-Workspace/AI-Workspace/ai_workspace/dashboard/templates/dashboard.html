@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AI Workspace{% endblock %}
+
+{% block content %}
+<!-- Metrics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <!-- Avg Reuse Card -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow" role="region" aria-labelledby="avg-reuse-label">
+        <h3 id="avg-reuse-label" class="text-gray-600 text-sm font-medium mb-2">Avg Reuse</h3>
+        <p class="text-3xl font-bold text-blue-600" id="avg-reuse">--</p>
+        <p class="text-xs text-gray-500 mt-1">Percentage</p>
+    </div>
+
+    <!-- Gates Completed Card -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow" role="region" aria-labelledby="gates-label">
+        <h3 id="gates-label" class="text-gray-600 text-sm font-medium mb-2">Gates</h3>
+        <p class="text-3xl font-bold text-green-600" id="gates-complete">--</p>
+        <p class="text-xs text-gray-500 mt-1">Completed</p>
+    </div>
+
+    <!-- Primary Language Card -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow" role="region" aria-labelledby="lang-label">
+        <h3 id="lang-label" class="text-gray-600 text-sm font-medium mb-2">Primary Language</h3>
+        <p class="text-2xl font-bold text-purple-600" id="primary-lang">--</p>
+        <p class="text-xs text-gray-500 mt-1">Detected</p>
+    </div>
+
+    <!-- Total Checks Card -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow" role="region" aria-labelledby="checks-label">
+        <h3 id="checks-label" class="text-gray-600 text-sm font-medium mb-2">Total Checks</h3>
+        <p class="text-3xl font-bold text-orange-600" id="total-checks">--</p>
+        <p class="text-xs text-gray-500 mt-1">Reuse Analysis</p>
+    </div>
+</div>
+
+<!-- Quality Metrics -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-8" role="region" aria-labelledby="quality-heading">
+    <h2 id="quality-heading" class="text-xl font-bold mb-4">Quality Compliance (5 Core Principles)</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Reuse Compliance -->
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-sm text-gray-600">Reuse (Principle 1)</span>
+                <span class="text-sm font-bold" id="reuse-compliance" aria-label="Reuse compliance percentage">--%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div id="reuse-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Check Before Create Compliance -->
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-sm text-gray-600">Check Before Create (P3)</span>
+                <span class="text-sm font-bold" id="check-compliance" aria-label="Check before create compliance percentage">--%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div id="check-bar" class="bg-green-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Phase Gates Compliance -->
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-sm text-gray-600">Phase Gates (P4)</span>
+                <span class="text-sm font-bold" id="gate-compliance" aria-label="Gate compliance percentage">--%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div id="gate-bar" class="bg-purple-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Score -->
+    <div class="mt-4">
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-700">Overall Quality Score</span>
+            <span class="text-2xl font-bold text-blue-600" id="overall-score" aria-label="Overall quality score">--%</span>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Reuse Distribution Chart -->
+    <div class="bg-white rounded-lg shadow-md p-6" role="region" aria-labelledby="reuse-chart-heading">
+        <h3 id="reuse-chart-heading" class="text-xl font-bold mb-4">Reuse Distribution</h3>
+        <div role="img" aria-label="Bar chart showing reuse percentage distribution across different ranges">
+            <canvas id="reuseChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Phase Gate Progress Chart -->
+    <div class="bg-white rounded-lg shadow-md p-6" role="region" aria-labelledby="gates-chart-heading">
+        <h3 id="gates-chart-heading" class="text-xl font-bold mb-4">Phase Gate Progress</h3>
+        <div role="img" aria-label="Doughnut chart showing phase gate completion distribution">
+            <canvas id="gatesChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="bg-white rounded-lg shadow-md p-6" role="region" aria-labelledby="activity-heading">
+    <h3 id="activity-heading" class="text-xl font-bold mb-4">Recent Activity</h3>
+    <div id="recent-activity" class="space-y-2" aria-live="polite" aria-atomic="false">
+        <div class="text-center py-8 text-gray-500">
+            <p class="text-sm">Loading activity...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Module System (ES6 Modules) -->
+<script type="module" src="{{ url_for('static', filename='js/modules/main.js') }}"></script>
+{% endblock %}

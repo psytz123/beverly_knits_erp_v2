@@ -1,0 +1,35 @@
+{
+  "handoff": {
+    "id": "9ce76333-3444-448d-b382-412b97336a8e",
+    "timestamp": "2025-10-13T08:41:42Z",
+    "from": "tech-lead-orchestrator",
+    "to": "qa-expert",
+    "status": "pending"
+  },
+  "context": {
+    "task": "Reorganize tests and raise coverage",
+    "phase": "planning",
+    "summary": "Stabilize fixtures, restructure suites, and align with CI coverage gates."
+  },
+  "outputs": {
+    "created": [
+      ".agent-workspace/outputs/design/2025-10-13-orchestration-plan.md"
+    ]
+  },
+  "next_steps": {
+    "required": [
+      "Consolidate scattered tests into organized suites",
+      "Fix harness path issues and create coverage reporting",
+      "Deliver regression test checklist linked to pipeline"
+    ]
+  },
+  "dependencies": [
+    "backend-developer",
+    "devops-engineer"
+  ],
+  "workspace_info": {
+    "structure": "Standard v1.0",
+    "location": ".agent-workspace/",
+    "status": "ready"
+  }
+}

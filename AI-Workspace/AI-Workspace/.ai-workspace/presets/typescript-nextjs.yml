@@ -1,0 +1,111 @@
+# TypeScript Next.js Preset
+# Modern full-stack React development with Next.js and Prisma
+
+name: "TypeScript Next.js Stack"
+description: "Full-stack TypeScript development with Next.js, React, Prisma, and PostgreSQL"
+version: "1.0.0"
+
+# Stack configuration
+stack:
+  languages:
+    - TypeScript
+    - JavaScript
+  frameworks:
+    - Next.js
+    - React
+    - Prisma
+    - TailwindCSS
+  databases:
+    - PostgreSQL
+  tools:
+    - npm
+    - pnpm
+    - jest
+    - playwright
+    - eslint
+    - prettier
+    - tsc
+
+# Quality settings
+quality:
+  level: "balanced"
+  max_complexity: 10
+  max_duplication: 3.0
+  max_file_loc: 500
+  max_function_loc: 50
+  min_test_coverage: 85
+  type_checking: "strict"
+
+# Recommended agents (loaded on init)
+recommended_agents:
+  core:
+    - fullstack-developer
+    - frontend-developer
+    - backend-developer
+    - typescript-pro
+  frameworks:
+    - nextjs-developer
+    - react-specialist
+  quality:
+    - code-reviewer
+    - test-automator
+    - accessibility-tester
+  design:
+    - ui-designer
+    - ux-researcher
+  data:
+    - database-optimizer
+    - postgres-pro
+
+# Pre-commit hooks
+pre_commit:
+  enabled: true
+  checks:
+    - file_size
+    - duplication
+    - type_coverage
+    - formatting
+    - eslint
+
+# Documentation
+documentation:
+  adr_required: true
+  component_docs: "Storybook"
+  api_docs: "tRPC/GraphQL"
+  docstrings: "TSDoc"
+
+# Testing strategy
+testing:
+  framework: "jest + playwright"
+  coverage_tool: "jest --coverage"
+  integration_tests: true
+  e2e_tests: true
+  visual_regression: true
+  min_coverage: 85
+
+# Project structure
+recommended_structure:
+  - "app/"
+  - "components/"
+  - "lib/"
+  - "prisma/"
+  - "public/"
+  - "styles/"
+  - "tests/"
+  - "types/"
+  - "package.json"
+  - "tsconfig.json"
+  - "next.config.js"
+  - ".env.example"
+
+# Optional features
+features:
+  server_actions: true
+  app_router: true
+  streaming_ssr: true
+  image_optimization: true
+  auth: "NextAuth.js"
+  api_routes: true
+  internationalization: false
+  pwa: false
+  analytics: "Vercel Analytics"

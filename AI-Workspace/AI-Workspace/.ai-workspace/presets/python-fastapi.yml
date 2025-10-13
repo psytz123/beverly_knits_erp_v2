@@ -1,0 +1,102 @@
+# Python FastAPI Preset
+# High-performance Python API development with PostgreSQL
+
+name: "Python FastAPI Stack"
+description: "Modern Python API development with FastAPI, PostgreSQL, and pytest"
+version: "1.0.0"
+
+# Stack configuration
+stack:
+  languages:
+    - Python
+  frameworks:
+    - FastAPI
+    - Pydantic
+    - SQLAlchemy
+  databases:
+    - PostgreSQL
+  tools:
+    - pytest
+    - black
+    - mypy
+    - ruff
+    - uvicorn
+    - alembic
+
+# Quality settings
+quality:
+  level: "strict"
+  max_complexity: 8
+  max_duplication: 2.5
+  max_file_loc: 400
+  max_function_loc: 40
+  min_test_coverage: 90
+  type_checking: "strict"
+
+# Recommended agents (loaded on init)
+recommended_agents:
+  core:
+    - backend-developer
+    - api-designer
+    - python-pro
+  quality:
+    - code-reviewer
+    - test-automator
+    - qa-expert
+  data:
+    - database-optimizer
+    - postgres-pro
+    - data-analyst
+  infrastructure:
+    - devops-engineer
+    - deployment-engineer
+    - sre-engineer
+
+# Pre-commit hooks
+pre_commit:
+  enabled: true
+  checks:
+    - file_size
+    - duplication
+    - type_coverage
+    - formatting
+    - complexity
+
+# Documentation
+documentation:
+  adr_required: true
+  api_docs: "OpenAPI/Swagger"
+  docstrings: "Google style"
+
+# Testing strategy
+testing:
+  framework: "pytest"
+  coverage_tool: "pytest-cov"
+  integration_tests: true
+  load_tests: true
+  min_coverage: 90
+
+# Project structure
+recommended_structure:
+  - "app/"
+  - "app/api/"
+  - "app/models/"
+  - "app/services/"
+  - "app/db/"
+  - "tests/"
+  - "alembic/"
+  - "docs/"
+  - "requirements.txt"
+  - "pyproject.toml"
+  - ".env.example"
+
+# Optional features
+features:
+  async_database: true
+  background_tasks: true
+  websockets: false
+  graphql: false
+  auth: "JWT"
+  rate_limiting: true
+  caching: "Redis"
+  monitoring: "Prometheus"

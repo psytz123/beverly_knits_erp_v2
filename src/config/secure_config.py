@@ -42,6 +42,9 @@ class SecureConfig:
             "password": os.getenv("DB_PASSWORD", "erp_password"),
             "connection_pool_size": int(os.getenv("DB_POOL_SIZE", 10)),
             "max_overflow": int(os.getenv("DB_POOL_MAX_OVERFLOW", 20)),
+            "min_pool_size": int(os.getenv("DB_MIN_POOL_SIZE", 2)),
+            "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", 10)),
+            "connection_options": os.getenv("DB_CONNECTION_OPTIONS", ""),
         }
 
     @staticmethod

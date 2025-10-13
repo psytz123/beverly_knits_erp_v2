@@ -27,8 +27,11 @@ cd /d "%SCRIPT_DIR%"
 echo Starting Backend API Server on port 5006...
 echo.
 
-REM Start the backend API server in a new window (lightweight version)
-start "Beverly Knits API Server" cmd /k "python src\api\lightweight_api_server.py"
+REM Ensure log directory exists
+if not exist logs mkdir logs
+
+REM Start the backend API server in a new window (production eFab proxy)
+start "Beverly Knits API Server" cmd /k "python src\api\efab_api_server.py"
 
 REM Wait a few seconds for the API server to start
 timeout /t 5 /nobreak >nul
@@ -39,6 +42,19 @@ echo.
 
 REM Start the dashboard web server in a new window
 start "Beverly Knits Dashboard" cmd /k "python web\server.py 8080"
+
+echo.
+echo Validating service health...
+echo.
+
+python scripts\system_health_check.py --retries 5 --interval 2
+if errorlevel 1 (
+    echo ============================================================================
+    echo WARNING: Health check failed. Review logs and running windows for details.
+    echo Close the API and dashboard windows, resolve issues, then rerun this script.
+    echo ============================================================================
+    goto :after_health
+)
 
 REM Wait a moment
 timeout /t 3 /nobreak >nul
@@ -60,6 +76,8 @@ echo.
 REM Open the dashboard in the default browser
 timeout /t 2 /nobreak >nul
 start http://localhost:8080/consolidated_dashboard_visual_preserved.html
+
+:after_health
 
 echo.
 echo Press any key to exit this launcher window...

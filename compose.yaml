@@ -11,8 +11,20 @@ services:
   server:
     build:
       context: .
+    image: beverly-knits-erp:latest
     ports:
       - 5006:5006
+    environment:
+      APP_PORT: "5006"
+      APP_HOST: "0.0.0.0"
+      PYTHONUNBUFFERED: "1"
+    healthcheck:
+      test: ["CMD", "python", "scripts/system_health_check.py", "--host", "http://localhost", "--port", "5006", "--retries", "3", "--interval", "2"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
@@ -46,4 +58,3 @@ services:
 # secrets:
 #   db-password:
 #     file: db/password.txt
-

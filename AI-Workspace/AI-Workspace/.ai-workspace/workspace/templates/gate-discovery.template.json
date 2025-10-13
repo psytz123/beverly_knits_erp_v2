@@ -1,0 +1,37 @@
+{
+  "phase": "discovery",
+  "task_name": "{{TASK_NAME}}",
+  "timestamp": "{{TIMESTAMP}}",
+  "artifacts": {
+    "problem_statement": {
+      "completed": false,
+      "path": "",
+      "notes": "Clearly define the problem being solved"
+    },
+    "requirements": {
+      "completed": false,
+      "path": "",
+      "notes": "Document functional and non-functional requirements"
+    },
+    "constraints": {
+      "completed": false,
+      "path": "",
+      "notes": "Identify technical, business, and resource constraints"
+    },
+    "success_criteria": {
+      "completed": false,
+      "path": "",
+      "notes": "Define measurable success criteria"
+    }
+  },
+  "exit_criteria_met": [false, false, false, false],
+  "exit_criteria": [
+    "Problem clearly defined",
+    "Requirements documented",
+    "Constraints identified",
+    "Success criteria established"
+  ],
+  "notes": "",
+  "approved_by": "",
+  "approval_timestamp": null
+}

@@ -1,0 +1,120 @@
+{
+  "project": {
+    "name": "beverly_knits_erp_v2",
+    "description": "Coordinated gap remediation and modernization planning for Beverly Knits ERP v2 using multi-agent workflow.",
+    "created": "2025-10-13T08:37:31Z",
+    "type": "erp-platform"
+  },
+  "workspace": {
+    "version": "1.0",
+    "initialized": "2025-10-13T08:37:31Z",
+    "initializer": "workspace-initializer"
+  },
+  "agents": {
+    "active": [
+      "data-engineer",
+      "security-engineer",
+      "qa-expert",
+      "technical-writer"
+    ],
+    "completed": [
+      "workspace-initializer",
+      "tech-lead-orchestrator",
+      "backend-developer",
+      "platform-engineer",
+      "devops-engineer",
+      "microservices-architect",
+      "database-administrator",
+      "security-engineer"
+    ],
+    "registry": {
+      "backend-developer": {
+        "invoked": "2025-10-13T08:41:35Z",
+        "status": "completed",
+        "outputs": [
+          "start_dashboard.sh",
+          "start_dashboard.bat",
+          "scripts/system_health_check.py",
+          ".agent-workspace/outputs/implementation/2025-10-13-backend-developer-health-tooling.md"
+        ]
+      },
+      "platform-engineer": {
+        "invoked": "2025-10-13T08:41:36Z",
+        "status": "completed",
+        "outputs": [
+          "requirements.txt",
+          "Dockerfile",
+          "compose.yaml",
+          ".agent-workspace/outputs/implementation/2025-10-13-platform-engineer-container-refresh.md"
+        ]
+      },
+      "devops-engineer": {
+        "invoked": "2025-10-13T08:41:37Z",
+        "status": "completed",
+        "outputs": [
+          ".github/workflows/build.yml",
+          ".agent-workspace/outputs/documentation/2025-10-13-devops-engineer-ci-playbook.md"
+        ]
+      },
+      "microservices-architect": {
+        "invoked": "2025-10-13T08:41:38Z",
+        "status": "completed",
+        "outputs": [
+          ".agent-workspace/outputs/design/2025-10-13-microservices-architect-strangler-plan.md",
+          "services/inventory_service/app/main.py",
+          "services/inventory_service/app/api/routers.py",
+          "services/inventory_service/app/api/dependencies.py",
+          "services/inventory_service/app/domain/dto.py",
+          "services/inventory_service/app/domain/service.py",
+          "services/inventory_service/config/settings.py",
+          "services/inventory_service/tests/contracts/test_inventory_contracts.py",
+          "services/inventory_service/pyproject.toml"
+        ]
+      },
+      "database-administrator": {
+        "invoked": "2025-10-13T08:41:39Z",
+        "status": "completed",
+        "outputs": [
+          "database/migrations/20251013_initial_schema.sql",
+          "database/migrations/20251013_initial_schema_down.sql",
+          "database/migrations/README.md",
+          "src/database/connection_pool.py",
+          "src/config/secure_config.py",
+          ".agent-workspace/outputs/design/2025-10-13-database-administrator-postgres-plan.md"
+        ]
+      },
+      "data-engineer": {
+        "invoked": null,
+        "status": "pending",
+        "outputs": []
+      },
+      "security-engineer": {
+        "invoked": "2025-10-13T08:41:41Z",
+        "status": "completed",
+        "outputs": [
+          "src/api/efab_api_server.py",
+          "src/config/secrets_manager.py",
+          ".agent-workspace/outputs/security/2025-10-13-security-engineer-hardening.md"
+        ]
+      },
+      "qa-expert": {
+        "invoked": null,
+        "status": "pending",
+        "outputs": []
+      },
+      "technical-writer": {
+        "invoked": null,
+        "status": "pending",
+        "outputs": []
+      }
+    }
+  },
+  "context": {
+    "last_updated": "2025-10-13T09:55:00Z",
+    "checksum": ""
+  },
+  "handoffs": {
+    "pending": 3,
+    "completed": 6
+  }
+}

@@ -1,0 +1,26 @@
+# AI Workspace Dashboard Dependencies (Optional)
+# Install with: pip install -r requirements-dashboard.txt
+
+# Core dependencies
+-r requirements.txt
+
+# Async web framework
+quart>=0.19.0
+quart-cors>=0.7.0
+
+# Async I/O
+aiofiles>=23.2.0
+
+# Legacy Flask (for compatibility)
+flask>=3.0.0
+flask-cors>=4.0.0
+flask-socketio>=5.3.0
+python-socketio>=5.11.0
+
+# File monitoring
+watchdog>=3.0.0
+
+# Search and caching
+Whoosh>=2.7.4
+cachetools>=5.3.0
+redis>=5.0.0

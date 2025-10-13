@@ -1,0 +1,38 @@
+{
+  "phase": "implementation",
+  "task_name": "{{TASK_NAME}}",
+  "timestamp": "{{TIMESTAMP}}",
+  "artifacts": {
+    "code_complete": {
+      "completed": false,
+      "path": "",
+      "notes": "All code implemented and reviewed"
+    },
+    "unit_tests": {
+      "completed": false,
+      "path": "",
+      "notes": "Unit tests passing (≥85% coverage)",
+      "coverage_percentage": 0
+    },
+    "integration_tests": {
+      "completed": false,
+      "path": "",
+      "notes": "Integration tests passing"
+    },
+    "documentation": {
+      "completed": false,
+      "path": "",
+      "notes": "Code documented (docstrings/comments)"
+    }
+  },
+  "exit_criteria_met": [false, false, false, false],
+  "exit_criteria": [
+    "Code implemented and reviewed",
+    "Unit tests passing (≥85% coverage)",
+    "Integration tests passing",
+    "Code documented (docstrings/comments)"
+  ],
+  "notes": "",
+  "approved_by": "",
+  "approval_timestamp": null
+}

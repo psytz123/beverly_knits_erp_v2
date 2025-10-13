@@ -1,0 +1,136 @@
+# Microservices Preset
+# Cloud-native microservices architecture with Kubernetes and gRPC
+
+name: "Microservices Stack"
+description: "Cloud-native microservices with Docker, Kubernetes, gRPC, and service mesh"
+version: "1.0.0"
+
+# Stack configuration
+stack:
+  languages:
+    - Go
+    - Python
+    - TypeScript
+  frameworks:
+    - gRPC
+    - Protocol Buffers
+    - Docker
+    - Kubernetes
+  databases:
+    - PostgreSQL
+    - MongoDB
+    - Redis
+  tools:
+    - kubectl
+    - helm
+    - docker-compose
+    - terraform
+    - prometheus
+    - grafana
+    - jaeger
+
+# Quality settings
+quality:
+  level: "balanced"
+  max_complexity: 10
+  max_duplication: 3.0
+  max_file_loc: 500
+  max_function_loc: 50
+  min_test_coverage: 80
+  type_checking: "enabled"
+
+# Recommended agents (loaded on init)
+recommended_agents:
+  architecture:
+    - microservices-architect
+    - cloud-architect
+    - api-designer
+  development:
+    - backend-developer
+    - golang-pro
+    - python-pro
+    - typescript-pro
+  infrastructure:
+    - kubernetes-specialist
+    - devops-engineer
+    - platform-engineer
+    - terraform-engineer
+  quality:
+    - code-reviewer
+    - test-automator
+    - performance-engineer
+  reliability:
+    - sre-engineer
+    - chaos-engineer
+    - devops-incident-responder
+  monitoring:
+    - performance-monitor
+    - error-detective
+
+# Pre-commit hooks
+pre_commit:
+  enabled: true
+  checks:
+    - file_size
+    - duplication
+    - formatting
+    - complexity
+    - dockerfile_lint
+
+# Documentation
+documentation:
+  adr_required: true
+  api_docs: "OpenAPI + gRPC docs"
+  architecture_diagrams: "C4 model"
+  runbooks: true
+
+# Testing strategy
+testing:
+  unit_tests: true
+  integration_tests: true
+  contract_tests: true  # Consumer-driven contracts
+  e2e_tests: true
+  chaos_tests: true
+  load_tests: true
+  min_coverage: 80
+
+# Project structure
+recommended_structure:
+  - "services/"
+  - "services/api-gateway/"
+  - "services/auth-service/"
+  - "services/user-service/"
+  - "shared/"
+  - "shared/proto/"
+  - "shared/lib/"
+  - "infrastructure/"
+  - "infrastructure/k8s/"
+  - "infrastructure/terraform/"
+  - "infrastructure/helm/"
+  - "tests/"
+  - "docs/"
+  - "docker-compose.yml"
+  - ".env.example"
+
+# Optional features
+features:
+  service_mesh: "Istio"
+  api_gateway: "Kong or custom"
+  message_broker: "Kafka or RabbitMQ"
+  event_sourcing: false
+  cqrs: false
+  circuit_breaker: true
+  distributed_tracing: "Jaeger"
+  centralized_logging: "ELK Stack"
+  monitoring: "Prometheus + Grafana"
+  secrets_management: "Vault"
+  ci_cd: "GitHub Actions or GitLab CI"
+
+# Architecture patterns
+patterns:
+  communication: "gRPC + REST"
+  data_management: "Database per service"
+  service_discovery: "Kubernetes DNS"
+  config_management: "ConfigMaps + Secrets"
+  deployment: "Rolling updates"
+  scaling: "Horizontal Pod Autoscaler"

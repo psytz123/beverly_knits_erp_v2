@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Phase Gates - AI Workspace{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <h2 class="text-3xl font-bold text-gray-800">Phase Gate Progress</h2>
+    <p class="text-gray-600 mt-2">Track progress through the 5 development phases</p>
+</div>
+
+<!-- Search Bar -->
+{% include 'components/search-bar.html' %}
+
+<!-- Filter Panel -->
+{% include 'components/filter-panel.html' %}
+
+<!-- Phase Gate Timeline -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-8" role="region" aria-labelledby="timeline-heading">
+    <h3 id="timeline-heading" class="text-xl font-bold mb-6">Development Phase Timeline</h3>
+
+    <!-- Timeline Visualization -->
+    <div class="relative">
+        <!-- Timeline Line -->
+        <div class="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-300" aria-hidden="true"></div>
+
+        <!-- Phase 1: Discovery -->
+        <div class="relative mb-8 ml-16">
+            <div class="absolute -left-16 top-1 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">1</div>
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <h4 class="text-lg font-bold text-gray-800">Discovery</h4>
+                <p class="text-sm text-gray-600 mt-1">Understand requirements and analyze existing solutions</p>
+                <div class="mt-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-gray-500">Completion</span>
+                        <span class="text-xs font-bold" id="gate-discovery-percent">--%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="gate-discovery-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="mt-3 space-y-1">
+                    <p class="text-xs text-gray-600"><span class="font-medium">Exit Criteria:</span></p>
+                    <ul class="text-xs text-gray-600 ml-4 space-y-1">
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Requirements documented</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Reuse analysis completed</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Technical approach identified</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 2: Design -->
+        <div class="relative mb-8 ml-16">
+            <div class="absolute -left-16 top-1 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">2</div>
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <h4 class="text-lg font-bold text-gray-800">Design</h4>
+                <p class="text-sm text-gray-600 mt-1">Create architecture and detailed design plans</p>
+                <div class="mt-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-gray-500">Completion</span>
+                        <span class="text-xs font-bold" id="gate-design-percent">--%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="gate-design-bar" class="bg-purple-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="mt-3 space-y-1">
+                    <p class="text-xs text-gray-600"><span class="font-medium">Exit Criteria:</span></p>
+                    <ul class="text-xs text-gray-600 ml-4 space-y-1">
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>ADR created for decisions</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Architecture diagram created</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Dependencies identified</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 3: Implementation -->
+        <div class="relative mb-8 ml-16">
+            <div class="absolute -left-16 top-1 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">3</div>
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <h4 class="text-lg font-bold text-gray-800">Implementation</h4>
+                <p class="text-sm text-gray-600 mt-1">Build solution following design and standards</p>
+                <div class="mt-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-gray-500">Completion</span>
+                        <span class="text-xs font-bold" id="gate-implementation-percent">--%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="gate-implementation-bar" class="bg-green-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="mt-3 space-y-1">
+                    <p class="text-xs text-gray-600"><span class="font-medium">Exit Criteria:</span></p>
+                    <ul class="text-xs text-gray-600 ml-4 space-y-1">
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Code meets quality standards</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Unit tests written</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Code review completed</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 4: Verification -->
+        <div class="relative mb-8 ml-16">
+            <div class="absolute -left-16 top-1 w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold">4</div>
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <h4 class="text-lg font-bold text-gray-800">Verification</h4>
+                <p class="text-sm text-gray-600 mt-1">Test functionality and validate requirements</p>
+                <div class="mt-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-gray-500">Completion</span>
+                        <span class="text-xs font-bold" id="gate-verification-percent">--%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="gate-verification-bar" class="bg-orange-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="mt-3 space-y-1">
+                    <p class="text-xs text-gray-600"><span class="font-medium">Exit Criteria:</span></p>
+                    <ul class="text-xs text-gray-600 ml-4 space-y-1">
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>All tests passing</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Coverage requirements met</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Performance validated</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 5: Integration -->
+        <div class="relative ml-16">
+            <div class="absolute -left-16 top-1 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-bold">5</div>
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <h4 class="text-lg font-bold text-gray-800">Integration</h4>
+                <p class="text-sm text-gray-600 mt-1">Deploy and integrate with existing systems</p>
+                <div class="mt-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-gray-500">Completion</span>
+                        <span class="text-xs font-bold" id="gate-integration-percent">--%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="gate-integration-bar" class="bg-red-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="mt-3 space-y-1">
+                    <p class="text-xs text-gray-600"><span class="font-medium">Exit Criteria:</span></p>
+                    <ul class="text-xs text-gray-600 ml-4 space-y-1">
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Deployed successfully</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Integration tests passing</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2" aria-hidden="true">✓</span>
+                            <span>Documentation updated</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gate Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Total Gates -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h4 class="text-gray-600 text-sm font-medium mb-2">Total Gates</h4>
+        <p class="text-3xl font-bold text-blue-600" id="total-gates">5</p>
+        <p class="text-xs text-gray-500 mt-1">Development phases</p>
+    </div>
+
+    <!-- Completed Gates -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h4 class="text-gray-600 text-sm font-medium mb-2">Completed</h4>
+        <p class="text-3xl font-bold text-green-600" id="gates-complete">--</p>
+        <p class="text-xs text-gray-500 mt-1">Gates finished</p>
+    </div>
+
+    <!-- Current Phase -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h4 class="text-gray-600 text-sm font-medium mb-2">Current Phase</h4>
+        <p class="text-2xl font-bold text-purple-600" id="current-phase">--</p>
+        <p class="text-xs text-gray-500 mt-1">Active phase</p>
+    </div>
+</div>
+
+<!-- Phase Gate Chart -->
+<div class="bg-white rounded-lg shadow-md p-6" role="region" aria-labelledby="gates-chart-heading">
+    <h3 id="gates-chart-heading" class="text-xl font-bold mb-4">Phase Distribution</h3>
+    <div role="img" aria-label="Doughnut chart showing phase gate completion distribution">
+        <canvas id="gatesChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Module System (ES6 Modules) -->
+<script type="module" src="{{ url_for('static', filename='js/modules/main.js') }}"></script>
+{% endblock %}

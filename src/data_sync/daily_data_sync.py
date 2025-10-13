@@ -42,8 +42,8 @@ class DailyDataSync:
         self.sync_status_file = self.local_data_dir / ".daily_sync_status.json"
         self.sync_status = self._load_sync_status()
 
-    def _load_sync_status(self) -> Dict:
-        """Load sync status from file"""
+    def _load_metadata(self) -> Dict:
+        """Load sync metadata from file"""
         if self.sync_status_file.exists():
             with open(self.sync_status_file, "r") as f:
                 return json.load(f)
@@ -199,170 +199,33 @@ class DailyDataSync:
             logger.warning(
                 "Running in non-interactive mode - skipping browser-based sync"
             )
-            logger.info(f"To sync manually, visit: {self.sharepoint_url}")
             return False
 
-        # Check if we're in a test or import context
-        import sys
-
-        if (
-            "pytest" in sys.modules
-            or "unittest" in sys.modules
-            or hasattr(sys, "_test_mode")
-        ):
-            logger.warning("Test mode detected - skipping browser-based sync")
-            return False
-
-        # Open SharePoint in browser
-        logger.info(f"\nOpening SharePoint folder in browser...")
-        logger.info(f"Please download the data when the page loads")
+        # Try to open the SharePoint folder in the default browser
+        logger.info("Opening SharePoint folder in browser...")
         try:
             webbrowser.open(self.sharepoint_url)
+            logger.info("Please download the latest data zip file manually.")
         except Exception as e:
-            logger.error(f"Could not open browser: {e}")
-            logger.info(f"Please manually visit: {self.sharepoint_url}")
+            logger.error(f"Error opening browser: {e}")
             return False
 
-        # Wait for user to download
-        logger.info("\nWaiting for download to complete...")
-        logger.info("The file will be saved to your Downloads folder")
+        # Wait for user to download the file
+        logger.info("Waiting for data download...")
+        start_time = datetime.now()
+        timeout = timedelta(minutes=15)
 
-        # Monitor downloads folder
-        import time
+        while datetime.now() - start_time < timeout:
+            latest_file = self.find_latest_download()
+            if latest_file:
+                logger.info(f"Found downloaded file: {latest_file}")
+                return self.extract_and_sync(latest_file)
+            time.sleep(10)
 
-        start_time = time.time()
-        timeout = 300  # 5 minutes timeout
-
-        while time.time() - start_time < timeout:
-            latest_download = self.find_latest_download()
-
-            if latest_download:
-                logger.info(f"\nFound downloaded file: {latest_download.name}")
-
-                # Wait a bit to ensure download is complete
-                time.sleep(2)
-
-                # Extract and sync
-                if self.extract_and_sync(latest_download):
-                    logger.info("\n✅ Daily data sync completed successfully!")
-                    return True
-                else:
-                    logger.error("Failed to extract data")
-                    return False
-
-            time.sleep(5)  # Check every 5 seconds
-
-        logger.error("Timeout waiting for download")
+        logger.error("Timeout waiting for data download.")
         return False
-
-    def get_data_status(self) -> Dict:
-        """Get current data status"""
-        data_files = list(self.local_data_dir.glob("*.xlsx")) + list(
-            self.local_data_dir.glob("*.csv")
-        )
-
-        status = {
-            "total_files": len(data_files),
-            "xlsx_files": len([f for f in data_files if f.suffix == ".xlsx"]),
-            "csv_files": len([f for f in data_files if f.suffix == ".csv"]),
-            "last_sync": self.sync_status.get("last_sync"),
-            "sync_count": self.sync_status.get("sync_count", 0),
-            "needs_sync": self.needs_sync(),
-        }
-
-        if data_files:
-            # Get newest file modification time
-            newest_file = max(data_files, key=lambda p: p.stat().st_mtime)
-            status["newest_file_date"] = datetime.fromtimestamp(
-                newest_file.stat().st_mtime
-            ).isoformat()
-
-        return status
-
-
-# Integration with ERP
-def ensure_daily_data_sync():
-    """Ensure daily data is synced before ERP starts"""
-    # Skip sync in test/non-interactive environments
-    import sys
-
-    if os.environ.get("NON_INTERACTIVE", "").lower() == "true":
-        logger.info("Non-interactive mode - skipping data sync check")
-        return True
-
-    if "pytest" in sys.modules or "unittest" in sys.modules:
-        logger.info("Test environment detected - skipping data sync")
-        return True
-
-    syncer = DailyDataSync()
-
-    status = syncer.get_data_status()
-    logger.info(
-        f"Data status: {status['total_files']} files, last sync: {status['last_sync']}"
-    )
-
-    if status["needs_sync"]:
-        logger.warning("Daily data sync required!")
-
-        # In headless or CI environments, skip browser-based sync
-        if os.environ.get("CI", "").lower() == "true" or not os.environ.get("DISPLAY"):
-            logger.warning(
-                "Headless environment detected - cannot open browser for sync"
-            )
-            logger.info(f"Manual sync required. Visit: {syncer.sharepoint_url}")
-            return False
-
-        success = syncer.auto_download_and_sync()
-
-        if not success:
-            logger.error("Failed to sync daily data")
-            logger.info("\nMANUAL SYNC REQUIRED:")
-            logger.info(f"1. Open: {syncer.sharepoint_url}")
-            logger.info("2. Download the data (it will be a ZIP file)")
-            logger.info(
-                f"3. Run: python daily_data_sync.py --file <downloaded_file.zip>"
-            )
-            return False
-
-    return True
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Daily SharePoint data sync")
-    parser.add_argument("--file", help="Path to downloaded ZIP file (for manual sync)")
-    parser.add_argument("--status", action="store_true", help="Check sync status")
-    parser.add_argument("--auto", action="store_true", help="Run automatic sync")
-
-    args = parser.parse_args()
-
-    syncer = DailyDataSync()
-
-    if args.status:
-        status = syncer.get_data_status()
-        print(f"\nData Sync Status:")
-        print(
-            f"Total files: {status['total_files']} ({status['xlsx_files']} Excel, {status['csv_files']} CSV)"
-        )
-        print(f"Last sync: {status['last_sync'] or 'Never'}")
-        print(f"Sync count: {status['sync_count']}")
-        print(f"Needs sync: {'YES' if status['needs_sync'] else 'NO'}")
-
-    elif args.file:
-        # Manual sync with provided file
-        file_path = Path(args.file)
-        if not file_path.exists():
-            print(f"Error: File not found: {file_path}")
-        else:
-            if syncer.extract_and_sync(file_path):
-                print("✅ Manual sync completed successfully!")
-            else:
-                print("❌ Manual sync failed")
-
-    else:
-        # Auto sync
-        if syncer.auto_download_and_sync():
-            print("\n✅ Daily data is up to date!")
-        else:
-            print("\n❌ Please download data manually from SharePoint")
+    sync = DailyDataSync()
+    sync.auto_download_and_sync()

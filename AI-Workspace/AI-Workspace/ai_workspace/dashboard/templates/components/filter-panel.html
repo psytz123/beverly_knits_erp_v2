@@ -1,0 +1,281 @@
+<!-- Filter Panel Component -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-6" role="region" aria-labelledby="filter-heading">
+    <div class="flex items-center justify-between mb-4">
+        <h3 id="filter-heading" class="text-lg font-bold text-gray-800">Filters</h3>
+        <button
+            id="reset-filters"
+            class="text-sm text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+            aria-label="Reset all filters">
+            Reset All
+        </button>
+    </div>
+
+    <!-- Filter Grid -->
+    <div class="space-y-6">
+        <!-- Date Range Filter -->
+        <div>
+            <label for="filter-date-range" class="block text-sm font-medium text-gray-700 mb-2">
+                Date Range
+            </label>
+            <select
+                id="filter-date-range"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Filter by date range">
+                <option value="">All Time</option>
+                <option value="last-24-hours">Last 24 Hours</option>
+                <option value="last-7-days">Last 7 Days</option>
+                <option value="last-30-days">Last 30 Days</option>
+                <option value="last-90-days">Last 90 Days</option>
+            </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div>
+            <fieldset>
+                <legend class="block text-sm font-medium text-gray-700 mb-2">Status</legend>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input
+                            type="checkbox"
+                            data-filter-status
+                            value="passed"
+                            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Passed</span>
+                        <span class="ml-auto px-2 py-1 text-xs bg-green-100 text-green-800 rounded">✓</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input
+                            type="checkbox"
+                            data-filter-status
+                            value="failed"
+                            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Failed</span>
+                        <span class="ml-auto px-2 py-1 text-xs bg-red-100 text-red-800 rounded">✗</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input
+                            type="checkbox"
+                            data-filter-status
+                            value="in_progress"
+                            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">In Progress</span>
+                        <span class="ml-auto px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">⟳</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input
+                            type="checkbox"
+                            data-filter-status
+                            value="pending"
+                            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Pending</span>
+                        <span class="ml-auto px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">⏸</span>
+                    </label>
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- Type Filter -->
+        <div>
+            <fieldset>
+                <legend class="block text-sm font-medium text-gray-700 mb-2">Type</legend>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input
+                            type="checkbox"
+                            data-filter-type
+                            value="reuse_check"
+                            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Reuse Checks</span>
+                        <span class="ml-auto text-lg" aria-hidden="true">🔍</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input
+                            type="checkbox"
+                            data-filter-type
+                            value="phase_gate"
+                            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Phase Gates</span>
+                        <span class="ml-auto text-lg" aria-hidden="true">🚪</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input
+                            type="checkbox"
+                            data-filter-type
+                            value="agent_activity"
+                            class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Agent Activity</span>
+                        <span class="ml-auto text-lg" aria-hidden="true">🤖</span>
+                    </label>
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- Category Filter -->
+        <div>
+            <label for="filter-category" class="block text-sm font-medium text-gray-700 mb-2">
+                Agent Category
+            </label>
+            <select
+                id="filter-category"
+                multiple
+                size="5"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Filter by agent category (hold Ctrl/Cmd to select multiple)">
+                <option value="orchestration">00 - Orchestration</option>
+                <option value="development">01 - Development</option>
+                <option value="languages">02 - Languages</option>
+                <option value="frameworks">03 - Frameworks</option>
+                <option value="infrastructure">04 - Infrastructure</option>
+                <option value="quality">05 - Quality</option>
+                <option value="data-ai">06 - Data & AI</option>
+                <option value="specialized">07 - Specialized</option>
+                <option value="support">08 - Support</option>
+                <option value="utilities">09 - Utilities</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+        </div>
+
+        <!-- Reuse Percentage Slider -->
+        <div>
+            <label for="filter-reuse-range" class="block text-sm font-medium text-gray-700 mb-2">
+                Minimum Reuse Percentage: <span id="reuse-range-value" class="font-bold text-blue-600">0%</span>
+            </label>
+            <input
+                type="range"
+                id="filter-reuse-range"
+                min="0"
+                max="100"
+                step="5"
+                value="0"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                aria-label="Filter by minimum reuse percentage"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0">
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0%</span>
+                <span>50%</span>
+                <span>100%</span>
+            </div>
+        </div>
+
+        <!-- Preset Filters -->
+        <div class="border-t border-gray-200 pt-4">
+            <p class="text-sm font-medium text-gray-700 mb-3">Quick Filters</p>
+            <div class="space-y-2">
+                <button
+                    data-filter-preset="recent-failures"
+                    class="w-full px-4 py-2 text-sm text-left text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
+                    <span class="inline-block mr-2" aria-hidden="true">❌</span>
+                    Recent Failures (Last 7 Days)
+                </button>
+                <button
+                    data-filter-preset="high-reuse"
+                    class="w-full px-4 py-2 text-sm text-left text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                    <span class="inline-block mr-2" aria-hidden="true">🔄</span>
+                    High Reuse (≥70%)
+                </button>
+                <button
+                    data-filter-preset="pending-gates"
+                    class="w-full px-4 py-2 text-sm text-left text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <span class="inline-block mr-2" aria-hidden="true">🚪</span>
+                    Pending Phase Gates
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Panel Styles -->
+<style>
+    /* Custom range slider styling */
+    .slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background: #3B82F6;
+        cursor: pointer;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: #3B82F6;
+        cursor: pointer;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .slider::-webkit-slider-track {
+        background: linear-gradient(to right, #EF4444 0%, #F59E0B 50%, #10B981 100%);
+        height: 8px;
+        border-radius: 4px;
+    }
+
+    .slider::-moz-range-track {
+        background: linear-gradient(to right, #EF4444 0%, #F59E0B 50%, #10B981 100%);
+        height: 8px;
+        border-radius: 4px;
+    }
+
+    .slider:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .slider:focus::-webkit-slider-thumb {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+
+    .slider:focus::-moz-range-thumb {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Checkbox focus styles */
+    input[type="checkbox"]:focus {
+        outline: 2px solid #3B82F6;
+        outline-offset: 2px;
+    }
+
+    /* Multi-select styling */
+    select[multiple] {
+        scrollbar-width: thin;
+        scrollbar-color: #CBD5E0 #F7FAFC;
+    }
+
+    select[multiple]::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    select[multiple]::-webkit-scrollbar-track {
+        background: #F7FAFC;
+        border-radius: 4px;
+    }
+
+    select[multiple]::-webkit-scrollbar-thumb {
+        background: #CBD5E0;
+        border-radius: 4px;
+    }
+
+    select[multiple]::-webkit-scrollbar-thumb:hover {
+        background: #A0AEC0;
+    }
+
+    /* Preset button hover effects */
+    button[data-filter-preset] {
+        transition: all 0.2s ease;
+    }
+
+    button[data-filter-preset]:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button[data-filter-preset]:active {
+        transform: translateY(0);
+    }
+</style>

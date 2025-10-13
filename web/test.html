@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Connection Test</title>
+</head>
+<body>
+    <h1>Beverly Knits ERP - API Connection Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+
+        async function testAPI() {
+            results.innerHTML += '<p>Testing API connection...</p>';
+
+            try {
+                const response = await fetch('http://localhost:5006/api/health');
+                const data = await response.json();
+
+                results.innerHTML += `<p style="color: green;">✓ SUCCESS! Status: ${response.status}</p>`;
+                results.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                results.innerHTML += `<p style="color: red;">✗ FAILED: ${error.message}</p>`;
+            }
+        }
+
+        testAPI();
+    </script>
+</body>
+</html>

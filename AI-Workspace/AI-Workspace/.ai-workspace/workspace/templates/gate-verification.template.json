@@ -1,0 +1,40 @@
+{
+  "phase": "verification",
+  "task_name": "{{TASK_NAME}}",
+  "timestamp": "{{TIMESTAMP}}",
+  "artifacts": {
+    "real_data_test": {
+      "completed": false,
+      "path": "",
+      "notes": "⚠️ CRITICAL: Must test with REAL production data (not mocks)",
+      "used_real_data": false,
+      "data_source": "",
+      "sample_size": 0
+    },
+    "performance_test": {
+      "completed": false,
+      "path": "",
+      "notes": "Performance benchmarks met"
+    },
+    "security_review": {
+      "completed": false,
+      "path": "",
+      "notes": "Security review completed"
+    },
+    "edge_cases_tested": {
+      "completed": false,
+      "path": "",
+      "notes": "Edge cases validated"
+    }
+  },
+  "exit_criteria_met": [false, false, false, false],
+  "exit_criteria": [
+    "Tested with REAL production data (not mocks)",
+    "Performance benchmarks met",
+    "Security review completed",
+    "Edge cases validated"
+  ],
+  "notes": "",
+  "approved_by": "",
+  "approval_timestamp": null
+}

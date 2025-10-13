@@ -1,0 +1,64 @@
+{
+  "handoff": {
+    "id": "{{HANDOFF_ID}}",
+    "from_agent": "{{FROM_AGENT}}",
+    "to_agent": "{{TO_AGENT}}",
+    "status": "{{STATUS}}",
+    "created_at": "{{TIMESTAMP}}",
+    "updated_at": "{{TIMESTAMP}}"
+  },
+  "context": {
+    "task": "{{TASK_DESCRIPTION}}",
+    "objective": "{{OBJECTIVE}}",
+    "files_modified": [],
+    "files_created": [],
+    "dependencies": [],
+    "current_phase": "{{CURRENT_PHASE}}"
+  },
+  "work_completed": {
+    "summary": "",
+    "artifacts": [],
+    "decisions_made": [],
+    "issues_encountered": []
+  },
+  "next_steps": {
+    "immediate_actions": [],
+    "blockers": [],
+    "questions": [],
+    "estimated_effort": ""
+  },
+  "quality_metrics": {
+    "test_coverage": 0,
+    "code_complexity": 0,
+    "duplication_percentage": 0,
+    "files_over_500_loc": []
+  },
+  "principle_compliance": {
+    "principle_1_less_is_more": {
+      "compliant": false,
+      "notes": "Reuse analysis completed?"
+    },
+    "principle_2_document_everything": {
+      "compliant": false,
+      "notes": "ADRs created?"
+    },
+    "principle_3_check_before_create": {
+      "compliant": false,
+      "notes": "Searched before creating?"
+    },
+    "principle_4_phase_gates": {
+      "compliant": false,
+      "notes": "Phase gate validated?"
+    },
+    "principle_5_plan_before_act": {
+      "compliant": false,
+      "notes": "Task plan exists?"
+    }
+  },
+  "metadata": {
+    "priority": "{{PRIORITY}}",
+    "estimated_completion": "{{ESTIMATED_COMPLETION}}",
+    "actual_completion": null,
+    "notes": ""
+  }
+}

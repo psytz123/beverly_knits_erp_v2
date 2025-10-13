@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}AI Agents - AI Workspace{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <h2 class="text-3xl font-bold text-gray-800">AI Agent Explorer</h2>
+    <p class="text-gray-600 mt-2">Browse and explore the 156 specialized AI agents across 10 categories</p>
+</div>
+
+<!-- Search Bar -->
+{% include 'components/search-bar.html' %}
+
+<!-- Filter Panel -->
+{% include 'components/filter-panel.html' %}
+
+<!-- Agent Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <!-- Total Agents -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+        <h3 class="text-gray-600 text-sm font-medium mb-2">Total Agents</h3>
+        <p class="text-3xl font-bold text-blue-600">156</p>
+        <p class="text-xs text-gray-500 mt-1">Specialized experts</p>
+    </div>
+
+    <!-- Categories -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+        <h3 class="text-gray-600 text-sm font-medium mb-2">Categories</h3>
+        <p class="text-3xl font-bold text-green-600">10</p>
+        <p class="text-xs text-gray-500 mt-1">Organized groups</p>
+    </div>
+
+    <!-- Most Used Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+        <h3 class="text-gray-600 text-sm font-medium mb-2">Most Popular</h3>
+        <p class="text-2xl font-bold text-purple-600" id="popular-category">Development</p>
+        <p class="text-xs text-gray-500 mt-1">Most used category</p>
+    </div>
+
+    <!-- Recommended Agents -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+        <h3 class="text-gray-600 text-sm font-medium mb-2">Recommended</h3>
+        <p class="text-3xl font-bold text-orange-600" id="recommended-count">--</p>
+        <p class="text-xs text-gray-500 mt-1">For current project</p>
+    </div>
+</div>
+
+<!-- Agent Categories Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Orchestration Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-blue-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Orchestration</h4>
+                <p class="text-sm text-gray-600 mt-1">Project setup & coordination</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">🎯</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                00-orchestration
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: tech-lead, project-manager, architect</p>
+    </div>
+
+    <!-- Development Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-green-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Development</h4>
+                <p class="text-sm text-gray-600 mt-1">Fullstack, backend, frontend</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">💻</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                01-development
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: fullstack, backend, frontend, mobile</p>
+    </div>
+
+    <!-- Languages Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-purple-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Languages</h4>
+                <p class="text-sm text-gray-600 mt-1">Python, TypeScript, Rust, Go, Java</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">🔤</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
+                02-languages
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: python-expert, typescript-expert, rust-expert</p>
+    </div>
+
+    <!-- Frameworks Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-yellow-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Frameworks</h4>
+                <p class="text-sm text-gray-600 mt-1">React, Next.js, Django, Spring</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">🏗️</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                03-frameworks
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: react-expert, nextjs-expert, django-expert</p>
+    </div>
+
+    <!-- Infrastructure Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-red-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Infrastructure</h4>
+                <p class="text-sm text-gray-600 mt-1">DevOps, Kubernetes, cloud</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">☁️</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                04-infrastructure
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: devops-engineer, cloud-architect, k8s-expert</p>
+    </div>
+
+    <!-- Quality Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-indigo-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Quality</h4>
+                <p class="text-sm text-gray-600 mt-1">Code review, testing, performance</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">✅</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-semibold rounded-full">
+                05-quality
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: code-reviewer, qa-expert, performance-engineer</p>
+    </div>
+
+    <!-- Data & AI Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-pink-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Data & AI</h4>
+                <p class="text-sm text-gray-600 mt-1">Data engineering, ML, LLM</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">🤖</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-pink-100 text-pink-800 text-xs font-semibold rounded-full">
+                06-data-ai
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: data-engineer, ml-engineer, llm-expert</p>
+    </div>
+
+    <!-- Specialized Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-teal-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Specialized</h4>
+                <p class="text-sm text-gray-600 mt-1">Blockchain, fintech, gaming, IoT</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">🎮</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-teal-100 text-teal-800 text-xs font-semibold rounded-full">
+                07-specialized
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: blockchain-expert, fintech-expert, game-dev</p>
+    </div>
+
+    <!-- Support Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-orange-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Support</h4>
+                <p class="text-sm text-gray-600 mt-1">Documentation, business, management</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">📚</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">
+                08-support
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: technical-writer, business-analyst, scrum-master</p>
+    </div>
+
+    <!-- Utilities Category -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow border-l-4 border-gray-500">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <h4 class="text-lg font-bold text-gray-800">Utilities</h4>
+                <p class="text-sm text-gray-600 mt-1">Research, search, analysis</p>
+            </div>
+            <span class="text-2xl" aria-hidden="true">🔧</span>
+        </div>
+        <div class="mt-3">
+            <span class="inline-block px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
+                09-utilities
+            </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Key agents: researcher, code-search, dependency-analyzer</p>
+    </div>
+</div>
+
+<!-- Agent Recommendation Tool -->
+<div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-md p-8 text-white" role="region" aria-labelledby="recommendation-heading">
+    <h3 id="recommendation-heading" class="text-2xl font-bold mb-4">Get Agent Recommendations</h3>
+    <p class="mb-6">Use the CLI to find the perfect agents for your task:</p>
+    <div class="bg-gray-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+        <code class="text-green-400">$ ai-workspace recommend "build REST API"</code>
+    </div>
+    <p class="text-sm mt-4 text-blue-100">
+        The recommendation engine uses semantic matching to find agents with relevant expertise for your specific task.
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Module System (ES6 Modules) -->
+<script type="module" src="{{ url_for('static', filename='js/modules/main.js') }}"></script>
+{% endblock %}

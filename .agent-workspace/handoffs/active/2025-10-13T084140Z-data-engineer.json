@@ -1,0 +1,34 @@
+{
+  "handoff": {
+    "id": "ca5a2fc3-3866-41ee-b218-6a4ee775027a",
+    "timestamp": "2025-10-13T08:41:40Z",
+    "from": "tech-lead-orchestrator",
+    "to": "data-engineer",
+    "status": "pending"
+  },
+  "context": {
+    "task": "Automate SharePoint ingestion via Graph API",
+    "phase": "planning",
+    "summary": "Replace browser workflow with authenticated service job plus validation tests."
+  },
+  "outputs": {
+    "created": [
+      ".agent-workspace/outputs/design/2025-10-13-orchestration-plan.md"
+    ]
+  },
+  "next_steps": {
+    "required": [
+      "Obtain Graph API credentials and define least-privilege scope",
+      "Implement ingestion job with retry/backoff and checksum validation",
+      "Add integration tests confirming dataset availability post-migration"
+    ]
+  },
+  "dependencies": [
+    "database-administrator"
+  ],
+  "workspace_info": {
+    "structure": "Standard v1.0",
+    "location": ".agent-workspace/",
+    "status": "ready"
+  }
+}

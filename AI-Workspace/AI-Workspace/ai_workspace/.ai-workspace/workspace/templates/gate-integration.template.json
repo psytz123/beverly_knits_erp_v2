@@ -1,0 +1,38 @@
+{
+  "phase": "integration",
+  "task_name": "{{TASK_NAME}}",
+  "timestamp": "{{TIMESTAMP}}",
+  "artifacts": {
+    "integration_complete": {
+      "completed": false,
+      "path": "",
+      "notes": "Integrated with existing systems"
+    },
+    "deployment_verified": {
+      "completed": false,
+      "path": "",
+      "notes": "Deployed to staging/production",
+      "environment": ""
+    },
+    "monitoring_setup": {
+      "completed": false,
+      "path": "",
+      "notes": "Monitoring and alerts configured"
+    },
+    "rollback_plan": {
+      "completed": false,
+      "path": "",
+      "notes": "Rollback plan documented"
+    }
+  },
+  "exit_criteria_met": [false, false, false, false],
+  "exit_criteria": [
+    "Integrated with existing systems",
+    "Deployed to staging/production",
+    "Monitoring and alerts configured",
+    "Rollback plan documented"
+  ],
+  "notes": "",
+  "approved_by": "",
+  "approval_timestamp": null
+}

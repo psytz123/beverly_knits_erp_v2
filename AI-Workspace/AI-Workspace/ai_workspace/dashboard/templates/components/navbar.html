@@ -1,0 +1,222 @@
+<!-- Navigation Bar Component -->
+<nav class="bg-blue-600 text-white shadow-lg" role="navigation" aria-label="Main navigation">
+    <div class="container mx-auto px-4 py-4">
+        <!-- Desktop Navigation -->
+        <div class="flex items-center justify-between">
+            <!-- Logo and Title -->
+            <div class="flex items-center space-x-4">
+                <div>
+                    <h1 class="text-2xl font-bold">
+                        <a href="/" class="hover:text-blue-100 transition-colors" data-nav-link>
+                            AI Workspace Dashboard
+                        </a>
+                    </h1>
+                    <p class="text-sm text-blue-200">Read-only visualization layer</p>
+                </div>
+            </div>
+
+            <!-- Desktop Navigation Links -->
+            <div class="hidden md:flex items-center space-x-1">
+                <a href="/"
+                   class="nav-link px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to Dashboard Home">
+                    <span class="inline-block mr-2" aria-hidden="true">🏠</span>
+                    <span>Home</span>
+                </a>
+
+                <a href="/metrics"
+                   class="nav-link px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to Quality Metrics">
+                    <span class="inline-block mr-2" aria-hidden="true">📊</span>
+                    <span>Metrics</span>
+                </a>
+
+                <a href="/gates"
+                   class="nav-link px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to Phase Gates">
+                    <span class="inline-block mr-2" aria-hidden="true">🚪</span>
+                    <span>Gates</span>
+                </a>
+
+                <a href="/reuse"
+                   class="nav-link px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to Reuse Analysis">
+                    <span class="inline-block mr-2" aria-hidden="true">🔄</span>
+                    <span>Reuse Analysis</span>
+                </a>
+
+                <a href="/agents"
+                   class="nav-link px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to AI Agents">
+                    <span class="inline-block mr-2" aria-hidden="true">🤖</span>
+                    <span>Agents</span>
+                </a>
+            </div>
+
+            <!-- Status and Version -->
+            <div class="hidden lg:flex items-center space-x-4">
+                <span id="connection-status" class="text-sm" role="status" aria-live="polite" aria-atomic="true">
+                    <span class="inline-block w-2 h-2 bg-yellow-400 rounded-full mr-1" aria-hidden="true"></span>
+                    <span class="text-yellow-200">Connecting...</span>
+                </span>
+                <span class="text-sm" aria-label="Dashboard version">v1.2.0</span>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-button"
+                    class="md:hidden p-2 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    aria-expanded="false"
+                    aria-controls="mobile-menu"
+                    aria-label="Toggle mobile navigation menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu"
+             class="hidden md:hidden mt-4 pb-2"
+             role="navigation"
+             aria-label="Mobile navigation">
+            <div class="flex flex-col space-y-2">
+                <a href="/"
+                   class="nav-link px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to Dashboard Home">
+                    <span class="inline-block mr-2" aria-hidden="true">🏠</span>
+                    <span>Home</span>
+                </a>
+
+                <a href="/metrics"
+                   class="nav-link px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to Quality Metrics">
+                    <span class="inline-block mr-2" aria-hidden="true">📊</span>
+                    <span>Metrics</span>
+                </a>
+
+                <a href="/gates"
+                   class="nav-link px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to Phase Gates">
+                    <span class="inline-block mr-2" aria-hidden="true">🚪</span>
+                    <span>Gates</span>
+                </a>
+
+                <a href="/reuse"
+                   class="nav-link px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to Reuse Analysis">
+                    <span class="inline-block mr-2" aria-hidden="true">🔄</span>
+                    <span>Reuse Analysis</span>
+                </a>
+
+                <a href="/agents"
+                   class="nav-link px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300"
+                   data-nav-link
+                   aria-label="Navigate to AI Agents">
+                    <span class="inline-block mr-2" aria-hidden="true">🤖</span>
+                    <span>Agents</span>
+                </a>
+
+                <!-- Mobile Status -->
+                <div class="px-4 py-3 border-t border-blue-500 mt-2">
+                    <div class="flex items-center justify-between">
+                        <span id="mobile-connection-status" class="text-sm" role="status" aria-live="polite">
+                            <span class="inline-block w-2 h-2 bg-yellow-400 rounded-full mr-1" aria-hidden="true"></span>
+                            <span class="text-yellow-200">Connecting...</span>
+                        </span>
+                        <span class="text-sm" aria-label="Dashboard version">v1.2.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Mobile Menu Toggle Script -->
+<script>
+    // Mobile menu toggle functionality
+    (function() {
+        const menuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (menuButton && mobileMenu) {
+            menuButton.addEventListener('click', () => {
+                const isExpanded = menuButton.getAttribute('aria-expanded') === 'true';
+
+                // Toggle menu visibility
+                mobileMenu.classList.toggle('hidden');
+
+                // Update aria-expanded
+                menuButton.setAttribute('aria-expanded', !isExpanded);
+
+                // Update icon
+                const icon = menuButton.querySelector('svg');
+                if (icon) {
+                    if (isExpanded) {
+                        // Menu icon (hamburger)
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>';
+                    } else {
+                        // Close icon (X)
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+                    }
+                }
+            });
+
+            // Close mobile menu when clicking a link
+            const mobileLinks = mobileMenu.querySelectorAll('a');
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    menuButton.setAttribute('aria-expanded', 'false');
+
+                    // Reset icon to hamburger
+                    const icon = menuButton.querySelector('svg');
+                    if (icon) {
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>';
+                    }
+                });
+            });
+
+            // Close mobile menu on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                    menuButton.setAttribute('aria-expanded', 'false');
+                    menuButton.focus();
+
+                    // Reset icon to hamburger
+                    const icon = menuButton.querySelector('svg');
+                    if (icon) {
+                        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>';
+                    }
+                }
+            });
+        }
+    })();
+</script>
+
+<!-- Active Link Styling -->
+<style>
+    .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        font-weight: 600;
+    }
+
+    .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Focus visible styles for better keyboard navigation */
+    .nav-link:focus-visible {
+        outline: 2px solid #93C5FD;
+        outline-offset: 2px;
+    }
+</style>

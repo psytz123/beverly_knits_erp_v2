@@ -1936,16 +1936,8 @@ const dataSafetyMonitor = {
                                     <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 13)">First Shortage</th>
                                     <th rowspan="2">Action</th>
                                 </tr>
-                                <tr>
-                                    <th class="text-center">W36</th>
-                                    <th class="text-center">W37</th>
-                                    <th class="text-center">W38</th>
-                                    <th class="text-center">W39</th>
-                                    <th class="text-center">W40</th>
-                                    <th class="text-center">W41</th>
-                                    <th class="text-center">W42</th>
-                                    <th class="text-center">W43</th>
-                                    <th class="text-center">W44+</th>
+                                <tr id="timePhasedWeekHeaders">
+                                    <!-- Week headers will be generated dynamically -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -4070,12 +4062,25 @@ const dataSafetyMonitor = {
                     let dedupedOrders = knitOrdersData.orders;
                     console.log('Production orders before deduplication:', dedupedOrders.length);
                     
-                    // Deduplicate using appropriate key
-                    const orderKey = dedupedOrders[0]?.ko_id ? 'ko_id' : 
-                                   dedupedOrders[0]?.order_number ? 'order_number' : 
-                                   dedupedOrders[0]?.['Order #'] ? 'Order #' : 
-                                   'order_id';
-                    dedupedOrders = deduplicateByKey(dedupedOrders, orderKey);
+                    // Deduplicate using appropriate key - prioritize eFab column names
+                    // Log sample order to see actual fields
+                    if (dedupedOrders.length > 0) {
+                        console.log('Sample order fields:', Object.keys(dedupedOrders[0]));
+                    }
+
+                    const orderKey = dedupedOrders[0]?.id ? 'id' :  // ← eFab's actual field name
+                                   dedupedOrders[0]?.['Order #'] ? 'Order #' :
+                                   dedupedOrders[0]?.ko_id ? 'ko_id' :
+                                   dedupedOrders[0]?.order_number ? 'order_number' :
+                                   null;  // Don't use fallback that doesn't exist
+
+                    console.log('Detected order key:', orderKey);
+
+                    if (orderKey) {
+                        dedupedOrders = deduplicateByKey(dedupedOrders, orderKey);
+                    } else {
+                        console.warn('No valid key field found, skipping deduplication');
+                    }
                     console.log('Production orders after deduplication:', dedupedOrders.length);
                     
                     // Validate and check for duplicate columns
@@ -4336,27 +4341,35 @@ const dataSafetyMonitor = {
          */
         function deduplicateByKey(array, keyField) {
             if (!Array.isArray(array) || !keyField) return array || [];
-            
+
             const seen = new Set();
             const deduped = [];
             let duplicateCount = 0;
-            
+            let missingKeyCount = 0;
+
             for (const item of array) {
                 const key = item[keyField];
-                if (key !== undefined && key !== null && key !== '') {
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        deduped.push(item);
-                    } else {
-                        duplicateCount++;
-                    }
+
+                // Handle items without keys - KEEP them instead of dropping
+                if (key === undefined || key === null || key === '') {
+                    console.warn(`Item missing key '${keyField}', keeping anyway. Sample fields:`,
+                                Object.keys(item).slice(0, 10));
+                    deduped.push(item);
+                    missingKeyCount++;
+                    continue;
+                }
+
+                // Deduplicate items WITH keys
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    deduped.push(item);
+                } else {
+                    duplicateCount++;
                 }
             }
-            
-            if (duplicateCount > 0) {
-                console.warn(`Removed ${duplicateCount} duplicate items based on key: ${keyField}`);
-            }
-            
+
+            console.log(`Deduplication on '${keyField}': kept ${deduped.length} items, removed ${duplicateCount} duplicates, ${missingKeyCount} without key`);
+
             return deduped;
         }
         
@@ -11507,10 +11520,7 @@ const dataSafetyMonitor = {
         });
         
         function updateProductionTable(data) {
-            // Production table removed - data available in Knit Orders tab
-            console.log('updateProductionTable: Table removed to avoid redundancy with Knit Orders tab');
-            return;
-            
+            // Production table now functional - displays knit orders
             const tableBody = document.getElementById('productionTableBody');
             if (!tableBody) return;
             
@@ -12456,7 +12466,10 @@ const dataSafetyMonitor = {
             try {
                 // Request yarn intelligence with time-phased data for shortage analysis
                 const data = await fetchAPI('/api/yarn-intelligence?include_timing=true');
-                
+
+                console.log('╔═══════════════════════════════════════════════════════════════════');
+                console.log('║ DATA SOURCE: /api/yarn-intelligence?include_timing=true (eFab)');
+                console.log('╠═══════════════════════════════════════════════════════════════════');
                 console.log('Yarn intelligence response:', data);
                 console.log('Has criticality_analysis:', !!data.criticality_analysis);
                 console.log('Has yarns array:', !!(data.criticality_analysis && data.criticality_analysis.yarns));
@@ -12468,6 +12481,15 @@ const dataSafetyMonitor = {
                     console.log('Processing yarns array...');
                     let allYarns = data.criticality_analysis.yarns;
                     console.log('Total yarns before deduplication:', allYarns.length);
+
+                    // DEBUG: Check theoretical_balance values in first few yarns FROM API
+                    if (allYarns.length > 0) {
+                        console.log('║ First 3 yarns FROM API (before deduplication):');
+                        allYarns.slice(0, 3).forEach((y, i) => {
+                            console.log(`║   Yarn ${i}: yarn_id=${y.yarn_id}, theoretical_balance=${y.theoretical_balance}, planning_balance=${y.planning_balance}, on_order=${y.on_order}`);
+                        });
+                        console.log('╚═══════════════════════════════════════════════════════════════════');
+                    }
                     
                     // Apply deduplication to prevent duplicate yarns
                     allYarns = deduplicateByKey(allYarns, 'yarn_id');
@@ -12510,18 +12532,21 @@ const dataSafetyMonitor = {
                     }).slice(0, 20); // Show top 20
                     
                     console.log(`Showing ${sortedYarns.length} yarns with shortages`);
-                    
+
                     if (sortedYarns.length > 0) {
+                        console.log('╔═══════════════════════════════════════════════════════════════════');
+                        console.log('║ SHORTAGE TABLE DATA - Values that will be displayed in table');
+                        console.log('╠═══════════════════════════════════════════════════════════════════');
+                        // Show first 5 shortage yarns that will be displayed
+                        sortedYarns.slice(0, 5).forEach((y, i) => {
+                            console.log(`║ Row ${i}: Yarn ID=${y.yarn_id}`);
+                            console.log(`║   -> THEORETICAL BALANCE (column): ${y.theoretical_balance}`);
+                            console.log(`║   -> ON ORDER (column): ${y.on_order}`);
+                            console.log(`║   -> PLANNING BALANCE (column): ${y.planning_balance}`);
+                            console.log(`║   -> Description: ${(y.description || '').substring(0, 40)}`);
+                        });
+                        console.log('╚═══════════════════════════════════════════════════════════════════');
                         console.log('Adding shortage rows to table...');
-                        // Debug: log first yarn to see structure
-                        if (sortedYarns[0]) {
-                            console.log('=== DEBUG: First yarn data structure ===');
-                            console.log('Full yarn object:', sortedYarns[0]);
-                            console.log('yarn_id value:', sortedYarns[0].yarn_id);
-                            console.log('typeof yarn_id:', typeof sortedYarns[0].yarn_id);
-                            console.log('All keys:', Object.keys(sortedYarns[0]));
-                            console.log('===========================');
-                        }
                         sortedYarns.forEach((yarn, index) => {
                             const shortage = yarn.planning_balance < 0 ? Math.abs(yarn.planning_balance) : 0;
                             
@@ -12631,6 +12656,7 @@ const dataSafetyMonitor = {
                             const theoreticalBalance = yarn.theoretical_balance || 0;
                             const onOrder = yarn.on_order || 0;
                             const runRate = yarn.weekly_demand || 0;
+
                             const theoreticalClass = theoreticalBalance < 0 ? 'text-red-600' : theoreticalBalance === 0 ? 'text-gray-500' : '';
                             const onOrderClass = onOrder > 0 ? 'text-blue-600 font-medium' : 'text-gray-500';
                             const runRateClass = runRate > 1000 ? 'text-orange-600 font-medium' : runRate > 500 ? 'text-yellow-600' : '';
@@ -12781,18 +12807,57 @@ const dataSafetyMonitor = {
             });
         }
 
+        // Calculate ISO week number
+        function getISOWeek(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+            const yearStart = new Date(d.getFullYear(), 0, 1);
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo;
+        }
+
+        // Generate dynamic week headers
+        function generateWeekHeaders() {
+            const currentWeek = getISOWeek(new Date());
+            const headerRow = document.getElementById('timePhasedWeekHeaders');
+            if (!headerRow) return currentWeek;
+
+            headerRow.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                const weekNum = currentWeek + i;
+                const th = document.createElement('th');
+                th.className = 'text-center';
+                th.textContent = `W${weekNum}`;
+                headerRow.appendChild(th);
+            }
+
+            // Add "W{currentWeek+8}+" header for remaining weeks
+            const thPlus = document.createElement('th');
+            thPlus.className = 'text-center';
+            thPlus.textContent = `W${currentWeek + 8}+`;
+            headerRow.appendChild(thPlus);
+
+            return currentWeek;
+        }
+
         // Load Time-Phased Yarn PO Schedule
         async function loadTimePhasedPO() {
             console.log('=== Loading Time-Phased PO Data ===');
+
+            // Generate dynamic week headers and get current week
+            const currentWeek = generateWeekHeaders();
+            console.log('Current ISO Week:', currentWeek);
+
             const tbody = document.querySelector('#timePhasedTable tbody');
             if (!tbody) {
                 console.error('ERROR: Cannot find #timePhasedTable tbody');
                 return;
             }
-            
+
             // Show loading state
             tbody.innerHTML = '<tr><td colspan="15" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading time-phased PO data...</td></tr>';
-            
+
             try {
                 // Request time-phased yarn PO data
                 const response = await fetchAPI('/api/time-phased-yarn-po');
@@ -12814,20 +12879,63 @@ const dataSafetyMonitor = {
                 let yarnCount = 0;
                 let expediteRecommendations = [];
 
-                if (response.yarns && Object.keys(response.yarns).length > 0) {
-                    const yarns = Object.entries(response.yarns);
+                // Handle both old format (response.yarns) and new Excel format (response.data)
+                const yarnsData = response.yarns || response.data;
+
+                if (yarnsData && (Array.isArray(yarnsData) ? yarnsData.length > 0 : Object.keys(yarnsData).length > 0)) {
+                    // Convert to array format if it's an object
+                    const yarns = Array.isArray(yarnsData) ? yarnsData : Object.entries(yarnsData);
                     
-                    yarns.forEach(([yarnId, yarnData]) => {
+                    yarns.forEach((item, index) => {
+                        // Handle both formats: [yarnId, yarnData] from Object.entries() or direct yarn object from array
+                        let yarnId, yarnData;
+                        if (Array.isArray(item)) {
+                            // Old format: [yarnId, yarnData]
+                            [yarnId, yarnData] = item;
+                        } else {
+                            // New Excel format: direct object
+                            yarnData = item;
+                            yarnId = yarnData.Description || `Yarn-${index + 1}`;
+                        }
+
                         if (!yarnData || yarnData.error) return;
-                        
+
+                        // Transform Excel format to expected format if needed
+                        if (!yarnData.description && yarnData.Description) {
+                            // This is Excel format - transform it
+                            yarnData.description = yarnData.Description;
+                            yarnData["Planning Balance"] = yarnData.Balance || yarnData["Monday Inventory"] || 0;
+
+                            // Map weekly receipts from "Receipts Week N" format to "week_N" format
+                            yarnData.weekly_receipts = {};
+                            yarnData.weekly_balances = {};
+                            for (let key in yarnData) {
+                                if (key.startsWith("Receipts Week ")) {
+                                    const weekNum = key.replace("Receipts Week ", "");
+                                    yarnData.weekly_receipts[`week_${weekNum}`] = yarnData[key] || 0;
+                                }
+                                if (key.startsWith("Balance Week ")) {
+                                    const weekNum = key.replace("Balance Week ", "");
+                                    yarnData.weekly_balances[`week_${weekNum}`] = yarnData[key] || 0;
+                                }
+                            }
+                            // Add "This Week" receipts using current week number
+                            if (yarnData["Receipts This Week"] !== undefined) {
+                                yarnData.weekly_receipts[`week_${currentWeek}`] = yarnData["Receipts This Week"];
+                            }
+                            if (yarnData["Balance This Week"] !== undefined) {
+                                yarnData.weekly_balances[`week_${currentWeek}`] = yarnData["Balance This Week"];
+                            }
+                        }
+
                         yarnCount++;
                         
                         // Count POs scheduled
                         if (yarnData.next_receipt_week) totalPOsScheduled++;
-                        
-                        // Sum next week receipts (week 36)
-                        const week36Receipts = yarnData.weekly_balances?.week_36 || 0;
-                        if (week36Receipts > 0) nextWeekReceipts += week36Receipts;
+
+                        // Sum next week receipts (current week)
+                        const currentWeekReceipts = yarnData.weekly_balances?.[`week_${currentWeek}`] || 0;
+                        if (currentWeekReceipts > 0) nextWeekReceipts += currentWeekReceipts;
                         
                         // Count expedite needs
                         if (yarnData.expedite_recommendations && yarnData.expedite_recommendations.length > 0) {
@@ -12854,10 +12962,10 @@ const dataSafetyMonitor = {
                         const criticality = yarnData.criticality_score || 0;
                         
                         if (yarnData.has_shortage) {
-                            if (yarnData.first_shortage_week && yarnData.first_shortage_week.includes('36')) {
+                            if (yarnData.first_shortage_week && yarnData.first_shortage_week.includes(currentWeek.toString())) {
                                 rowClass = 'bg-red-50 border-l-4 border-red-500'; // Critical - shortage this week
                                 urgencyIcon = '<i class="fas fa-exclamation-circle text-red-600" title="Critical: Shortage this week"></i>';
-                            } else if (yarnData.first_shortage_week && yarnData.first_shortage_week.includes('37')) {
+                            } else if (yarnData.first_shortage_week && yarnData.first_shortage_week.includes((currentWeek + 1).toString())) {
                                 rowClass = 'bg-orange-50 border-l-4 border-orange-500'; // High - shortage next week
                                 urgencyIcon = '<i class="fas fa-exclamation-triangle text-orange-600" title="High: Shortage next week"></i>';
                             } else {
@@ -12874,25 +12982,31 @@ const dataSafetyMonitor = {
                         
                         row.className += ' ' + rowClass;
                         
-                        // Format weekly receipt cells with color coding
-                        const formatWeekCell = (week, balance) => {
-                            const receipt = weeklyReceipts[week] || 0;
-                            const projectedBalance = weeklyBalances[week] || balance;
-                            
+                        // Format weekly balance cells with color coding
+                        const formatWeekCell = (week, fallbackBalance) => {
+                            const projectedBalance = weeklyBalances[week];
+
                             let cellClass = '';
                             let cellContent = '';
-                            
-                            if (receipt > 0) {
-                                cellClass = 'text-green-600 font-medium';
-                                cellContent = receipt.toFixed(0);
-                            } else if (projectedBalance < 0) {
-                                cellClass = 'text-red-600 font-medium';
-                                cellContent = `(${Math.abs(projectedBalance).toFixed(0)})`;
-                            } else {
+
+                            // If no balance data available, show dash
+                            if (projectedBalance === undefined || projectedBalance === null) {
                                 cellClass = 'text-gray-400';
                                 cellContent = '-';
+                            } else if (projectedBalance < 0) {
+                                // Negative balance (shortage) - red
+                                cellClass = 'text-red-600 font-bold';
+                                cellContent = `(${Math.abs(projectedBalance).toFixed(0)})`;
+                            } else if (projectedBalance < 1000) {
+                                // Low balance - orange/yellow warning
+                                cellClass = 'text-orange-500 font-medium';
+                                cellContent = projectedBalance.toFixed(0);
+                            } else {
+                                // Healthy balance - green
+                                cellClass = 'text-green-600';
+                                cellContent = projectedBalance.toFixed(0);
                             }
-                            
+
                             return `<td class="px-2 py-2 text-center ${cellClass}">${cellContent}</td>`;
                         };
                         
@@ -12904,28 +13018,28 @@ const dataSafetyMonitor = {
                         const currentBalance = yarnData["Planning Balance"] || yarnData["Theoretical Balance"] || yarnData["Beginning Balance"] || 0;
                         const balanceClass = currentBalance < 0 ? 'text-red-600 font-bold' : currentBalance < 1000 ? 'text-orange-600' : 'text-gray-700';
                         
+                        // Generate week cells dynamically
+                        const weekCells = [];
+                        for (let i = 0; i < 8; i++) {
+                            const weekNum = currentWeek + i;
+                            weekCells.push(formatWeekCell(`week_${weekNum}`, yarnData.theoretical_balance));
+                        }
+
                         row.innerHTML = `
                             <td class="px-4 py-2 font-medium">
                                 ${urgencyIcon} ${yarnId}
                             </td>
                             <td class="px-4 py-2 text-sm" title="${yarnData.description || ''}">${(yarnData.description || '').substring(0, 25)}${(yarnData.description || '').length > 25 ? '...' : ''}</td>
                             <td class="px-4 py-2 text-right ${balanceClass}">${currentBalance.toFixed(0)}</td>
-                            ${formatWeekCell('week_36', yarnData.theoretical_balance)}
-                            ${formatWeekCell('week_37', yarnData.theoretical_balance)}
-                            ${formatWeekCell('week_38', yarnData.theoretical_balance)}
-                            ${formatWeekCell('week_39', yarnData.theoretical_balance)}
-                            ${formatWeekCell('week_40', yarnData.theoretical_balance)}
-                            ${formatWeekCell('week_41', yarnData.theoretical_balance)}
-                            ${formatWeekCell('week_42', yarnData.theoretical_balance)}
-                            ${formatWeekCell('week_43', yarnData.theoretical_balance)}
+                            ${weekCells.join('')}
                             <td class="px-2 py-2 text-center ${weeklyReceipts.later > 0 ? 'text-blue-600' : 'text-gray-400'}">${weeklyReceipts.later > 0 ? weeklyReceipts.later.toFixed(0) : '-'}</td>
                             <td class="px-4 py-2 text-right ${totalOnOrder > 0 ? 'text-blue-600 font-medium' : ''}">${totalOnOrder.toFixed(0)}</td>
                             <td class="px-4 py-2 text-center ${yarnData.has_shortage ? 'text-red-600 font-medium' : 'text-green-600'}">${yarnData.first_shortage_week || 'None'}</td>
                             <td class="px-4 py-2 text-center">
-                                ${yarnData.has_shortage && yarnData.expedite_recommendations?.length > 0 ? 
+                                ${yarnData.has_shortage && yarnData.expedite_recommendations?.length > 0 ?
                                     `<button onclick="showExpediteDetails('${yarnId}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs">
                                         <i class="fas fa-shipping-fast mr-1"></i>Expedite
-                                    </button>` : 
+                                    </button>` :
                                     '<span class="text-gray-400">-</span>'}
                             </td>
                         `;
@@ -16303,8 +16417,9 @@ Customer: ${order.customer || 'Unknown'}
 
   // Single source of truth for API base (same-origin; we'll append /api/... below)
   function apiBase() {
-    const { protocol, host } = window.location;
-    return protocol + '//' + host;
+    // FIXED: Always return the API server URL, not the dashboard server
+    const { protocol, hostname } = window.location;
+    return protocol + '//' + hostname + ':5006';
   }
 
   // Optional: map deprecated -> new endpoints here (no leading '/')

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Reuse Analysis - AI Workspace{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <h2 class="text-3xl font-bold text-gray-800">Reuse Analysis</h2>
+    <p class="text-gray-600 mt-2">Track code reuse and "Check Before Create" compliance</p>
+</div>
+
+<!-- Search Bar -->
+{% include 'components/search-bar.html' %}
+
+<!-- Filter Panel -->
+{% include 'components/filter-panel.html' %}
+
+<!-- Reuse Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <!-- Average Reuse -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+        <h3 class="text-gray-600 text-sm font-medium mb-2">Average Reuse</h3>
+        <p class="text-3xl font-bold text-blue-600" id="avg-reuse">--%</p>
+        <p class="text-xs text-gray-500 mt-1">Across all checks</p>
+    </div>
+
+    <!-- Total Checks -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+        <h3 class="text-gray-600 text-sm font-medium mb-2">Total Checks</h3>
+        <p class="text-3xl font-bold text-green-600" id="total-checks">--</p>
+        <p class="text-xs text-gray-500 mt-1">Reuse analyses</p>
+    </div>
+
+    <!-- High Reuse Count -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+        <h3 class="text-gray-600 text-sm font-medium mb-2">High Reuse (≥70%)</h3>
+        <p class="text-3xl font-bold text-purple-600" id="high-reuse-count">--</p>
+        <p class="text-xs text-gray-500 mt-1">Excellent matches</p>
+    </div>
+
+    <!-- Low Reuse Count -->
+    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+        <h3 class="text-gray-600 text-sm font-medium mb-2">Low Reuse (&lt;30%)</h3>
+        <p class="text-3xl font-bold text-orange-600" id="low-reuse-count">--</p>
+        <p class="text-xs text-gray-500 mt-1">New implementations</p>
+    </div>
+</div>
+
+<!-- Reuse Distribution Chart -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-8" role="region" aria-labelledby="reuse-chart-heading">
+    <h3 id="reuse-chart-heading" class="text-xl font-bold mb-4">Reuse Distribution</h3>
+    <div role="img" aria-label="Bar chart showing reuse percentage distribution across different ranges">
+        <canvas id="reuseChart"></canvas>
+    </div>
+</div>
+
+<!-- Reuse Percentage Trends (Placeholder) -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-8" role="region" aria-labelledby="trends-heading">
+    <h3 id="trends-heading" class="text-xl font-bold mb-4">Reuse Trends Over Time</h3>
+    <div class="text-center py-12 bg-gray-50 rounded-lg">
+        <span class="text-4xl mb-4 block" aria-hidden="true">📊</span>
+        <p class="text-gray-600">Historical reuse trends coming soon</p>
+        <p class="text-sm text-gray-500 mt-2">Track reuse percentages over time to improve efficiency</p>
+    </div>
+</div>
+
+<!-- Recent Reuse Checks -->
+<div class="bg-white rounded-lg shadow-md p-6" role="region" aria-labelledby="recent-heading">
+    <h3 id="recent-heading" class="text-xl font-bold mb-4">Recent Reuse Checks</h3>
+    <div id="recent-reuse-checks" class="space-y-3" aria-live="polite">
+        <!-- Loading State -->
+        <div class="text-center py-8 text-gray-500">
+            <p class="text-sm">Loading recent checks...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Reuse Analysis Guide -->
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-8" role="region" aria-labelledby="guide-heading">
+    <h3 id="guide-heading" class="text-lg font-bold text-blue-800 mb-3">Understanding Reuse Analysis</h3>
+    <div class="space-y-2 text-sm text-blue-900">
+        <p><strong>High Reuse (≥70%):</strong> Excellent! Existing code can be reused with minimal changes. Auto-approved for creation.</p>
+        <p><strong>Medium Reuse (30-69%):</strong> Good match found. Review existing implementation before creating new code.</p>
+        <p><strong>Low Reuse (&lt;30%):</strong> New implementation needed. Ensure it follows coding standards and is well-documented.</p>
+        <p class="mt-4 pt-4 border-t border-blue-300">
+            <strong>Principle 3: Check Before Create</strong> - Always search for existing solutions before writing new code. This reduces duplication and improves maintainability.
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Module System (ES6 Modules) -->
+<script type="module" src="{{ url_for('static', filename='js/modules/main.js') }}"></script>
+<script type="module">
+    // Initialize recent reuse checks display
+    import { navigation } from '{{ url_for("static", filename="js/modules/navigation.js") }}';
+
+    // Placeholder data display logic
+    document.addEventListener('DOMContentLoaded', () => {
+        // This will be replaced with actual WebSocket data in implementation
+        console.log('[ReuseAnalysis] Page loaded, waiting for data...');
+    });
+</script>
+{% endblock %}

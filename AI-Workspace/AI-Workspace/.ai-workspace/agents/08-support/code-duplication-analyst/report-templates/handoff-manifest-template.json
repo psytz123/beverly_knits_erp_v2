@@ -1,0 +1,566 @@
+{
+  "handoff_manifest": {
+    "manifest_id": "{manifest_id}",
+    "generated": "{timestamp}",
+    "source_agent": "code-duplication-analyst",
+    "analysis_report": "{report_path}",
+    "priority": "high",
+    "estimated_total_effort_hours": "{total_effort_hours}",
+    "estimated_loc_reduction": "{total_loc_reduction}",
+    "status": "pending_delegation"
+  },
+
+  "summary": {
+    "total_tasks": "{total_tasks}",
+    "high_priority": "{high_priority_count}",
+    "medium_priority": "{medium_priority_count}",
+    "low_priority": "{low_priority_count}",
+    "agents_involved": [
+      "refactoring-specialist",
+      "python-pro",
+      "backend-developer",
+      "code-reviewer",
+      "tech-lead-orchestrator"
+    ]
+  },
+
+  "delegations": [
+    {
+      "task_id": "DUP-001",
+      "title": "Extract Health Check Endpoints to Shared Library",
+      "category": "exact_duplicate",
+      "priority": "high",
+      "delegate_to": "refactoring-specialist",
+      "estimated_effort_hours": 4,
+      "estimated_loc_reduction": 500,
+
+      "description": "Consolidate 10 identical health check endpoint implementations into a single shared module",
+
+      "affected_files": [
+        "./services/inventory-service/app/api/health.py",
+        "./services/yarn-service/app/api/health.py",
+        "./services/production-service/app/api/health.py",
+        "./services/shipping-service/app/api/health.py",
+        "./services/quality-service/app/api/health.py",
+        "./services/procurement-service/app/api/health.py",
+        "./services/maintenance-service/app/api/health.py",
+        "./services/analytics-service/app/api/health.py",
+        "./services/forecast-service/app/api/health.py",
+        "./services/ai-agent-service/app/api/health.py"
+      ],
+
+      "action_items": [
+        "Create shared/api/health.py with configurable health check logic",
+        "Include /health, /ready, and /ping endpoints",
+        "Support custom health check functions per service",
+        "Update all 10 services to import from shared module",
+        "Remove duplicate implementations",
+        "Update tests to use shared health endpoints"
+      ],
+
+      "validation_criteria": [
+        "All services have working health endpoints",
+        "Health checks pass for all dependencies (DB, Redis, etc.)",
+        "No duplicate health endpoint code remains",
+        "Integration tests pass",
+        "API response format unchanged"
+      ],
+
+      "dependencies": [],
+
+      "rollback_plan": "Revert shared library import and restore original health.py files from git history",
+
+      "success_metrics": {
+        "loc_reduced": 500,
+        "files_consolidated": 10,
+        "test_coverage": "100%"
+      }
+    },
+
+    {
+      "task_id": "DUP-002",
+      "title": "Create Unified Database Connection Factory",
+      "category": "exact_duplicate",
+      "priority": "high",
+      "delegate_to": "python-pro",
+      "estimated_effort_hours": 6,
+      "estimated_loc_reduction": 400,
+
+      "description": "Design and implement a unified database connection factory to replace 10 duplicate database.py implementations",
+
+      "affected_files": [
+        "./services/*/app/database.py"
+      ],
+
+      "action_items": [
+        "Design flexible database factory pattern",
+        "Create shared/database/factory.py with async support",
+        "Support PostgreSQL, MySQL, MongoDB connection pooling",
+        "Implement connection health checks",
+        "Create service-specific database configuration",
+        "Migrate all services to use shared factory",
+        "Comprehensive connection pool testing"
+      ],
+
+      "validation_criteria": [
+        "All services connect successfully to databases",
+        "Connection pooling works correctly",
+        "No connection leaks detected",
+        "Performance benchmarks meet requirements",
+        "Load testing passes"
+      ],
+
+      "dependencies": ["DUP-003"],
+
+      "rollback_plan": "Restore original database.py files, update service configurations",
+
+      "success_metrics": {
+        "loc_reduced": 400,
+        "files_consolidated": 10,
+        "connection_pool_efficiency": ">95%"
+      }
+    },
+
+    {
+      "task_id": "DUP-003",
+      "title": "Create Base Configuration Settings Class",
+      "category": "semantic_similarity",
+      "priority": "high",
+      "delegate_to": "backend-developer",
+      "estimated_effort_hours": 5,
+      "estimated_loc_reduction": 300,
+
+      "description": "Extract common configuration patterns into a base settings class with environment-specific overrides",
+
+      "affected_files": [
+        "./services/*/app/config.py"
+      ],
+
+      "action_items": [
+        "Analyze all config.py files for common patterns",
+        "Create shared/config/base.py with BaseSettings",
+        "Support environment variables and .env files",
+        "Implement common validation patterns",
+        "Service-specific configs inherit from base",
+        "Update all services to use base config",
+        "Environment-specific configuration testing"
+      ],
+
+      "validation_criteria": [
+        "All services load configuration correctly",
+        "Environment variable override works",
+        "Validation catches configuration errors",
+        "No breaking changes to existing configs",
+        "Config values match original behavior"
+      ],
+
+      "dependencies": [],
+
+      "rollback_plan": "Restore original config.py files per service",
+
+      "success_metrics": {
+        "loc_reduced": 300,
+        "config_reuse": ">80%",
+        "validation_errors_caught": "100%"
+      }
+    },
+
+    {
+      "task_id": "DUP-004",
+      "title": "Consolidate Test Fixtures to Shared Testing Module",
+      "category": "exact_duplicate",
+      "priority": "medium",
+      "delegate_to": "refactoring-specialist",
+      "estimated_effort_hours": 3,
+      "estimated_loc_reduction": 200,
+
+      "description": "Move duplicate pytest fixtures to a shared testing module",
+
+      "affected_files": [
+        "./services/*/tests/conftest.py"
+      ],
+
+      "action_items": [
+        "Identify common test fixtures across services",
+        "Create shared/testing/fixtures.py",
+        "Extract database test fixtures",
+        "Extract API client test fixtures",
+        "Update all test files to import shared fixtures",
+        "Validate all tests still pass"
+      ],
+
+      "validation_criteria": [
+        "All test suites pass with shared fixtures",
+        "No test failures introduced",
+        "Test execution time unchanged or improved",
+        "Fixture cleanup works correctly"
+      ],
+
+      "dependencies": ["DUP-002", "DUP-003"],
+
+      "rollback_plan": "Restore service-specific conftest.py files",
+
+      "success_metrics": {
+        "loc_reduced": 200,
+        "fixtures_shared": 15,
+        "test_pass_rate": "100%"
+      }
+    },
+
+    {
+      "task_id": "DUP-005",
+      "title": "Create Unified Redis Cache Client",
+      "category": "pattern",
+      "priority": "medium",
+      "delegate_to": "python-pro",
+      "estimated_effort_hours": 4,
+      "estimated_loc_reduction": 250,
+
+      "description": "Consolidate Redis cache setup patterns into a shared cache client factory",
+
+      "affected_files": [
+        "./services/*/app/cache.py"
+      ],
+
+      "action_items": [
+        "Design flexible Redis client factory",
+        "Create shared/cache/redis.py with async support",
+        "Support connection pooling and retry logic",
+        "Implement common caching patterns (get, set, delete, ttl)",
+        "Service-specific cache key prefixes",
+        "Migrate all services to shared cache client"
+      ],
+
+      "validation_criteria": [
+        "Cache operations work across all services",
+        "Connection pooling efficient",
+        "Cache invalidation works correctly",
+        "No cache key collisions between services"
+      ],
+
+      "dependencies": [],
+
+      "rollback_plan": "Restore original cache.py files",
+
+      "success_metrics": {
+        "loc_reduced": 250,
+        "cache_hit_rate": ">80%",
+        "connection_reuse": ">90%"
+      }
+    },
+
+    {
+      "task_id": "DUP-006",
+      "title": "Standardize Kafka Client Implementation",
+      "category": "pattern",
+      "priority": "medium",
+      "delegate_to": "backend-developer",
+      "estimated_effort_hours": 6,
+      "estimated_loc_reduction": 400,
+
+      "description": "Create unified Kafka client with producer/consumer patterns",
+
+      "affected_files": [
+        "./services/*/app/kafka_client.py"
+      ],
+
+      "action_items": [
+        "Design Kafka client abstraction",
+        "Create shared/messaging/kafka.py",
+        "Support producer and consumer patterns",
+        "Implement error handling and retry logic",
+        "Topic naming conventions",
+        "Service-specific message serialization"
+      ],
+
+      "validation_criteria": [
+        "Message publishing works across services",
+        "Consumer groups function correctly",
+        "No message loss during migration",
+        "Performance meets requirements"
+      ],
+
+      "dependencies": [],
+
+      "rollback_plan": "Restore service-specific Kafka clients",
+
+      "success_metrics": {
+        "loc_reduced": 400,
+        "message_throughput": "maintained",
+        "error_rate": "<0.1%"
+      }
+    },
+
+    {
+      "task_id": "DUP-007",
+      "title": "Extract SQLAlchemy Base Model",
+      "category": "exact_duplicate",
+      "priority": "high",
+      "delegate_to": "python-pro",
+      "estimated_effort_hours": 3,
+      "estimated_loc_reduction": 150,
+
+      "description": "Consolidate 5 identical SQLAlchemy base model implementations",
+
+      "affected_files": [
+        "./services/*/app/models/base.py"
+      ],
+
+      "action_items": [
+        "Create shared/models/base.py with DeclarativeBase",
+        "Include common fields (id, created_at, updated_at)",
+        "Mixin classes for common patterns",
+        "Update all service models to inherit from shared base",
+        "Database migration validation"
+      ],
+
+      "validation_criteria": [
+        "All models work with shared base",
+        "Database migrations generate correctly",
+        "No schema changes introduced",
+        "ORM operations function correctly"
+      ],
+
+      "dependencies": [],
+
+      "rollback_plan": "Restore service-specific base models",
+
+      "success_metrics": {
+        "loc_reduced": 150,
+        "models_using_shared_base": "100%"
+      }
+    },
+
+    {
+      "task_id": "DUP-008",
+      "title": "Standardize Alembic Migration Environment",
+      "category": "exact_duplicate",
+      "priority": "low",
+      "delegate_to": "backend-developer",
+      "estimated_effort_hours": 4,
+      "estimated_loc_reduction": 500,
+
+      "description": "Create standard Alembic migration environment template",
+
+      "affected_files": [
+        "./services/*/migrations/env.py"
+      ],
+
+      "action_items": [
+        "Create shared/database/migrations/env_template.py",
+        "Support async migrations",
+        "Multi-database support",
+        "Service-specific migration configurations",
+        "Update all migration environments"
+      ],
+
+      "validation_criteria": [
+        "Migrations run successfully across all services",
+        "Rollback functionality works",
+        "No data loss during migration",
+        "Schema versions tracked correctly"
+      ],
+
+      "dependencies": ["DUP-002", "DUP-007"],
+
+      "rollback_plan": "Restore original migration env.py files",
+
+      "success_metrics": {
+        "loc_reduced": 500,
+        "migration_success_rate": "100%"
+      }
+    },
+
+    {
+      "task_id": "DUP-009",
+      "title": "Create Base Repository Pattern Class",
+      "category": "pattern",
+      "priority": "medium",
+      "delegate_to": "python-pro",
+      "estimated_effort_hours": 5,
+      "estimated_loc_reduction": 300,
+
+      "description": "Extract repository pattern into reusable base class",
+
+      "affected_files": [
+        "./services/*/app/repositories/*_repository.py"
+      ],
+
+      "action_items": [
+        "Design generic repository base class",
+        "Create shared/repositories/base.py",
+        "Common CRUD operations (get, list, create, update, delete)",
+        "Async support with type hints",
+        "Service repositories inherit from base",
+        "Comprehensive repository testing"
+      ],
+
+      "validation_criteria": [
+        "All repository operations work correctly",
+        "Type safety maintained",
+        "Performance benchmarks met",
+        "No breaking changes to service APIs"
+      ],
+
+      "dependencies": ["DUP-007"],
+
+      "rollback_plan": "Restore service-specific repository implementations",
+
+      "success_metrics": {
+        "loc_reduced": 300,
+        "repositories_using_base": ">80%",
+        "code_reuse": ">70%"
+      }
+    },
+
+    {
+      "task_id": "DUP-010",
+      "title": "Establish Base Service Layer Class",
+      "category": "pattern",
+      "priority": "medium",
+      "delegate_to": "python-pro",
+      "estimated_effort_hours": 5,
+      "estimated_loc_reduction": 250,
+
+      "description": "Create base service class with common business logic patterns",
+
+      "affected_files": [
+        "./services/*/app/services/*_service.py"
+      ],
+
+      "action_items": [
+        "Design service layer base class",
+        "Create shared/services/base.py",
+        "Common error handling patterns",
+        "Transaction management",
+        "Event publishing integration",
+        "Service classes inherit from base"
+      ],
+
+      "validation_criteria": [
+        "Business logic functions correctly",
+        "Error handling works as expected",
+        "Transactions commit/rollback properly",
+        "Event publishing reliable"
+      ],
+
+      "dependencies": ["DUP-009"],
+
+      "rollback_plan": "Restore service-specific implementations",
+
+      "success_metrics": {
+        "loc_reduced": 250,
+        "services_using_base": ">75%",
+        "error_handling_consistency": "100%"
+      }
+    },
+
+    {
+      "task_id": "VALIDATE-ALL",
+      "title": "Comprehensive Validation and Code Review",
+      "category": "validation",
+      "priority": "critical",
+      "delegate_to": "code-reviewer",
+      "estimated_effort_hours": 8,
+      "estimated_loc_reduction": 0,
+
+      "description": "Validate all refactoring changes and ensure no regressions",
+
+      "affected_files": ["all services"],
+
+      "action_items": [
+        "Review all shared library implementations",
+        "Run full test suite across all services",
+        "Integration testing end-to-end",
+        "Performance benchmarking",
+        "Security audit of shared code",
+        "Code quality metrics validation",
+        "Documentation review"
+      ],
+
+      "validation_criteria": [
+        "All tests pass (unit, integration, e2e)",
+        "Performance within acceptable limits",
+        "No security vulnerabilities introduced",
+        "Code quality metrics improved",
+        "Documentation complete and accurate"
+      ],
+
+      "dependencies": [
+        "DUP-001", "DUP-002", "DUP-003", "DUP-004", "DUP-005",
+        "DUP-006", "DUP-007", "DUP-008", "DUP-009", "DUP-010"
+      ],
+
+      "rollback_plan": "Full system rollback if critical issues found",
+
+      "success_metrics": {
+        "test_pass_rate": "100%",
+        "code_coverage": ">85%",
+        "performance_regression": "0%",
+        "security_issues": 0
+      }
+    }
+  ],
+
+  "execution_plan": {
+    "phase_1": {
+      "name": "Foundation Setup",
+      "duration_weeks": 2,
+      "tasks": ["DUP-003", "DUP-007", "DUP-001"],
+      "goal": "Establish core shared library components"
+    },
+
+    "phase_2": {
+      "name": "Service Migration",
+      "duration_weeks": 3,
+      "tasks": ["DUP-002", "DUP-004", "DUP-005", "DUP-006"],
+      "goal": "Migrate all services to use shared components"
+    },
+
+    "phase_3": {
+      "name": "Pattern Consolidation",
+      "duration_weeks": 2,
+      "tasks": ["DUP-009", "DUP-010", "DUP-008"],
+      "goal": "Extract and implement shared patterns"
+    },
+
+    "phase_4": {
+      "name": "Validation & Optimization",
+      "duration_weeks": 1,
+      "tasks": ["VALIDATE-ALL"],
+      "goal": "Comprehensive validation and optimization"
+    }
+  },
+
+  "risk_mitigation": {
+    "high_risk_tasks": ["DUP-002", "DUP-006", "DUP-008"],
+    "mitigation_strategies": [
+      "Incremental rollout per service",
+      "Comprehensive testing before migration",
+      "Feature flags for gradual enablement",
+      "Monitoring and alerting for all changes",
+      "Quick rollback procedures documented"
+    ]
+  },
+
+  "success_tracking": {
+    "kpis": {
+      "loc_reduction_target": "{total_loc_reduction}",
+      "code_reuse_target": ">90%",
+      "duplicate_code_target": "<3%",
+      "test_coverage_target": ">85%",
+      "performance_target": "no regression"
+    },
+
+    "monitoring": {
+      "frequency": "daily",
+      "metrics": [
+        "LOC reduction progress",
+        "Test pass rate",
+        "Service health metrics",
+        "Performance benchmarks",
+        "Developer feedback"
+      ]
+    }
+  }
+}

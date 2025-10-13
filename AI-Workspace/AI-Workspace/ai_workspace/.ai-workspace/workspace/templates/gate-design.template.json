@@ -1,0 +1,37 @@
+{
+  "phase": "design",
+  "task_name": "{{TASK_NAME}}",
+  "timestamp": "{{TIMESTAMP}}",
+  "artifacts": {
+    "architecture_decision": {
+      "completed": false,
+      "path": "",
+      "notes": "Create ADR documenting architectural decisions"
+    },
+    "api_design": {
+      "completed": false,
+      "path": "",
+      "notes": "Define API contracts and interfaces"
+    },
+    "data_model": {
+      "completed": false,
+      "path": "",
+      "notes": "Specify data models and schemas"
+    },
+    "reuse_analysis": {
+      "completed": false,
+      "path": "",
+      "notes": "Complete reuse analysis (≥0% documented)"
+    }
+  },
+  "exit_criteria_met": [false, false, false, false],
+  "exit_criteria": [
+    "Architecture documented (ADR created)",
+    "API contracts defined",
+    "Data models specified",
+    "Reuse analysis completed (≥0% documented)"
+  ],
+  "notes": "",
+  "approved_by": "",
+  "approval_timestamp": null
+}

@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""
+Pre-commit Hook - AI Workspace Quality Gates (v2.0)
+Enforces Operating Charter quality standards before commit.
+
+Fix #5: Optional tool checks with graceful degradation
+- Tools not installed? Skipped with warning, not failed
+- All checks are optional except file size (always enforced)
+"""
+import subprocess
+import sys
+from pathlib import Path
+
+
+class QualityGateChecker:
+    """Run quality gate checks before commit."""
+
+    def __init__(self):
+        """Initialize checker."""
+        self.errors = []
+        self.warnings = []
+        self.skipped = []
+
+    def run_all_checks(self) -> bool:
+        """Run all quality gate checks."""
+        print("🔍 AI Workspace - Quality Gate Checks v2.0")
+        print("=" * 60)
+        print("Enforcing: Principle 1 (Less is More) & Principle 4 (Phase Gates)")
+        print("=" * 60)
+
+        checks = [
+            ("File Size Budget", self.check_file_sizes, True),  # Required
+            ("Code Duplication", self.check_duplication, False),  # Optional
+            ("Type Coverage", self.check_types, False),  # Optional
+            ("Code Formatting", self.check_formatting, False),  # Optional
+        ]
+
+        for name, check_fn, required in checks:
+            print(f"\n▶ {name}{'*' if required else ''}...")
+            try:
+                check_fn()
+                print(f"  ✅ {name} passed")
+            except Exception as e:
+                if required:
+                    self.errors.append(f"{name}: {e}")
+                    print(f"  ❌ {name} failed: {e}")
+                else:
+                    self.warnings.append(f"{name}: {e}")
+                    print(f"  ⚠️  {name} warning: {e}")
+
+        return len(self.errors) == 0
+
+    def check_file_sizes(self) -> None:
+        """Enforce ≤500 LOC per file (soft limit)."""
+        max_loc = 500
+        violations = []
+
+        # Get staged files
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+            capture_output=True,
+            text=True,
+        )
+
+        staged_files = [f for f in result.stdout.strip().split("\n") if f]
+
+        for file_path in staged_files:
+            path = Path(file_path)
+
+            # Skip non-code files
+            if path.suffix not in [".py", ".ts", ".tsx", ".js", ".jsx", ".rs", ".go"]:
+                continue
+
+            # Skip migrations, tests, generated files
+            if any(skip in str(path) for skip in ["migrations/versions", "test_", ".test."]):
+                continue
+
+            if not path.exists():
+                continue
+
+            lines = len([
+                l for l in path.read_text().split("\n")
+                if l.strip() and not l.strip().startswith("#")
+            ])
+
+            if lines > max_loc:
+                violations.append(f"  {path}: {lines} LOC (max: {max_loc})")
+
+        if violations:
+            raise Exception(
+                f"\n{len(violations)} files exceed LOC budget:\n" + "\n".join(violations) +
+                "\nAdd justification in PR description or refactor."
+            )
+
+    def check_duplication(self) -> None:
+        """Check code duplication with jscpd (optional)."""
+        try:
+            result = subprocess.run(
+                ["npx", "jscpd", "--threshold", "3", "--format", "json", "."],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            # If jscpd found duplications above threshold, it returns non-zero
+            if result.returncode != 0 and "duplications" in result.stdout.lower():
+                raise Exception("Code duplication above 3% threshold")
+
+        except FileNotFoundError:
+            self.skipped.append("jscpd not installed")
+            print("  ⏭️  jscpd not found, skipping duplication check")
+            print("     Install: npm install -D jscpd")
+            return
+        except subprocess.TimeoutExpired:
+            self.skipped.append("jscpd timed out")
+            print("  ⏭️  Duplication check timed out, skipping")
+            return
+
+    def check_types(self) -> None:
+        """Run type checker (mypy for Python, tsc for TypeScript) - optional."""
+        type_checked = False
+
+        # Check for Python
+        if Path("pyproject.toml").exists() or Path("requirements.txt").exists():
+            try:
+                result = subprocess.run(
+                    ["mypy", "."],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
+                if result.returncode != 0:
+                    # Show first 10 errors
+                    errors = result.stdout.split("\n")[:10]
+                    raise Exception(f"Type errors found:\n" + "\n".join(errors))
+                type_checked = True
+            except FileNotFoundError:
+                self.skipped.append("mypy not installed")
+                print("  ⏭️  mypy not found, skipping Python type check")
+                print("     Install: pip install mypy")
+            except subprocess.TimeoutExpired:
+                self.skipped.append("mypy timed out")
+                print("  ⏭️  mypy timed out, skipping")
+
+        # Check for TypeScript
+        if Path("tsconfig.json").exists():
+            try:
+                result = subprocess.run(
+                    ["npx", "tsc", "--noEmit"],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                )
+                if result.returncode != 0:
+                    raise Exception("TypeScript type errors found")
+                type_checked = True
+            except FileNotFoundError:
+                self.skipped.append("tsc not installed")
+                print("  ⏭️  tsc not found, skipping TypeScript type check")
+                print("     Install: npm install -D typescript")
+            except subprocess.TimeoutExpired:
+                self.skipped.append("tsc timed out")
+                print("  ⏭️  tsc timed out, skipping")
+
+        if not type_checked:
+            print("  ⏭️  No type checker available, skipping")
+
+    def check_formatting(self) -> None:
+        """Check code formatting - optional."""
+        formatted = False
+
+        # Python - black
+        if Path("pyproject.toml").exists() or Path("setup.py").exists():
+            try:
+                result = subprocess.run(
+                    ["black", "--check", "."],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    raise Exception("Code not formatted with black. Run: black .")
+                formatted = True
+            except FileNotFoundError:
+                self.skipped.append("black not installed")
+                print("  ⏭️  black not found, skipping Python formatting check")
+                print("     Install: pip install black")
+
+        # JavaScript/TypeScript - prettier
+        if Path("package.json").exists():
+            try:
+                result = subprocess.run(
+                    ["npx", "prettier", "--check", "."],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    raise Exception("Code not formatted with prettier. Run: npx prettier --write .")
+                formatted = True
+            except FileNotFoundError:
+                self.skipped.append("prettier not installed")
+                print("  ⏭️  prettier not found, skipping JS/TS formatting check")
+                print("     Install: npm install -D prettier")
+
+        if not formatted:
+            print("  ⏭️  No formatter available, skipping")
+
+    def print_results(self) -> None:
+        """Print check results."""
+        print("\n" + "=" * 60)
+
+        if not self.errors:
+            print("✅ All required quality gates passed!")
+            if self.warnings:
+                print(f"⚠️  {len(self.warnings)} optional check(s) had warnings")
+            if self.skipped:
+                print(f"⏭️  {len(self.skipped)} check(s) skipped (tools not installed)")
+            print("=" * 60)
+            return
+
+        print(f"❌ {len(self.errors)} required quality gate(s) failed:")
+        print("=" * 60)
+        for error in self.errors:
+            print(f"  • {error}")
+
+        if self.warnings:
+            print(f"\n⚠️  {len(self.warnings)} optional check(s) had warnings:")
+            for warning in self.warnings:
+                print(f"  • {warning}")
+
+        if self.skipped:
+            print(f"\n⏭️  {len(self.skipped)} check(s) skipped:")
+            for skip in self.skipped:
+                print(f"  • {skip}")
+
+        print("\n💡 Fix errors above, or bypass with:")
+        print("   git commit --no-verify  (not recommended)")
+        print("\n📚 See: .ai-workspace/docs/ for help")
+        print("=" * 60)
+
+
+def main() -> int:
+    """Main entry point."""
+    checker = QualityGateChecker()
+    success = checker.run_all_checks()
+    checker.print_results()
+
+    return 0 if success else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
