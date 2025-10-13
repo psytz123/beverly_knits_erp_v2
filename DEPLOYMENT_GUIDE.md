@@ -1,704 +1,385 @@
-# Beverly Knits ERP v2 - Deployment Guide
+# Beverly Knits ERP Dashboard - Deployment Guide
 
-Complete guide for deploying Beverly Knits ERP v2 in production environments, covering Docker deployment, API integration setup, and monitoring configuration.
+## Overview
 
-## 📋 Prerequisites
+This guide provides complete instructions for deploying and running the Beverly Knits ERP consolidated dashboard system.
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│         Beverly Knits ERP System                │
+├─────────────────────────────────────────────────┤
+│                                                  │
+│  ┌──────────────┐         ┌─────────────────┐  │
+│  │   Frontend   │         │    Backend      │  │
+│  │  Dashboard   │◄────────┤   API Server    │  │
+│  │  (Port 8080) │  HTTP   │   (Port 5006)   │  │
+│  └──────────────┘         └─────────────────┘  │
+│         │                          │            │
+│         │                          │            │
+│         ▼                          ▼            │
+│  consolidated_dashboard    database_api_server │
+│  _visual_preserved.html          .py           │
+│                                   │             │
+│                                   ▼             │
+│                            ┌─────────────┐     │
+│                            │  Database   │     │
+│                            │ PostgreSQL  │     │
+│                            └─────────────┘     │
+└─────────────────────────────────────────────────┘
+```
+
+## Prerequisites
+
+### Required Software
+
+1. **Python 3.8+**
+   - Download from: https://www.python.org/downloads/
+   - Verify installation: `python --version`
+
+2. **Python Packages** (Already installed in venv)
+   - Flask 3.1.1
+   - Flask-CORS
+   - psycopg2-binary (for PostgreSQL)
+   - pandas, numpy
+
+3. **PostgreSQL Database** (Optional)
+   - The API server connects to PostgreSQL
+   - Configuration in `src/database/database_config.json`
 
 ### System Requirements
 
-#### Minimum Requirements (Single Instance)
-- **CPU**: 4 cores, 2.4 GHz
-- **Memory**: 8 GB RAM
-- **Storage**: 50 GB SSD
-- **Network**: 1 Gbps connection
-- **OS**: Ubuntu 20.04 LTS, CentOS 8, or RHEL 8
+- **Operating System**: Windows, Linux, or macOS
+- **Memory**: 4GB RAM minimum
+- **Disk Space**: 500MB free space
+- **Network**: Port 5006 and 8080 available
 
-#### Recommended Requirements (Production)
-- **CPU**: 8 cores, 3.0 GHz
-- **Memory**: 16 GB RAM
-- **Storage**: 100 GB NVMe SSD
-- **Network**: 10 Gbps connection
-- **OS**: Ubuntu 22.04 LTS
+## Quick Start
 
-#### Software Dependencies
-- **Python**: 3.10+ (3.11 recommended)
-- **Docker**: 20.10+ (recommended for deployment)
-- **Redis**: 7.0+ (optional for caching)
-- **Nginx**: 1.20+ (reverse proxy for production)
+### Option 1: Windows
 
----
+1. **Double-click** `start_dashboard.bat`
 
-## 🚀 Quick Deployment (Development)
+   The script will:
+   - Start the backend API server on port 5006
+   - Start the frontend dashboard server on port 8080
+   - Open the dashboard in your default browser
 
-### Local Development Setup
+2. **Access the dashboard**:
+   - URL: http://localhost:8080/consolidated_dashboard_visual_preserved.html
 
-```bash
-# Clone the repository
-git clone https://github.com/your-org/beverly_knits_erp_v2.git
-cd beverly_knits_erp_v2
+3. **Stop the servers**:
+   - Close the command windows
+   - Or press Ctrl+C in each window
 
-# Create virtual environment
-python3.11 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate    # Windows
+### Option 2: Linux/Mac
 
-# Install dependencies
-pip install -r requirements.txt
+1. **Run the startup script**:
+   ```bash
+   ./start_dashboard.sh
+   ```
 
-# Set up environment variables
-cp .env.example .env
-nano .env  # Configure your eFab/QuadS credentials
+2. **Access the dashboard**:
+   - URL: http://localhost:8080/consolidated_dashboard_visual_preserved.html
 
-# Start development server
-python3 src/core/beverly_comprehensive_erp.py
-```
+3. **Stop the servers**:
+   ```bash
+   ./stop_dashboard.sh
+   ```
 
-### Docker Development Setup
+## Manual Deployment
+
+### Step 1: Start Backend API Server
 
 ```bash
-# Clone repository
-git clone https://github.com/your-org/beverly_knits_erp_v2.git
-cd beverly_knits_erp_v2
+# Navigate to the project directory
+cd C:\finalee\beverly_knits_erp_v2
 
-# Start with Docker Compose
-docker-compose up -d
+# Activate virtual environment (if needed)
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
 
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f beverly-erp
+# Start the API server
+python src/api/database_api_server.py
 ```
 
----
+The API server will start on **port 5006**.
 
-## 🏗️ Production Deployment
-
-### Docker Production Deployment (Recommended)
-
-#### 1. Infrastructure Setup
+### Step 2: Start Frontend Dashboard Server
 
 ```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
+# In a new terminal, navigate to the web directory
+cd C:\finalee\beverly_knits_erp_v2\web
 
-# Install Docker and Docker Compose
-sudo apt install -y docker.io docker-compose nginx git
-
-# Create beverly user
-sudo useradd -m -s /bin/bash beverly
-sudo usermod -aG docker beverly
+# Start the web server
+python server.py 8080
 ```
 
-#### 2. Environment Configuration
+The dashboard will be available on **port 8080**.
 
-Create production environment file:
+### Step 3: Access the Dashboard
+
+Open your browser and navigate to:
+```
+http://localhost:8080/consolidated_dashboard_visual_preserved.html
+```
+
+## Dashboard Features
+
+The consolidated dashboard provides:
+
+### 1. **Yarn Intelligence**
+   - Real-time yarn inventory tracking
+   - Critical yarn alerts
+   - Yarn consumption forecasts
+
+### 2. **Knit Orders Management**
+   - Production order tracking
+   - Machine assignments
+   - Order priorities
+
+### 3. **Production Planning**
+   - Time-phased production schedules
+   - Capacity planning
+   - Material requirements planning (MRP)
+
+### 4. **Fabric Forecasting**
+   - ML-powered demand forecasts
+   - Sales trend analysis
+   - Inventory optimization
+
+### 5. **Analytics & Reporting**
+   - Real-time KPIs
+   - Production metrics
+   - Export capabilities (CSV, Excel, JSON)
+
+## Configuration
+
+### API Configuration
+
+The dashboard automatically detects the environment and configures the API base URL:
+
+- **Local Development**: `http://localhost:5006`
+- **ngrok/Railway/Render**: Uses current hostname
+- **Custom**: Edit `getAPIBaseURI()` in the HTML file (line 3454)
+
+### Backend Configuration
+
+Database connection settings in `src/database/database_config.json`:
+
+```json
+{
+  "host": "localhost",
+  "port": 5432,
+  "database": "beverly_erp",
+  "user": "postgres",
+  "password": "your_password"
+}
+```
+
+## Troubleshooting
+
+### Issue: Port Already in Use
+
+**Error**: `Address already in use: 5006` or `8080`
+
+**Solution**:
+```bash
+# Windows - Find and kill process on port
+netstat -ano | findstr :5006
+taskkill /PID <process_id> /F
+
+# Linux/Mac - Find and kill process on port
+lsof -ti:5006 | xargs kill -9
+```
+
+### Issue: Cannot Connect to Database
+
+**Error**: `Connection refused` or `Database connection failed`
+
+**Solution**:
+1. Check PostgreSQL is running
+2. Verify database credentials in `database_config.json`
+3. Ensure database exists: `createdb beverly_erp`
+
+### Issue: Dashboard Shows No Data
+
+**Possible Causes**:
+1. Backend API not running
+2. Database not initialized
+3. No data synced from eFab
+
+**Solution**:
+1. Check API health: `http://localhost:5006/api/health`
+2. Check browser console for errors (F12)
+3. Verify API endpoints are responding
+
+### Issue: CORS Errors
+
+**Error**: `Access-Control-Allow-Origin` errors in browser console
+
+**Solution**:
+- The `server.py` includes CORS headers
+- Ensure you're accessing via `http://localhost:8080`
+- Don't use `file://` protocol
+
+## Advanced Deployment
+
+### Using Production WSGI Server
+
+For production, use a proper WSGI server like **Gunicorn**:
 
 ```bash
-# Create .env.production
-cat > .env.production << 'EOF'
-# eFab ERP Configuration
-ERP_BASE_URL=https://efab.bkiapps.com
-ERP_LOGIN_URL=https://efab.bkiapps.com/login
-ERP_API_PREFIX=/api
-ERP_USERNAME=psytz
-ERP_PASSWORD=big$cat
-EFAB_SESSION=aMdcwNLa0ov0pcbWcQ_zb5wyPLSkYF_B
+# Install gunicorn
+pip install gunicorn
 
-# QuadS Configuration
-QUADS_BASE_URL=https://quads.bkiapps.com
-QUADS_LOGIN_URL=https://quads.bkiapps.com/LOGIN
-
-# Session Management
-SESSION_COOKIE_NAME=dancer.session
-SESSION_STATE_PATH=/tmp/erp_session.json
-
-# Beverly ERP Settings
-FLASK_ENV=production
-DEBUG=False
-PORT=5006
-HOST=0.0.0.0
-
-# Yarn Demand Scheduler
-ENABLE_YARN_SCHEDULER=true
-FILTER_NONPRODUCTION_YARNS=true
-SCHEDULER_INTERVAL_HOURS=2
-
-# Performance Settings
-WORKERS=4
-CACHE_TTL=3600
-MAX_CONCURRENT_REQUESTS=100
-
-# Logging
-LOG_LEVEL=INFO
-LOG_TO_FILE=true
-LOG_FILE_PATH=/app/logs/beverly_erp.log
-
-# Security
-SECRET_KEY=your_very_secure_secret_key_here
-CORS_ORIGINS=*
-RATE_LIMITING=true
-EOF
+# Run with gunicorn
+gunicorn -w 4 -b 0.0.0.0:5006 src.api.database_api_server:app
 ```
 
-#### 3. Docker Compose Configuration
+### Using Reverse Proxy (Nginx)
 
-Create `docker-compose.prod.yml`:
+Example Nginx configuration:
 
-```yaml
-version: '3.8'
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
 
-services:
-  beverly-erp:
-    build:
-      context: .
-      dockerfile: Dockerfile.production
-    ports:
-      - "5006:5006"
-    environment:
-      - FLASK_ENV=production
-    env_file:
-      - .env.production
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - /tmp:/tmp
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5006/api/comprehensive-kpis"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    depends_on:
-      - redis
-    networks:
-      - beverly-network
+    # Dashboard static files
+    location / {
+        root /path/to/beverly_knits_erp_v2/web;
+        try_files $uri $uri/ =404;
+    }
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru
-    networks:
-      - beverly-network
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - beverly-erp
-    restart: unless-stopped
-    networks:
-      - beverly-network
-
-volumes:
-  redis_data:
-
-networks:
-  beverly-network:
-    driver: bridge
+    # API proxy
+    location /api/ {
+        proxy_pass http://localhost:5006;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
 ```
 
-#### 4. Production Dockerfile
+### Docker Deployment
 
-Create `Dockerfile.production`:
+Create a `Dockerfile`:
 
 ```dockerfile
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
+COPY . /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN pip install -r requirements.txt
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+EXPOSE 5006 8080
 
-# Copy application code
-COPY src/ ./src/
-COPY web/ ./web/
-COPY data/ ./data/
-COPY scripts/ ./scripts/
-
-# Create logs directory
-RUN mkdir -p /app/logs
-
-# Create non-root user
-RUN useradd -m -u 1000 beverly && chown -R beverly:beverly /app
-USER beverly
-
-# Expose port
-EXPOSE 5006
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:5006/api/comprehensive-kpis || exit 1
-
-# Start application
-CMD ["python3", "src/core/beverly_comprehensive_erp.py"]
+CMD ["python", "start_services.py"]
 ```
 
-#### 5. Nginx Configuration
-
-Create `nginx.conf`:
-
-```nginx
-events {
-    worker_connections 1024;
-}
-
-http {
-    upstream beverly_erp {
-        server beverly-erp:5006;
-    }
-
-    server {
-        listen 80;
-        server_name your-domain.com;
-        return 301 https://$server_name$request_uri;
-    }
-
-    server {
-        listen 443 ssl http2;
-        server_name your-domain.com;
-
-        ssl_certificate /etc/nginx/ssl/certificate.crt;
-        ssl_certificate_key /etc/nginx/ssl/private.key;
-        ssl_protocols TLSv1.2 TLSv1.3;
-        ssl_ciphers HIGH:!aNULL:!MD5;
-
-        client_max_body_size 100M;
-        proxy_read_timeout 300s;
-        proxy_connect_timeout 75s;
-
-        location / {
-            proxy_pass http://beverly_erp;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-
-            # WebSocket support for real-time updates
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
-        }
-
-        location /api/ {
-            proxy_pass http://beverly_erp;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-
-            # API-specific timeouts
-            proxy_read_timeout 300s;
-            proxy_send_timeout 300s;
-        }
-
-        location /static/ {
-            alias /app/web/static/;
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
-    }
-}
-```
-
-#### 6. Deploy and Start Services
+Build and run:
 
 ```bash
-# Switch to beverly user
-sudo su - beverly
-
-# Clone and setup
-git clone https://github.com/your-org/beverly_knits_erp_v2.git
-cd beverly_knits_erp_v2
-
-# Build and start services
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# Check status
-docker-compose -f docker-compose.prod.yml ps
-
-# View logs
-docker-compose -f docker-compose.prod.yml logs -f beverly-erp
+docker build -t beverly-erp .
+docker run -p 5006:5006 -p 8080:8080 beverly-erp
 ```
+
+## Security Considerations
+
+### Production Checklist
+
+- [ ] Change default database passwords
+- [ ] Enable HTTPS/TLS
+- [ ] Implement authentication
+- [ ] Set up firewall rules
+- [ ] Enable API rate limiting
+- [ ] Configure secure session cookies
+- [ ] Regular security updates
+- [ ] Implement audit logging
+
+### Environment Variables
+
+Store sensitive configuration in environment variables:
+
+```bash
+export DATABASE_URL="postgresql://user:pass@host/db"
+export EFAB_SESSION="your_session_cookie"
+export SECRET_KEY="your_secret_key"
+```
+
+## Monitoring & Maintenance
+
+### Health Checks
+
+```bash
+# API health
+curl http://localhost:5006/api/health
+
+# Expected response
+{"status": "healthy", "database": "connected"}
+```
+
+### Logs
+
+Check logs for errors:
+
+```bash
+# API server logs
+tail -f logs/api_server.log
+
+# Web server logs
+tail -f logs/web_server.log
+```
+
+### Database Maintenance
+
+```sql
+-- Check table sizes
+SELECT
+    schemaname,
+    tablename,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+
+-- Vacuum and analyze
+VACUUM ANALYZE;
+```
+
+## Support & Documentation
+
+### Additional Documentation
+
+- **API Reference**: `docs/API_REFERENCE.md`
+- **Database Setup**: `src/database/README.md`
+- **Mapping Guide**: `docs/technical/MAPPING/`
+- **Quick Start**: `docs/QUICK_START.md`
+
+### Getting Help
+
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review error logs
+3. Consult the technical documentation
+4. Contact system administrator
+
+## Version Information
+
+- **System**: Beverly Knits ERP v2
+- **Dashboard**: consolidated_dashboard_visual_preserved.html
+- **API Version**: 2025-08-29-fix-double-api-prefix
+- **Backend**: Flask 3.1.1
+- **Database**: PostgreSQL 12+
+
+## License
+
+Proprietary - Beverly Knits ERP v2
 
 ---
 
-## 🔧 Configuration Management
-
-### eFab API Integration
-
-#### Session Management
-The system requires valid eFab session cookies. Update these regularly:
-
-```bash
-# Check current session status
-curl -s http://localhost:5006/api/comprehensive-kpis | jq '.efab_connection_status'
-
-# Update session cookie
-docker-compose -f docker-compose.prod.yml exec beverly-erp \
-  python3 -c "
-import os
-os.environ['EFAB_SESSION'] = 'new_session_cookie_value'
-print('Session updated')
-"
-
-# Restart service to apply new session
-docker-compose -f docker-compose.prod.yml restart beverly-erp
-```
-
-#### API Endpoint Verification
-Verify all wrapper endpoints are working:
-
-```bash
-# Test primary endpoints
-curl -s http://localhost:5006/api/yarn/active | jq '.status'
-curl -s http://localhost:5006/api/knitorder/list | jq '.status'
-curl -s http://localhost:5006/api/sales-order/plan/list | jq '.status'
-curl -s http://localhost:5006/api/styles | jq '.status'
-
-# Test QuadS endpoints
-curl -s http://localhost:5006/api/styles/greige/active | jq '.status'
-curl -s http://localhost:5006/api/styles/finished/active | jq '.status'
-
-# Test reporting endpoints
-curl -s http://localhost:5006/api/report/yarn_demand | jq '.status'
-curl -s http://localhost:5006/api/yarn-po | jq '.status'
-```
-
-### Yarn Demand Scheduler Configuration
-
-The system includes automated yarn demand report downloading:
-
-```bash
-# Enable scheduler
-export ENABLE_YARN_SCHEDULER=true
-export FILTER_NONPRODUCTION_YARNS=true
-
-# Manual refresh trigger
-curl -X POST http://localhost:5006/api/manual-yarn-refresh
-
-# Check scheduler status in logs
-docker-compose -f docker-compose.prod.yml logs beverly-erp | grep SCHEDULER
-```
-
----
-
-## 📊 Monitoring & Observability
-
-### Health Monitoring
-
-#### System Health Endpoint
-```bash
-# Check overall system health
-curl -s http://localhost:5006/api/comprehensive-kpis | jq '.'
-```
-
-#### Docker Container Monitoring
-```bash
-# Monitor container resources
-docker stats
-
-# Check container health
-docker-compose -f docker-compose.prod.yml ps
-
-# View container logs
-docker-compose -f docker-compose.prod.yml logs --tail=100 beverly-erp
-```
-
-### Performance Metrics
-
-#### Key Performance Indicators
-- **API Response Time**: <200ms for most endpoints
-- **Data Load Time**: <2 seconds for inventory data
-- **Cache Hit Rate**: >80% for optimal performance
-- **Memory Usage**: <2GB per container
-- **Yarn Shortage Detection**: Real-time updates
-
-#### Monitoring Commands
-```bash
-# Check API performance
-curl -w "@curl-format.txt" -o /dev/null -s http://localhost:5006/api/inventory-intelligence-enhanced
-
-# Monitor cache performance
-curl -s http://localhost:5006/api/consolidation-metrics | jq '.cache_metrics'
-
-# Check memory usage
-docker exec beverly-erp ps aux --sort=-%mem | head -10
-```
-
----
-
-## 🔒 Security Configuration
-
-### SSL/TLS Setup
-
-#### Let's Encrypt Certificate (Recommended)
-```bash
-# Install Certbot
-sudo apt install certbot python3-certbot-nginx
-
-# Obtain certificate
-sudo certbot --nginx -d your-domain.com
-
-# Auto-renewal setup
-sudo crontab -e
-# Add: 0 12 * * * /usr/bin/certbot renew --quiet
-```
-
-### Firewall Configuration
-```bash
-# Configure UFW firewall
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow 22/tcp    # SSH
-sudo ufw allow 80/tcp    # HTTP
-sudo ufw allow 443/tcp   # HTTPS
-sudo ufw enable
-```
-
-### API Security
-- **Session-based authentication** via eFab cookies
-- **CORS protection** configured for specific origins
-- **Rate limiting** enabled for API endpoints
-- **Secure headers** included in all responses
-
----
-
-## 🔄 Backup & Recovery
-
-### Data Backup Strategy
-
-#### Automated Backup Script
-```bash
-#!/bin/bash
-# backup_script.sh
-
-BACKUP_DIR="/backup/beverly-erp"
-DATE=$(date +%Y%m%d_%H%M%S)
-
-# Create backup directory
-mkdir -p $BACKUP_DIR
-
-# Backup application data
-docker run --rm \
-  -v beverly_knits_erp_v2_data:/data \
-  -v $BACKUP_DIR:/backup \
-  alpine tar czf /backup/data_backup_$DATE.tar.gz -C /data .
-
-# Backup Redis data
-docker exec beverly_knits_erp_v2_redis_1 redis-cli BGSAVE
-docker cp beverly_knits_erp_v2_redis_1:/data/dump.rdb $BACKUP_DIR/redis_backup_$DATE.rdb
-
-# Clean old backups (keep 30 days)
-find $BACKUP_DIR -name "*.tar.gz" -mtime +30 -delete
-find $BACKUP_DIR -name "*.rdb" -mtime +30 -delete
-
-echo "Backup completed: $DATE"
-```
-
-#### Automated Backup with Cron
-```bash
-# Add to crontab
-crontab -e
-
-# Daily backup at 2 AM
-0 2 * * * /home/beverly/backup_script.sh
-
-# Weekly full system backup
-0 1 * * 0 /home/beverly/full_backup_script.sh
-```
-
-### Disaster Recovery
-
-#### Recovery Procedure
-```bash
-# Stop services
-docker-compose -f docker-compose.prod.yml down
-
-# Restore data
-tar xzf /backup/data_backup_YYYYMMDD_HHMMSS.tar.gz -C ./data/
-
-# Restore Redis data
-docker-compose -f docker-compose.prod.yml up -d redis
-docker cp /backup/redis_backup_YYYYMMDD_HHMMSS.rdb beverly_knits_erp_v2_redis_1:/data/dump.rdb
-docker-compose -f docker-compose.prod.yml restart redis
-
-# Start all services
-docker-compose -f docker-compose.prod.yml up -d
-
-# Verify recovery
-curl -s http://localhost:5006/api/comprehensive-kpis
-```
-
----
-
-## 📚 Troubleshooting
-
-### Common Issues
-
-#### High Memory Usage
-```bash
-# Check memory usage
-docker stats beverly-erp
-
-# Restart service to clear memory
-docker-compose -f docker-compose.prod.yml restart beverly-erp
-
-# Optimize memory settings
-# Edit docker-compose.prod.yml:
-# mem_limit: 2g
-# memswap_limit: 2g
-```
-
-#### Slow API Responses
-```bash
-# Check API performance
-curl -w "%{time_total}" -o /dev/null -s http://localhost:5006/api/yarn-intelligence
-
-# Enable Redis caching
-# Verify Redis is running:
-docker-compose -f docker-compose.prod.yml ps redis
-
-# Check cache hit rates
-curl -s http://localhost:5006/api/consolidation-metrics | jq '.cache_hit_rate'
-```
-
-#### eFab Session Expiration
-```bash
-# Check session status
-curl -s http://localhost:5006/api/comprehensive-kpis | jq '.efab_session_status'
-
-# Update session cookie
-# 1. Login to eFab in browser
-# 2. Copy session cookie from browser dev tools
-# 3. Update environment variable:
-docker-compose -f docker-compose.prod.yml exec beverly-erp \
-  bash -c 'export EFAB_SESSION="new_session_value"'
-
-# Restart service
-docker-compose -f docker-compose.prod.yml restart beverly-erp
-```
-
-#### Yarn Scheduler Issues
-```bash
-# Check scheduler logs
-docker-compose -f docker-compose.prod.yml logs beverly-erp | grep SCHEDULER
-
-# Manual refresh
-curl -X POST http://localhost:5006/api/manual-yarn-refresh
-
-# Verify downloaded files
-docker-compose -f docker-compose.prod.yml exec beverly-erp \
-  ls -la /app/data/production/5/ERP\ Data/Expected_Yarn_Report.xlsx
-```
-
----
-
-## 📈 Scaling Guidelines
-
-### Horizontal Scaling
-
-#### Load Balancer Configuration
-```bash
-# Add multiple ERP instances
-# Update docker-compose.prod.yml:
-services:
-  beverly-erp-1:
-    # ... same config ...
-    ports:
-      - "5006:5006"
-
-  beverly-erp-2:
-    # ... same config ...
-    ports:
-      - "5007:5006"
-
-  nginx:
-    # Update upstream in nginx.conf:
-    upstream beverly_erp {
-        server beverly-erp-1:5006;
-        server beverly-erp-2:5006;
-    }
-```
-
-### Performance Optimization
-
-#### Redis Cluster Setup
-```yaml
-# For high-availability Redis
-services:
-  redis-master:
-    image: redis:7-alpine
-    command: redis-server --maxmemory 4gb --maxmemory-policy allkeys-lru
-
-  redis-replica:
-    image: redis:7-alpine
-    command: redis-server --slaveof redis-master 6379
-    depends_on:
-      - redis-master
-```
-
----
-
-## ✅ Production Checklist
-
-### Pre-Deployment
-- [ ] eFab and QuadS credentials configured
-- [ ] SSL certificates installed and validated
-- [ ] Environment variables properly set
-- [ ] Firewall rules configured
-- [ ] Docker containers build successfully
-- [ ] Health checks passing
-- [ ] Backup procedures tested
-- [ ] Monitoring configured
-
-### Post-Deployment
-- [ ] All API endpoints responding correctly
-- [ ] eFab session authentication working
-- [ ] Yarn demand scheduler active
-- [ ] Cache performance optimized
-- [ ] Logs being collected
-- [ ] Backup schedules active
-- [ ] Security monitoring enabled
-- [ ] Performance baselines established
-
-### API Endpoint Validation
-```bash
-# Validate all primary wrapper endpoints
-endpoints=(
-  "/api/yarn/active"
-  "/api/knitorder/list"
-  "/api/sales-order/plan/list"
-  "/api/styles"
-  "/api/styles/greige/active"
-  "/api/styles/finished/active"
-  "/api/report/yarn_demand"
-  "/api/yarn-po"
-)
-
-for endpoint in "${endpoints[@]}"; do
-  status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:5006$endpoint")
-  echo "$endpoint: $status"
-done
-```
-
----
-
-*Deployment Guide v2.0.0 - Beverly Knits ERP System - Updated September 2025*
+**Last Updated**: 2025-10-12

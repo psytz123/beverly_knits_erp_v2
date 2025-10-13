@@ -1,6 +1,7 @@
 # Complete Data Mapping Reference - Beverly Knits ERP
 
 ## Overview
+
 This reference documents all column mappings for both fabric/style identifiers and yarn identifiers across different data sources.
 
 ---
@@ -9,19 +10,24 @@ This reference documents all column mappings for both fabric/style identifiers a
 
 ### Mapping Table
 
-| Data Source | Style Column | Maps To | Notes |
-|------------|--------------|---------|-------|
-| **eFab_SO_List_** | `cFVersion` + `fBase` | `cFVersion` + `fBase` | Has BOTH columns |
-| **eFab_Knit_Orders_** | `Style #` | `Style#` | Production orders |
-| **eFab_Inventory_I01_** | `Style #` | `Style#` | QC inspection |
-| **eFab_Inventory_G00_** | `Style #` | `Style#` | Greige stage 1 |
-| **eFab_Inventory_F01_** | `Style #` | `Style#` | Finished goods |
-| **eFab_Inventory_G02_** | `fStyle` | `fStyle#` | Greige stage 2 (only file using fStyle) |
-| **QuadS_finishedFabric** | `Style#` | `Style#` | QuadS fabric list |
-| **BOM_updated** | `Style#` | `Style#` | Bill of materials |
-| **Sales Activity Report** | `Style` | `cFVersion` | ⚠️ Special: Style = cFVersion |
+
+| <br />Data Source                                                | Style Column              | Maps To                   | Notes                                   |
+| ---------------------------------------------------------------- | ------------------------- | ------------------------- | --------------------------------------- |
+| api/sales-order/plan/list                                        | `cFVersion` + `fBase` | `cFVersion` + `fBase` | Has BOTH columns                        |
+| `GET /api/knitorder/list`                                      | `Style #`               | `Style#`                | Production orders                       |
+| `GET /api/finished/i01`                                        | `Style #`               | `Style#`                | QC inspection                           |
+| `GET /api/greige/g00`                                          | `Style #`               | `Style#`                | Greige stage 1                          |
+| `GET /api/finished/f01`                                        | `Style #`               | `Style#`                | Finished goods                          |
+| `GET /api/greige/g02`                                          | `fStyle`                | `fStyle#`               | Greige stage 2 (only file using fStyle) |
+| `GET /api/styles/greige/active` & /api/styles/finished/active | `Style#`                | `Style#`                | QuadS fabric list                       |
+| **BOM_updated**                                            | `Style#`                | `Style#`                | Bill of materials                       |
+| **Sales Activity Report**                                  | `Style`                 | `cFVersion`             | ⚠️ Special: Style = cFVersion         |
+
+- `GET /api/styles/greige/active` - Greige styles from QuadS
+- `GET /api/styles/finished/active` - Finished styles from QuadS
 
 ### Standardized Style Columns
+
 - **`Style#`** - Primary style identifier (most files)
 - **`fStyle#`** - Fabric style (only G02 inventory)
 - **`fBase`** - Fabric base (SO List)
@@ -33,22 +39,25 @@ This reference documents all column mappings for both fabric/style identifiers a
 
 ### Mapping Table
 
-| Data Source | Yarn Column | Maps To | Notes |
-|------------|-------------|---------|-------|
-| **BOM_updated** | `Desc#` | `Desc#` | Already standard |
-| **Yarn_ID** | `Desc#` | `Desc#` | Already standard |
-| **Yarn_ID_Master** | `Desc#` | `Desc#` | Already standard |
-| **yarn_inventory** | `Desc#` | `Desc#` | Already standard |
-| **Expected_Yarn_Report** | `Desc` | `Desc#` | Maps Desc → Desc# |
-| **Yarn_Demand_Report** | `Yarn` | `Desc#` | Maps Yarn → Desc# |
-| **Yarn_Demand_By_Style** | `Yarn` | `Desc#` | Maps Yarn → Desc# |
-| **Yarn_Demand_By_Style_KO** | `Yarn` | `Desc#` | Maps Yarn → Desc# |
+| Data Source                        | Yarn Column | Maps To   | Notes              |
+| ---------------------------------- | ----------- | --------- | ------------------ |
+| **BOM_updated**              | `Desc#`   | `Desc#` | Already standard   |
+| `GET /api/yarn/active`           | `Desc#`   | `Desc#` | Already standard   |
+| `GET /api/yarn/active`           | `Desc#`   | `Desc#` | Already standard   |
+| `GET /api/yarn/active`           | `Desc#`   | `Desc#` | Already standard   |
+| `/api/report/yarn_expected`      | `Desc`    | `Desc#` | Maps Desc → Desc# |
+| `GET /api/report/yarn_demand`    | `Yarn`    | `Desc#` | Maps Yarn → Desc# |
+| `GET /api/report/yarn_demand`    | `Yarn`    | `Desc#` | Maps Yarn → Desc# |
+| `GET /api/report/yarn_demand_ko` | `Yarn`    | `Desc#` | Maps Yarn → Desc# |
 
 ### Standardized Yarn Column
+
 - **`Desc#`** - Universal yarn identifier (ALL files)
 
 ### Yarn Attribute Columns
+
 These columns are also standardized when found:
+
 - **Color** → `Yarn_Color`
 - **Type** → `Yarn_Type`
 - **Count** → `Yarn_Count`
@@ -71,12 +80,14 @@ The data parser applies mappings in this sequence:
 ## COMMON VARIATIONS HANDLED
 
 ### Style Variations
+
 - `Style #` → `Style#`
 - `Style Number` → `Style#`
 - `fStyle` → `fStyle#`
 - `Fabric Style` → `fStyle#`
 
 ### Yarn Variations
+
 - `Yarn_ID` → `Desc#`
 - `YarnID` → `Desc#`
 - `Yarn ID` → `Desc#`
@@ -91,12 +102,14 @@ The data parser applies mappings in this sequence:
 Files are identified by these patterns in their names:
 
 ### Fabric/Style Files
+
 - Contains `eFab_`
 - Contains `QuadS_`
 - Contains `BOM`
 - Contains `Sales Activity`
 
 ### Yarn Files
+
 - Contains `yarn_inventory`
 - Contains `Yarn_ID`
 - Contains `Yarn_Demand`
@@ -107,11 +120,13 @@ Files are identified by these patterns in their names:
 ## VALIDATION RULES
 
 ### Style/Fabric Values
+
 - Remove "Style " prefix
 - Standardize spacing
 - Preserve alphanumeric codes
 
 ### Yarn Values
+
 - Remove leading zeros from numeric codes
 - Remove "YARN-" or "Y-" prefixes
 - Convert to uppercase for demand reports
@@ -122,11 +137,13 @@ Files are identified by these patterns in their names:
 ## CRITICAL RELATIONSHIPS
 
 ### Style Flow
+
 ```
 Sales (cFVersion) → SO List (cFVersion + fBase) → Production (Style#) → Inventory (Style# or fStyle#)
 ```
 
 ### Yarn Flow
+
 ```
 BOM (Desc#) → Inventory (Desc#) → Demand Reports (Yarn → Desc#)
 ```
@@ -136,12 +153,14 @@ BOM (Desc#) → Inventory (Desc#) → Demand Reports (Yarn → Desc#)
 ## TROUBLESHOOTING
 
 ### If columns aren't mapping:
+
 1. Check filename matches expected pattern
 2. Verify column exists in source file
 3. Look for typos in column names
 4. Check cleaning report for details
 
 ### Common Issues:
+
 - **Multiple style columns**: Parser preserves all, maps each appropriately
 - **Missing columns**: Logged as warnings, processing continues
 - **Invalid values**: Cleaned but flagged in report

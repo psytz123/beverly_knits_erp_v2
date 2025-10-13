@@ -1009,7 +1009,6 @@ const dataSafetyMonitor = {
                             System Active
                         </span>
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6);" id="last-update">Last update: --</span>
-                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6);" id="api-server-indicator">API Server: detecting…</span>
                     </div>
                     <button onclick="refreshAllData()" style="padding: 10px 24px; background: rgba(255,255,255,0.2); color: white; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); font-weight: 500; transition: all 0.3s ease; cursor: pointer;" 
                             onmouseover="this.style.background='rgba(255,255,255,0.3)'" 
@@ -3452,303 +3451,33 @@ const dataSafetyMonitor = {
 
     <script>
         // Global API configuration - Smart detection for ngrok/external access
-        function sanitizeBaseUrl(url) {
-            if (!url) {
-                return null;
-            }
-
-            try {
-                const trimmed = url.trim();
-                if (!trimmed) {
-                    return null;
-                }
-
-                // If protocol missing, assume http
-                if (!/^https?:\/\//i.test(trimmed)) {
-                    return `http://${trimmed}`;
-                }
-
-                const parsed = new URL(trimmed);
-                // Remove trailing slash for consistency
-                parsed.pathname = parsed.pathname.replace(/\/$/, '');
-                parsed.hash = '';
-                parsed.search = '';
-                return parsed.toString().replace(/\/$/, '');
-            } catch (error) {
-                console.warn('[API Config] Failed to sanitize base URL, ignoring value:', url, error);
-                return null;
-            }
-        }
-
-        function persistApiBase(url) {
-            try {
-                if (window.localStorage && url) {
-                    localStorage.setItem('bk:dashboard:apiBase', url);
-                }
-            } catch (storageError) {
-                console.debug('[API Config] Unable to persist API base URL:', storageError.message);
-            }
-        }
-
-        function clearPersistedApiBase() {
-            try {
-                if (window.localStorage) {
-                    localStorage.removeItem('bk:dashboard:apiBase');
-                }
-            } catch (storageError) {
-                console.debug('[API Config] Unable to clear persisted API base URL:', storageError.message);
-            }
-        }
-
-        function loadPersistedApiBase() {
-            try {
-                if (window.localStorage) {
-                    return localStorage.getItem('bk:dashboard:apiBase');
-                }
-            } catch (storageError) {
-                console.debug('[API Config] Unable to read persisted API base URL:', storageError.message);
-            }
-            return null;
-        }
-
-        function resolveBaseFromQuery() {
-            try {
-                const search = window.location.search || '';
-                if (!search) return null;
-
-                const params = new URLSearchParams(search);
-                const queryValue = params.get('apiBase') || params.get('api_base') || params.get('baseUrl');
-                return sanitizeBaseUrl(queryValue);
-            } catch (error) {
-                console.debug('[API Config] Unable to resolve API base from query string:', error.message);
-                return null;
-            }
-        }
-
-        let API_BASE_DETECTION_SOURCE = 'unknown';
-
         function getAPIBaseURI() {
-            try {
-                // Highest priority: explicit global override
-                const globalOverride = sanitizeBaseUrl(window.API_BASE_URL_OVERRIDE || window.API_BASE_URL || window.baseUrlOverride);
-                if (globalOverride) {
-                    persistApiBase(globalOverride);
-                    API_BASE_DETECTION_SOURCE = 'global-override';
-                    return globalOverride;
-                }
-
-                // Next priority: query string parameter (allows ?apiBase=https://...)
-                const queryBase = resolveBaseFromQuery();
-                if (queryBase) {
-                    persistApiBase(queryBase);
-                    API_BASE_DETECTION_SOURCE = 'query-string';
-                    return queryBase;
-                }
-
-                // Next: previously persisted value
-                const persisted = sanitizeBaseUrl(loadPersistedApiBase());
-                if (persisted) {
-                    API_BASE_DETECTION_SOURCE = 'local-storage';
-                    return persisted;
-                }
-
-                const { protocol, hostname, port, origin } = window.location;
-
-                // Handle local file access (file:// or missing hostname)
-                if (protocol === 'file:' || !hostname) {
-                    console.warn('[API Config] Detected file:// access - defaulting API base to http://localhost:5006');
-                    API_BASE_DETECTION_SOURCE = 'file-default';
-                    return 'http://localhost:5006';
-                }
-
-                // External hosted environments (ngrok, render, etc.) - reuse current origin
-                const hostedDomains = ['ngrok', 'railway', 'render', 'herokuapp', 'vercel', 'netlify'];
-                if (hostedDomains.some(domain => hostname.includes(domain))) {
-                    API_BASE_DETECTION_SOURCE = 'hosted-origin';
-                    return origin.replace(/\/$/, '');
-                }
-
-                // Local development - ensure port 5006
-                if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                    const resolvedPort = port && port !== '80' && port !== '443' ? port : '5006';
-                    API_BASE_DETECTION_SOURCE = 'localhost-default';
-                    return `${protocol}//${hostname}:${resolvedPort}`.replace(/\/$/, '');
-                }
-
-                // Fallback: current origin
-                API_BASE_DETECTION_SOURCE = 'origin-fallback';
-                return origin.replace(/\/$/, '');
-            } catch (error) {
-                console.error('[API Config] Failed to determine API base URL, using default http://localhost:5006', error);
-                API_BASE_DETECTION_SOURCE = 'error-default';
-                return 'http://localhost:5006';
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            
+            // Check if we're on ngrok or any external domain
+            if (hostname.includes('ngrok') || hostname.includes('railway') || 
+                hostname.includes('render') || hostname.includes('herokuapp') ||
+                hostname.includes('vercel') || hostname.includes('netlify')) {
+                // External access - use same domain without adding port
+                return protocol + '//' + hostname + (port && port !== '80' && port !== '443' ? '' : '');
+            } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // Local access - use port 5006
+                return protocol + '//' + hostname + ':5006';
+            } else {
+                // Default - use current origin
+                return window.location.origin;
             }
         }
-
-        let API_BASE_URL = getAPIBaseURI();
-        let baseUrl = API_BASE_URL;  // Alias for compatibility
-        window.API_BASE_URL = API_BASE_URL; // Expose for legacy scripts
-        window.baseUrl = API_BASE_URL; // Legacy global alias used by older widgets
-
-        window.API_BASE_DETECTION_SOURCE = API_BASE_DETECTION_SOURCE;
-
+        
+        const API_BASE_URL = getAPIBaseURI();
+        const baseUrl = API_BASE_URL;  // Alias for compatibility
+        
         console.log('[API Config] Detected environment:', {
             hostname: window.location.hostname,
             port: window.location.port,
-            protocol: window.location.protocol,
-            apiBaseUrl: API_BASE_URL,
-            detectedVia: API_BASE_DETECTION_SOURCE
-        });
-
-        window.setDashboardAPIBase = function(newBaseUrl, options = {}) {
-            const sanitized = sanitizeBaseUrl(newBaseUrl);
-            if (!sanitized) {
-                console.error('[API Config] Invalid API base URL provided:', newBaseUrl);
-                return false;
-            }
-
-            const shouldPersist = options.persist !== false;
-            if (shouldPersist) {
-                persistApiBase(sanitized);
-            } else {
-                clearPersistedApiBase();
-            }
-
-            API_BASE_URL = sanitized;
-            baseUrl = sanitized;
-            window.API_BASE_URL = sanitized;
-            window.baseUrl = sanitized;
-            API_BASE_DETECTION_SOURCE = 'manual-override';
-            window.API_BASE_DETECTION_SOURCE = API_BASE_DETECTION_SOURCE;
-            updateApiServerIndicator();
-            showApiBaseBanner(`API server overridden to ${formatApiBaseForDisplay(API_BASE_URL)}.`, 'success');
-
-            console.info(`[API Config] API base URL updated to ${sanitized} (persist=${shouldPersist})`);
-            return true;
-        };
-
-        window.getDashboardAPIBase = function() {
-            return API_BASE_URL;
-        };
-
-        window.resetDashboardAPIBase = function() {
-            clearPersistedApiBase();
-            API_BASE_URL = getAPIBaseURI();
-            baseUrl = API_BASE_URL;
-            window.API_BASE_URL = API_BASE_URL;
-            window.baseUrl = API_BASE_URL;
-            window.API_BASE_DETECTION_SOURCE = API_BASE_DETECTION_SOURCE;
-            updateApiServerIndicator();
-            showApiBaseBanner(`API server reset to ${formatApiBaseForDisplay(API_BASE_URL)} (${detectionLabel(API_BASE_DETECTION_SOURCE)}).`, 'info');
-            console.info('[API Config] API base URL reset to detected value:', API_BASE_URL);
-            return API_BASE_URL;
-        };
-
-        function formatApiBaseForDisplay(url) {
-            if (!url) return 'unknown';
-            try {
-                const parsed = new URL(url);
-                const path = parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : '';
-                return `${parsed.host}${path}`;
-            } catch (error) {
-                return url;
-            }
-        }
-
-        function detectionLabel(source) {
-            switch (source) {
-                case 'global-override':
-                case 'manual-override':
-                    return 'manual override';
-                case 'query-string':
-                    return 'from URL parameter';
-                case 'local-storage':
-                    return 'saved preference';
-                case 'file-default':
-                case 'error-default':
-                    return 'default (http://localhost:5006)';
-                case 'hosted-origin':
-                    return 'current origin';
-                case 'localhost-default':
-                    return 'localhost:5006';
-                case 'origin-fallback':
-                default:
-                    return 'auto-detected';
-            }
-        }
-
-        function updateApiServerIndicator() {
-            try {
-                const indicator = document.getElementById('api-server-indicator');
-                if (!indicator) return;
-                const displayUrl = formatApiBaseForDisplay(API_BASE_URL);
-                const label = detectionLabel(API_BASE_DETECTION_SOURCE);
-                indicator.textContent = `API Server: ${displayUrl} (${label})`;
-                indicator.setAttribute('title', `Full URL: ${API_BASE_URL}\nDetected via: ${API_BASE_DETECTION_SOURCE}`);
-            } catch (error) {
-                console.debug('[API Config] Unable to update API server indicator:', error.message);
-            }
-        }
-
-        function showApiBaseBanner(message, variant = 'info') {
-            try {
-                const palette = {
-                    info: {
-                        bg: 'bg-blue-50',
-                        border: 'border-blue-200',
-                        text: 'text-blue-900',
-                        icon: 'text-blue-500 fa-circle-info'
-                    },
-                    warning: {
-                        bg: 'bg-yellow-50',
-                        border: 'border-yellow-200',
-                        text: 'text-yellow-900',
-                        icon: 'text-yellow-500 fa-triangle-exclamation'
-                    },
-                    success: {
-                        bg: 'bg-green-50',
-                        border: 'border-green-200',
-                        text: 'text-green-900',
-                        icon: 'text-green-500 fa-circle-check'
-                    }
-                };
-
-                const styles = palette[variant] || palette.info;
-
-                const existing = document.getElementById('api-base-banner');
-                if (existing) {
-                    existing.remove();
-                }
-
-                const banner = document.createElement('div');
-                banner.id = 'api-base-banner';
-                banner.className = `${styles.bg} ${styles.border} ${styles.text} border-b px-4 py-2 flex items-center justify-between text-sm`;
-                banner.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid ${styles.icon}"></i>
-                        <span>${message}</span>
-                    </div>
-                    <button class="text-xs underline" aria-label="Dismiss API server banner">Dismiss</button>
-                `;
-
-                banner.querySelector('button').addEventListener('click', () => {
-                    banner.remove();
-                });
-
-                document.body.prepend(banner);
-            } catch (error) {
-                console.debug('[API Config] Unable to render API base banner:', error.message);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            updateApiServerIndicator();
-
-            if (['file-default', 'error-default'].includes(API_BASE_DETECTION_SOURCE)) {
-                showApiBaseBanner('Using default API server at http://localhost:5006. Update with ?apiBase=YOUR_URL or call setDashboardAPIBase("https://your-server") for remote deployments.', 'warning');
-            } else if (API_BASE_DETECTION_SOURCE === 'local-storage') {
-                showApiBaseBanner(`Using saved API server ${formatApiBaseForDisplay(API_BASE_URL)}. Call resetDashboardAPIBase() to auto-detect again.`, 'info');
-            }
+            apiBaseUrl: API_BASE_URL
         });
         
         // ========== CRITICAL FUNCTIONS (MUST BE DEFINED FIRST) ==========
@@ -3788,33 +3517,17 @@ const dataSafetyMonitor = {
         // Fetch API wrapper with error handling
         async function fetchAPI(endpoint, options = {}) {
             try {
-                if (!endpoint) {
-                    throw new Error('Missing API endpoint');
-                }
-
-                let normalizedEndpoint = String(endpoint).trim();
-                let url;
-
-                if (/^https?:\/\//i.test(normalizedEndpoint)) {
-                    // Absolute URL provided - use as-is
-                    url = normalizedEndpoint;
-                } else {
-                    // Remove leading slash if present and handle /api/ prefix
-                    normalizedEndpoint = normalizedEndpoint.replace(/^\/+/, '');
-
-                    if (normalizedEndpoint.startsWith('api/')) {
-                        url = `${API_BASE_URL}/${normalizedEndpoint}`;
-                    } else if (normalizedEndpoint.startsWith('v2/')) {
-                        // Allow shorthand for v2 endpoints (e.g., v2/forecast)
-                        url = `${API_BASE_URL}/api/${normalizedEndpoint}`;
-                    } else {
-                        url = `${API_BASE_URL}/api/${normalizedEndpoint}`;
-                    }
-                }
-
+                // Remove leading slash if present and handle /api/ prefix
+                endpoint = endpoint.replace(/^\/+/, '');
+                
+                // If endpoint already starts with 'api/', don't add it again
+                const url = endpoint.startsWith('api/') 
+                    ? `${API_BASE_URL}/${endpoint}`
+                    : `${API_BASE_URL}/api/${endpoint}`;
+                
                 // Debug log to track URL construction
                 console.log(`[fetchAPI] Calling: ${url}`);
-
+                    
                 const response = await fetch(url, {
                     ...options,
                     headers: {
@@ -16568,5 +16281,113 @@ Customer: ${order.customer || 'Unknown'}
             }, 30000);
         });
     </script>
+
+<!-- Minimal wiring patch: preserves original layout/styles -->
+<script>
+(function () {
+  // Obtain a clean, native fetch from a sandboxed iframe (works even if earlier overrides exist)
+  function getNativeFetch() {
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.documentElement.appendChild(iframe);
+      const nativeFetch = iframe.contentWindow.fetch.bind(window);
+      iframe.remove();
+      return nativeFetch;
+    } catch (e) {
+      return window.fetch.bind(window);
+    }
+  }
+
+  const nativeFetch = getNativeFetch();
+
+  // Single source of truth for API base (same-origin; we'll append /api/... below)
+  function apiBase() {
+    const { protocol, host } = window.location;
+    return protocol + '//' + host;
+  }
+
+  // Optional: map deprecated -> new endpoints here (no leading '/')
+  const REDIRECT = new Map(Object.entries({
+    // 'legacy/kpis': 'comprehensive-kpis',
+    // 'yarn-intel': 'yarn-intelligence',
+  }));
+
+  function normalizeEndpoint(input) {
+    let ep = String(input || '').replace(/^\/+/, '');
+    if (ep.startsWith('api/')) ep = ep.slice(4);
+    const mapped = REDIRECT.get(ep) || ep;
+    return mapped;
+  }
+
+  // Helper that builds a same-origin /api URL from many variants
+  function buildApiURL(urlLike) {
+    try {
+      // If already a URL object or absolute URL, inspect and normalize if it's pointing at common dev ports
+      if (typeof urlLike === 'string') {
+        let u = urlLike.trim();
+
+        // Handle calls like '/api/foo' or 'api/foo' or 'foo'
+        if (u.startsWith('/api/')) {
+          return apiBase() + u;
+        }
+        if (u.startsWith('api/')) {
+          return apiBase() + '/api/' + normalizeEndpoint(u);
+        }
+
+        // Handle hard-coded localhost:5006 or :8000 etc. → force same-origin
+        // This prevents CORS when the HTML is hosted elsewhere.
+        const hardPort = /^(https?:\/\/[^\s]+?:\d+)(\/api\/.*)$/i;
+        const m = u.match(hardPort);
+        if (m) {
+          return apiBase() + m[2];
+        }
+
+        // If it's a bare endpoint like 'comprehensive-kpis', treat it as /api/<endpoint>
+        if (!/^https?:\/\//i.test(u) && !u.startsWith('/')) {
+          return apiBase() + '/api/' + normalizeEndpoint(u);
+        }
+
+        // Otherwise leave it as-is
+        return u;
+      }
+      return urlLike;
+    } catch {
+      return urlLike;
+    }
+  }
+
+  // Final, single fetch shim
+  window.fetch = async function(url, options) {
+    try {
+      // Only touch API-ish calls; let all other assets (CSS, images) pass through untouched
+      let finalURL = url;
+      const str = String(url);
+      const looksApiLike = (
+        str.startsWith('/api/') ||
+        str.startsWith('api/') ||
+        (!/^https?:\/\//i.test(str) && !str.startsWith('/')) // bare endpoint like 'yarn-intelligence'
+      ) || /:\d+\/api\//.test(str); // http://host:5006/api/...
+
+      if (looksApiLike) {
+        finalURL = buildApiURL(str);
+      }
+
+      const resp = await nativeFetch(finalURL, options || {});
+
+      // If API request failed (4xx/5xx), log a clean message to help debugging
+      if (!resp.ok && String(finalURL).includes('/api/')) {
+        let text = '';
+        try { text = await resp.clone().text(); } catch {}
+        console.warn('[API fetch error]', resp.status, resp.statusText, '\nURL:', finalURL, '\nBody:', text);
+      }
+      return resp;
+    } catch (err) {
+      console.error('[fetch shim error]', err);
+      throw err;
+    }
+  };
+})();
+</script>
 </body>
 </html>

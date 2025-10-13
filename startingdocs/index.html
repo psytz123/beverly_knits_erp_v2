@@ -7,6 +7,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <!-- Cache buster for CORS fix -->
+    <meta name="cache-buster" content="cors-fix-2025-09-27-v3">
     <title>Beverly Knits Consolidated ERP Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -1009,7 +1011,6 @@ const dataSafetyMonitor = {
                             System Active
                         </span>
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6);" id="last-update">Last update: --</span>
-                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6);" id="api-server-indicator">API Server: detecting…</span>
                     </div>
                     <button onclick="refreshAllData()" style="padding: 10px 24px; background: rgba(255,255,255,0.2); color: white; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); font-weight: 500; transition: all 0.3s ease; cursor: pointer;" 
                             onmouseover="this.style.background='rgba(255,255,255,0.3)'" 
@@ -1506,7 +1507,7 @@ const dataSafetyMonitor = {
                         <table class="min-w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-2 text-left">Style#</th>
+                                    <th class="px-4 py-2 text-left">Style</th>
                                     <th class="px-4 py-2 text-left">Customer</th>
                                     <th class="px-4 py-2 text-left">Fabric Type</th>
                                     <th class="px-4 py-2 text-right">Order Qty</th>
@@ -1571,7 +1572,7 @@ const dataSafetyMonitor = {
                     <table class="min-w-full">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-2 text-left">Style#</th>
+                                <th class="px-4 py-2 text-left">Style</th>
                                 <th class="px-4 py-2 text-left">Customer</th>
                                 <th class="px-4 py-2 text-right">Forecasted Demand</th>
                                 <th class="px-4 py-2 text-right">Current Inventory</th>
@@ -1659,7 +1660,7 @@ const dataSafetyMonitor = {
                     <table class="data-table" id="mlFabricForecastTable">
                         <thead>
                             <tr>
-                                <th>Style#</th>
+                                <th>Style</th>
                                 <th>Fabric Type</th>
                                 <th>Description</th>
                                 <th>Forecasted Qty (yards)</th>
@@ -2772,7 +2773,7 @@ const dataSafetyMonitor = {
                                 </th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
                                     onclick="sortKOTable('style')">
-                                    Style# <i class="fas fa-sort text-gray-400 ml-1"></i>
+                                    Style <i class="fas fa-sort text-gray-400 ml-1"></i>
                                 </th>
                                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200"
                                     onclick="sortKOTable('ordered')">
@@ -3452,303 +3453,33 @@ const dataSafetyMonitor = {
 
     <script>
         // Global API configuration - Smart detection for ngrok/external access
-        function sanitizeBaseUrl(url) {
-            if (!url) {
-                return null;
-            }
-
-            try {
-                const trimmed = url.trim();
-                if (!trimmed) {
-                    return null;
-                }
-
-                // If protocol missing, assume http
-                if (!/^https?:\/\//i.test(trimmed)) {
-                    return `http://${trimmed}`;
-                }
-
-                const parsed = new URL(trimmed);
-                // Remove trailing slash for consistency
-                parsed.pathname = parsed.pathname.replace(/\/$/, '');
-                parsed.hash = '';
-                parsed.search = '';
-                return parsed.toString().replace(/\/$/, '');
-            } catch (error) {
-                console.warn('[API Config] Failed to sanitize base URL, ignoring value:', url, error);
-                return null;
-            }
-        }
-
-        function persistApiBase(url) {
-            try {
-                if (window.localStorage && url) {
-                    localStorage.setItem('bk:dashboard:apiBase', url);
-                }
-            } catch (storageError) {
-                console.debug('[API Config] Unable to persist API base URL:', storageError.message);
-            }
-        }
-
-        function clearPersistedApiBase() {
-            try {
-                if (window.localStorage) {
-                    localStorage.removeItem('bk:dashboard:apiBase');
-                }
-            } catch (storageError) {
-                console.debug('[API Config] Unable to clear persisted API base URL:', storageError.message);
-            }
-        }
-
-        function loadPersistedApiBase() {
-            try {
-                if (window.localStorage) {
-                    return localStorage.getItem('bk:dashboard:apiBase');
-                }
-            } catch (storageError) {
-                console.debug('[API Config] Unable to read persisted API base URL:', storageError.message);
-            }
-            return null;
-        }
-
-        function resolveBaseFromQuery() {
-            try {
-                const search = window.location.search || '';
-                if (!search) return null;
-
-                const params = new URLSearchParams(search);
-                const queryValue = params.get('apiBase') || params.get('api_base') || params.get('baseUrl');
-                return sanitizeBaseUrl(queryValue);
-            } catch (error) {
-                console.debug('[API Config] Unable to resolve API base from query string:', error.message);
-                return null;
-            }
-        }
-
-        let API_BASE_DETECTION_SOURCE = 'unknown';
-
         function getAPIBaseURI() {
-            try {
-                // Highest priority: explicit global override
-                const globalOverride = sanitizeBaseUrl(window.API_BASE_URL_OVERRIDE || window.API_BASE_URL || window.baseUrlOverride);
-                if (globalOverride) {
-                    persistApiBase(globalOverride);
-                    API_BASE_DETECTION_SOURCE = 'global-override';
-                    return globalOverride;
-                }
-
-                // Next priority: query string parameter (allows ?apiBase=https://...)
-                const queryBase = resolveBaseFromQuery();
-                if (queryBase) {
-                    persistApiBase(queryBase);
-                    API_BASE_DETECTION_SOURCE = 'query-string';
-                    return queryBase;
-                }
-
-                // Next: previously persisted value
-                const persisted = sanitizeBaseUrl(loadPersistedApiBase());
-                if (persisted) {
-                    API_BASE_DETECTION_SOURCE = 'local-storage';
-                    return persisted;
-                }
-
-                const { protocol, hostname, port, origin } = window.location;
-
-                // Handle local file access (file:// or missing hostname)
-                if (protocol === 'file:' || !hostname) {
-                    console.warn('[API Config] Detected file:// access - defaulting API base to http://localhost:5006');
-                    API_BASE_DETECTION_SOURCE = 'file-default';
-                    return 'http://localhost:5006';
-                }
-
-                // External hosted environments (ngrok, render, etc.) - reuse current origin
-                const hostedDomains = ['ngrok', 'railway', 'render', 'herokuapp', 'vercel', 'netlify'];
-                if (hostedDomains.some(domain => hostname.includes(domain))) {
-                    API_BASE_DETECTION_SOURCE = 'hosted-origin';
-                    return origin.replace(/\/$/, '');
-                }
-
-                // Local development - ensure port 5006
-                if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                    const resolvedPort = port && port !== '80' && port !== '443' ? port : '5006';
-                    API_BASE_DETECTION_SOURCE = 'localhost-default';
-                    return `${protocol}//${hostname}:${resolvedPort}`.replace(/\/$/, '');
-                }
-
-                // Fallback: current origin
-                API_BASE_DETECTION_SOURCE = 'origin-fallback';
-                return origin.replace(/\/$/, '');
-            } catch (error) {
-                console.error('[API Config] Failed to determine API base URL, using default http://localhost:5006', error);
-                API_BASE_DETECTION_SOURCE = 'error-default';
-                return 'http://localhost:5006';
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            
+            // Check if we're on ngrok or any external domain
+            if (hostname.includes('ngrok') || hostname.includes('railway') || 
+                hostname.includes('render') || hostname.includes('herokuapp') ||
+                hostname.includes('vercel') || hostname.includes('netlify')) {
+                // External access - use same domain without adding port
+                return protocol + '//' + hostname + (port && port !== '80' && port !== '443' ? '' : '');
+            } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                // Local access - use port 8000 (main API gateway)
+                return protocol + '//' + hostname + ':8080';
+            } else {
+                // Default - use current origin
+                return window.location.origin;
             }
         }
-
-        let API_BASE_URL = getAPIBaseURI();
-        let baseUrl = API_BASE_URL;  // Alias for compatibility
-        window.API_BASE_URL = API_BASE_URL; // Expose for legacy scripts
-        window.baseUrl = API_BASE_URL; // Legacy global alias used by older widgets
-
-        window.API_BASE_DETECTION_SOURCE = API_BASE_DETECTION_SOURCE;
-
+        
+        const API_BASE_URL = getAPIBaseURI();
+        const baseUrl = API_BASE_URL;  // Alias for compatibility
+        
         console.log('[API Config] Detected environment:', {
             hostname: window.location.hostname,
             port: window.location.port,
-            protocol: window.location.protocol,
-            apiBaseUrl: API_BASE_URL,
-            detectedVia: API_BASE_DETECTION_SOURCE
-        });
-
-        window.setDashboardAPIBase = function(newBaseUrl, options = {}) {
-            const sanitized = sanitizeBaseUrl(newBaseUrl);
-            if (!sanitized) {
-                console.error('[API Config] Invalid API base URL provided:', newBaseUrl);
-                return false;
-            }
-
-            const shouldPersist = options.persist !== false;
-            if (shouldPersist) {
-                persistApiBase(sanitized);
-            } else {
-                clearPersistedApiBase();
-            }
-
-            API_BASE_URL = sanitized;
-            baseUrl = sanitized;
-            window.API_BASE_URL = sanitized;
-            window.baseUrl = sanitized;
-            API_BASE_DETECTION_SOURCE = 'manual-override';
-            window.API_BASE_DETECTION_SOURCE = API_BASE_DETECTION_SOURCE;
-            updateApiServerIndicator();
-            showApiBaseBanner(`API server overridden to ${formatApiBaseForDisplay(API_BASE_URL)}.`, 'success');
-
-            console.info(`[API Config] API base URL updated to ${sanitized} (persist=${shouldPersist})`);
-            return true;
-        };
-
-        window.getDashboardAPIBase = function() {
-            return API_BASE_URL;
-        };
-
-        window.resetDashboardAPIBase = function() {
-            clearPersistedApiBase();
-            API_BASE_URL = getAPIBaseURI();
-            baseUrl = API_BASE_URL;
-            window.API_BASE_URL = API_BASE_URL;
-            window.baseUrl = API_BASE_URL;
-            window.API_BASE_DETECTION_SOURCE = API_BASE_DETECTION_SOURCE;
-            updateApiServerIndicator();
-            showApiBaseBanner(`API server reset to ${formatApiBaseForDisplay(API_BASE_URL)} (${detectionLabel(API_BASE_DETECTION_SOURCE)}).`, 'info');
-            console.info('[API Config] API base URL reset to detected value:', API_BASE_URL);
-            return API_BASE_URL;
-        };
-
-        function formatApiBaseForDisplay(url) {
-            if (!url) return 'unknown';
-            try {
-                const parsed = new URL(url);
-                const path = parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : '';
-                return `${parsed.host}${path}`;
-            } catch (error) {
-                return url;
-            }
-        }
-
-        function detectionLabel(source) {
-            switch (source) {
-                case 'global-override':
-                case 'manual-override':
-                    return 'manual override';
-                case 'query-string':
-                    return 'from URL parameter';
-                case 'local-storage':
-                    return 'saved preference';
-                case 'file-default':
-                case 'error-default':
-                    return 'default (http://localhost:5006)';
-                case 'hosted-origin':
-                    return 'current origin';
-                case 'localhost-default':
-                    return 'localhost:5006';
-                case 'origin-fallback':
-                default:
-                    return 'auto-detected';
-            }
-        }
-
-        function updateApiServerIndicator() {
-            try {
-                const indicator = document.getElementById('api-server-indicator');
-                if (!indicator) return;
-                const displayUrl = formatApiBaseForDisplay(API_BASE_URL);
-                const label = detectionLabel(API_BASE_DETECTION_SOURCE);
-                indicator.textContent = `API Server: ${displayUrl} (${label})`;
-                indicator.setAttribute('title', `Full URL: ${API_BASE_URL}\nDetected via: ${API_BASE_DETECTION_SOURCE}`);
-            } catch (error) {
-                console.debug('[API Config] Unable to update API server indicator:', error.message);
-            }
-        }
-
-        function showApiBaseBanner(message, variant = 'info') {
-            try {
-                const palette = {
-                    info: {
-                        bg: 'bg-blue-50',
-                        border: 'border-blue-200',
-                        text: 'text-blue-900',
-                        icon: 'text-blue-500 fa-circle-info'
-                    },
-                    warning: {
-                        bg: 'bg-yellow-50',
-                        border: 'border-yellow-200',
-                        text: 'text-yellow-900',
-                        icon: 'text-yellow-500 fa-triangle-exclamation'
-                    },
-                    success: {
-                        bg: 'bg-green-50',
-                        border: 'border-green-200',
-                        text: 'text-green-900',
-                        icon: 'text-green-500 fa-circle-check'
-                    }
-                };
-
-                const styles = palette[variant] || palette.info;
-
-                const existing = document.getElementById('api-base-banner');
-                if (existing) {
-                    existing.remove();
-                }
-
-                const banner = document.createElement('div');
-                banner.id = 'api-base-banner';
-                banner.className = `${styles.bg} ${styles.border} ${styles.text} border-b px-4 py-2 flex items-center justify-between text-sm`;
-                banner.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid ${styles.icon}"></i>
-                        <span>${message}</span>
-                    </div>
-                    <button class="text-xs underline" aria-label="Dismiss API server banner">Dismiss</button>
-                `;
-
-                banner.querySelector('button').addEventListener('click', () => {
-                    banner.remove();
-                });
-
-                document.body.prepend(banner);
-            } catch (error) {
-                console.debug('[API Config] Unable to render API base banner:', error.message);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            updateApiServerIndicator();
-
-            if (['file-default', 'error-default'].includes(API_BASE_DETECTION_SOURCE)) {
-                showApiBaseBanner('Using default API server at http://localhost:5006. Update with ?apiBase=YOUR_URL or call setDashboardAPIBase("https://your-server") for remote deployments.', 'warning');
-            } else if (API_BASE_DETECTION_SOURCE === 'local-storage') {
-                showApiBaseBanner(`Using saved API server ${formatApiBaseForDisplay(API_BASE_URL)}. Call resetDashboardAPIBase() to auto-detect again.`, 'info');
-            }
+            apiBaseUrl: API_BASE_URL
         });
         
         // ========== CRITICAL FUNCTIONS (MUST BE DEFINED FIRST) ==========
@@ -3786,36 +3517,56 @@ const dataSafetyMonitor = {
         }
         
         // Fetch API wrapper with error handling
-        async function fetchAPI(endpoint, options = {}) {
+        async function fetchAPI(endpoint, options = {}, retryCount = 0) {
+            const maxRetries = 3;
+            const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff, max 5s
+
             try {
-                if (!endpoint) {
-                    throw new Error('Missing API endpoint');
+                // Validate endpoint - prevent empty endpoints
+                if (!endpoint || typeof endpoint !== 'string') {
+                    throw new Error('Invalid endpoint: endpoint must be a non-empty string');
                 }
 
-                let normalizedEndpoint = String(endpoint).trim();
+                // Remove leading slash if present and handle /api/ prefix
+                endpoint = endpoint.replace(/^\/+/, '');
+
+                // Additional validation after cleanup - prevent empty endpoints
+                if (!endpoint || endpoint === 'api' || endpoint === 'api/') {
+                    throw new Error(`Invalid endpoint after cleanup: "${endpoint}"`);
+                }
+
+                // Try optimized endpoint first if available
                 let url;
+                const isOptimizedAvailable = endpoint.match(/comprehensive-kpis|yarn-intelligence|production-pipeline|inventory-intelligence|sales-order\/plan\/list|knitorder\/list|yarn\/active/);
 
-                if (/^https?:\/\//i.test(normalizedEndpoint)) {
-                    // Absolute URL provided - use as-is
-                    url = normalizedEndpoint;
-                } else {
-                    // Remove leading slash if present and handle /api/ prefix
-                    normalizedEndpoint = normalizedEndpoint.replace(/^\/+/, '');
-
-                    if (normalizedEndpoint.startsWith('api/')) {
-                        url = `${API_BASE_URL}/${normalizedEndpoint}`;
-                    } else if (normalizedEndpoint.startsWith('v2/')) {
-                        // Allow shorthand for v2 endpoints (e.g., v2/forecast)
-                        url = `${API_BASE_URL}/api/${normalizedEndpoint}`;
-                    } else {
-                        url = `${API_BASE_URL}/api/${normalizedEndpoint}`;
+                if (isOptimizedAvailable && retryCount === 0) {
+                    // Try fast endpoint first - properly handle query parameters
+                    const [endpointPath, queryString] = endpoint.split('?');
+                    // Remove 'api/' prefix if present to avoid duplication
+                    const cleanPath = endpointPath.replace(/^api\//, '');
+                    // Validate clean path is not empty
+                    if (!cleanPath) {
+                        throw new Error(`Invalid endpoint path after cleanup: "${endpointPath}"`);
                     }
+                    // Convert to fast endpoint by replacing slashes and adding -fast suffix
+                    const fastEndpoint = cleanPath.replace(/\//g, '-') + '-fast';
+                    url = queryString ?
+                        `${API_BASE_URL}/api/v2/${fastEndpoint}?${queryString}` :
+                        `${API_BASE_URL}/api/v2/${fastEndpoint}`;
+                } else {
+                    // Use regular endpoint
+                    url = endpoint.startsWith('api/')
+                        ? `${API_BASE_URL}/${endpoint}`
+                        : `${API_BASE_URL}/api/${endpoint}`;
                 }
 
                 // Debug log to track URL construction
                 console.log(`[fetchAPI] Calling: ${url}`);
-
-                const response = await fetch(url, {
+                    
+                // Use native fetch directly to avoid override issues
+                const fetchFunc = window.nativeFetch || window.fetch;
+                const response = await fetchFunc(url, {
+                    method: options.method || 'GET',
                     ...options,
                     headers: {
                         'Content-Type': 'application/json',
@@ -3825,12 +3576,30 @@ const dataSafetyMonitor = {
                 
                 if (!response.ok) {
                     console.error(`API error for ${url}:`, response.status, response.statusText);
+
+                    // Retry logic for failed requests (but not for 4xx client errors)
+                    if (response.status >= 500 && retryCount < maxRetries) {
+                        console.log(`Retrying ${endpoint} after ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        return fetchAPI(endpoint, options, retryCount + 1);
+                    }
+
                     throw new Error(`API error: ${response.status}`);
                 }
-                
-                return await response.json();
+
+                const data = await response.json();
+                console.log(`[fetchAPI] Success for ${endpoint}`);
+                return data;
             } catch (error) {
                 console.error(`Error fetching ${endpoint}:`, error);
+
+                // Retry on network errors
+                if (retryCount < maxRetries && (error.name === 'TypeError' || error.name === 'NetworkError')) {
+                    console.log(`Retrying ${endpoint} after network error (attempt ${retryCount + 1}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    return fetchAPI(endpoint, options, retryCount + 1);
+                }
+
                 // Return empty data structure instead of throwing to prevent dashboard crashes
                 return { error: true, message: error.message, data: [] };
             }
@@ -3868,21 +3637,15 @@ const dataSafetyMonitor = {
             '/api/emergency-shortage': '/api/emergency-shortage-dashboard',
             '/api/supply-chain-analysis-cached': '/api/supply-chain-analysis'
         };
-        
-        // Override fetch to automatically handle deprecated endpoints
-        const originalFetch = window.fetch;
-        window.fetch = function(url, options = {}) {
-            // Check if URL contains a deprecated endpoint
-            for (const [oldEndpoint, newEndpoint] of Object.entries(API_REDIRECT_MAP)) {
-                if (url.includes(oldEndpoint)) {
-                    const newUrl = url.replace(oldEndpoint, newEndpoint);
-                    console.warn(`[API Compatibility] Redirecting deprecated endpoint: ${oldEndpoint} → ${newEndpoint.split('?')[0]}`);
-                    return originalFetch(newUrl, options);
-                }
-            }
-            // No redirect needed, use original URL
-            return originalFetch(url, options);
-        };
+
+        // Store native fetch immediately before any overrides
+        if (!window.nativeFetch) {
+            window.nativeFetch = window.fetch;
+            console.log('[API Compat] Native fetch stored successfully');
+            console.log('[API Compat] CORS Fix v3 - Cache Buster Active');
+        } else {
+            console.log('[API Compat] Native fetch already stored');
+        }
         
         // Helper function to check if an endpoint is deprecated
         function isDeprecatedEndpoint(endpoint) {
@@ -3967,8 +3730,8 @@ const dataSafetyMonitor = {
                     console.debug('[API Compat] URL parsing failed, using original:', e.message);
                 }
                 
-                // Call original fetch with error handling
-                return window.originalFetch(url, options).then(response => {
+                // Call native fetch with error handling
+                return window.nativeFetch(url, options).then(response => {
                     // Check for deprecation headers
                     if (response.headers && response.headers.get) {
                         if (response.headers.get('X-Deprecated') === 'true') {
@@ -3997,8 +3760,16 @@ const dataSafetyMonitor = {
             
             // Enable compatibility mode
             enable: function() {
+                // Prevent multiple overrides
+                if (this.isEnabled()) {
+                    console.log('[API Compat] Already enabled, skipping');
+                    return true;
+                }
                 console.log('[API Compat] Enabling API compatibility layer');
-                window.originalFetch = window.originalFetch || window.fetch;
+                // Use the nativeFetch we stored earlier
+                if (!window.nativeFetch) {
+                    window.nativeFetch = window.fetch;
+                }
                 window.fetch = this.fetch.bind(this);
                 return true;
             },
@@ -4006,8 +3777,8 @@ const dataSafetyMonitor = {
             // Disable compatibility mode
             disable: function() {
                 console.log('[API Compat] Disabling API compatibility layer');
-                if (window.originalFetch) {
-                    window.fetch = window.originalFetch;
+                if (window.nativeFetch) {
+                    window.fetch = window.nativeFetch;
                 }
                 return true;
             },
@@ -4018,10 +3789,11 @@ const dataSafetyMonitor = {
             }
         };
         
-        // Enable API compatibility layer by default
+        // Temporarily disable APICompat to avoid fetch override issues
+        // APICompat can be enabled manually if needed by calling APICompat.enable()
         try {
-            APICompat.enable();
-            console.log('[API Compat] Compatibility layer activated successfully');
+            // APICompat.enable();
+            console.log('[API Compat] Compatibility layer DISABLED for debugging CORS issues');
         } catch (error) {
             console.error('[API Compat] Failed to enable compatibility layer:', error);
         }
@@ -4083,54 +3855,7 @@ const dataSafetyMonitor = {
         // Override window.fetchAPI to use the correct implementation
         window.fetchAPI = fetchAPI;
         
-        // Legacy fetchAPI implementation (commented out)
-        /*
-        window.fetchAPI = async function(endpoint, options = {}) {
-            const url = API_BASE_URL + '/api/' + endpoint;
-            console.log('API Call:', url);
-            try {
-                const response = await fetch(url, {
-                    method: options.method || 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        ...(options.headers || {})
-                    },
-                    body: options.body ? JSON.stringify(options.body) : undefined,
-                    mode: 'cors'
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                // Return the response object itself, not the parsed data
-                // This allows callers to use response.json()
-                return response;
-            } catch (error) {
-                console.error('API Error:', endpoint, error);
-                // Return a mock response object for error cases
-                const mockData = (() => {
-                    if (endpoint.includes('knit-orders')) {
-                        return { orders: [], summary: {} };
-                    } else if (endpoint.includes('inventory')) {
-                        return { inventory: [], metrics: {} };
-                    } else if (endpoint.includes('yarn')) {
-                        return { yarns: [], shortage: [] };
-                    } else if (endpoint.includes('production')) {
-                        return { pipeline: [], metrics: {} };
-                    }
-                    return {};
-                })();
-                
-                // Return a mock response object
-                return {
-                    ok: false,
-                    status: 500,
-                    json: async () => mockData,
-                    text: async () => JSON.stringify(mockData)
-                };
-            }
-        }
-        */
+        // Legacy fetchAPI implementation removed - using active implementation above
         
         // ========== CORE DASHBOARD FUNCTIONS ==========
         
@@ -4193,41 +3918,62 @@ const dataSafetyMonitor = {
         loadOverviewData = async function() {
             console.log('Loading overview data...');
             try {
-                // Load comprehensive KPIs
+                // Load comprehensive KPIs with error handling
                 const kpisData = await fetchAPI('comprehensive-kpis');
                 console.log('KPIs loaded:', kpisData);
-                
-                // Update inventory value
+
+                // Check if kpisData is valid
+                if (!kpisData || kpisData.error) {
+                    console.warn('KPIs data unavailable or error:', kpisData);
+                    // Use empty object to prevent errors
+                    kpisData = kpisData || {};
+                }
+
+                // Safely access nested KPI data
+                const kpis = kpisData.kpis || {};
+                const inventory = kpis.inventory || {};
+                const operational = kpis.operational || {};
+
+                // Update inventory value with safe access
                 const invValue = document.getElementById('inventoryValue');
-                if (invValue) invValue.textContent = kpisData.inventory_value || '--';
-                
+                if (invValue) invValue.textContent = inventory.total_value ?
+                    `$${(inventory.total_value / 1000000).toFixed(1)}M` : '--';
+
                 const invCount = document.getElementById('inventoryCount');
-                if (invCount) invCount.textContent = (kpisData.total_yarns || '--') + ' items';
-                
-                // Update active orders
+                if (invCount) invCount.textContent = inventory.total_items ?
+                    `${inventory.total_items} items` : '-- items';
+
+                // Update active orders with safe access
                 const activeOrders = document.getElementById('activeOrders');
-                if (activeOrders) activeOrders.textContent = kpisData.active_knit_orders || '--';
-                
+                if (activeOrders) activeOrders.textContent = operational.active_orders || '--';
+
                 const orderValue = document.getElementById('orderValue');
-                if (orderValue) orderValue.textContent = kpisData.order_value || '--';
-                
-                // Update critical alerts
+                if (orderValue) orderValue.textContent = operational.order_value ?
+                    `$${(operational.order_value / 1000).toFixed(0)}K` : '--';
+
+                // Update critical alerts with safe access
+                const alerts = kpisData.alerts || [];
                 const criticalAlerts = document.getElementById('criticalAlerts');
-                if (criticalAlerts) criticalAlerts.textContent = kpisData.critical_alerts || '0';
-                
+                if (criticalAlerts) criticalAlerts.textContent =
+                    alerts.filter(a => a && a.severity === 'critical').length || '0';
+
                 const alertsCount = document.getElementById('alertsCount');
-                if (alertsCount) alertsCount.textContent = (kpisData.alerts_count || '0') + ' total';
-                
-                // Update forecast accuracy
+                if (alertsCount) alertsCount.textContent = `${alerts.length || 0} total`;
+
+                // Update forecast accuracy with safe access
                 const forecastAccuracy = document.getElementById('forecastAccuracy');
-                if (forecastAccuracy) forecastAccuracy.textContent = kpisData.forecast_accuracy || '--';
-                
-                // Load yarn intelligence for shortage info
+                if (forecastAccuracy) forecastAccuracy.textContent =
+                    operational.forecast_accuracy ? `${(operational.forecast_accuracy * 100).toFixed(0)}%` : '--';
+
+                // Load yarn intelligence for shortage info with error handling
                 const yarnData = await fetchAPI('/api/yarn-intelligence');
                 console.log('Yarn intelligence loaded:', yarnData);
-                
-                if (yarnData.criticality_analysis && yarnData.criticality_analysis.summary) {
-                    const summary = yarnData.criticality_analysis.summary;
+
+                // Check if yarnData is valid and has expected structure
+                if (yarnData && !yarnData.error) {
+                    const summary = yarnData.summary ||
+                                  (yarnData.criticality_analysis && yarnData.criticality_analysis.summary) ||
+                                  {};
                     
                     // Update status indicators
                     const inventoryStatus = document.getElementById('inventoryStatus');
@@ -5075,7 +4821,7 @@ const dataSafetyMonitor = {
             console.log('Loading forecasted orders with net requirements...');
             
             try {
-                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
+                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':8080';
                 
                 // Fetch multiple APIs for comprehensive live data including yarn intelligence
                 const [planningResponse, inventoryResponse, forecastResponse, nettingResponse, kpisResponse, yarnResponse] = await Promise.all([
@@ -5160,7 +4906,7 @@ const dataSafetyMonitor = {
                         });
                     } else if (nettingData.netting_details && nettingData.netting_details.length > 0) {
                         nettingData.netting_details.forEach(item => {
-                            if (item.yarn_id) {
+                            if (item.desc_number) {
                                 totalInventory += (item.on_hand || 0) + (item.available_to_promise || 0);
                                 pipelineInventory += (item.on_order || 0);
                             }
@@ -5228,7 +4974,7 @@ const dataSafetyMonitor = {
                     const yarnMap = {};
                     if (yarnData && yarnData.criticality_analysis && yarnData.criticality_analysis.yarns) {
                         yarnData.criticality_analysis.yarns.forEach(yarn => {
-                            yarnMap[yarn.yarn_id] = yarn;
+                            yarnMap[yarn.desc_number] = yarn;
                         });
                     }
                     
@@ -5474,7 +5220,7 @@ const dataSafetyMonitor = {
             console.log('Loading AI production suggestions...');
             
             try {
-                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
+                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':8080';
                 
                 // Fetch production suggestions
                 const response = await fetch(baseUrl + '/api/production-suggestions');
@@ -5674,7 +5420,7 @@ const dataSafetyMonitor = {
                 console.log('Fetching from APIs...');
                 
                 // Use direct fetch without the fetchAPI wrapper to avoid issues
-                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
+                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':8080';
                 const [riskResult, suggestionsResult, nettingResult, pipelineResult] = await Promise.allSettled([
                     fetch(baseUrl + '/api/po-risk-analysis'),
                     fetch(baseUrl + '/api/production-suggestions'),
@@ -6615,7 +6361,7 @@ const dataSafetyMonitor = {
                 html += `
                     <div class="flex justify-between items-center p-2 bg-white rounded">
                         <div>
-                            <span class="font-medium">${yarn.yarn_id}</span>
+                            <span class="font-medium">${yarn.desc_number}</span>
                             <span class="text-sm text-gray-600 ml-2">${yarn.description}</span>
                         </div>
                         <div class="text-right">
@@ -6824,7 +6570,7 @@ const dataSafetyMonitor = {
                 requirements.critical_yarns.slice(0, 5).forEach(yarn => {
                     html += `
                         <div class="flex justify-between text-sm">
-                            <span class="text-gray-700">${yarn.yarn_id}</span>
+                            <span class="text-gray-700">${yarn.desc_number}</span>
                             <span class="font-medium">${yarn.required.toLocaleString()} lbs</span>
                         </div>
                     `;
@@ -7217,7 +6963,7 @@ const dataSafetyMonitor = {
             if (poRiskData && poRiskData.risk_analysis && poRiskData.risk_analysis.length > 0) {
                 console.log(`Processing ${poRiskData.risk_analysis.length} PO risk items (PRIMARY SOURCE)`);
                 poRiskData.risk_analysis.forEach(order => {
-                    const styleNum = order.style || order['Style#'] || order.style_number;
+                    const styleNum = order.style || order.style_number;
                     if (!styleNum || styleNum === 'N/A' || styleNum === '' || styleNum === 'undefined') return;
                     
                     // Skip if already processed
@@ -7327,7 +7073,7 @@ const dataSafetyMonitor = {
                 console.log('Using forecast data to generate recommendations');
                 forecastData.forEach(item => {
                     // Only process if it has a valid product/style
-                    const styleNum = item.product || item.style || item['Style#'];
+                    const styleNum = item.product || item.style;
                     if (!styleNum || styleNum === 'N/A' || styleNum === '' || styleNum === 'undefined') return;
                     if (recommendations.some(r => r.style === styleNum)) return;
                     
@@ -7730,7 +7476,7 @@ const dataSafetyMonitor = {
         function executeAIRecommendation(style, recommendation) {
             console.log(`Executing ${recommendation} for style ${style}`);
             // This would connect to backend API to execute the recommendation
-            alert(`Executing: ${recommendation} for Style# ${style}\n\nThis would trigger backend automation.`);
+            alert(`Executing: ${recommendation} for style ${style}\n\nThis would trigger backend automation.`);
         }
         
         // Display yarn substitution opportunities
@@ -7779,7 +7525,7 @@ const dataSafetyMonitor = {
                         <div class="bg-white border border-gray-200 rounded-lg p-6 mb-4 shadow-sm">
                             <div class="flex justify-between items-start mb-4">
                                 <div class="flex-1">
-                                    <h5 class="text-lg font-semibold text-gray-800">${opp.yarn_id}</h5>
+                                    <h5 class="text-lg font-semibold text-gray-800">${opp.desc_number}</h5>
                                     <p class="text-sm text-gray-600 mb-2">${opp.description}</p>
                                     <div class="flex items-center space-x-4 text-sm">
                                         <span class="text-red-600 font-medium">
@@ -7809,7 +7555,7 @@ const dataSafetyMonitor = {
                                     <div class="bg-green-50 border-l-4 border-green-400 p-3 rounded">
                                         <div class="flex justify-between items-start">
                                             <div class="flex-1">
-                                                <div class="font-medium text-green-800">${sub.yarn_id}</div>
+                                                <div class="font-medium text-green-800">${sub.desc_number}</div>
                                                 <div class="text-sm text-green-700 mb-1">${sub.description}</div>
                                                 <div class="flex space-x-4 text-xs">
                                                     <span class="text-green-600">Supplier: ${sub.supplier}</span>
@@ -8211,21 +7957,36 @@ const dataSafetyMonitor = {
                 const container = document.getElementById('safetyStockRecommendations');
                 if (!container) return;
                 
-                // Fetch live yarn intelligence data
+                // Fetch live yarn intelligence data with error handling
                 const yarnData = await fetchAPI('/api/yarn-intelligence');
-                
-                // Create inventory data from yarn data
+
+                // Check if data is valid
+                if (!yarnData || yarnData.error) {
+                    console.warn('Yarn intelligence data unavailable');
+                    container.innerHTML = '<p class="text-gray-500">Data temporarily unavailable</p>';
+                    return;
+                }
+
+                // Create inventory data from yarn data with safe access
                 const inventoryData = {
-                    total_items: yarnData.criticality_analysis?.total_yarns || 0,
-                    critical_items: yarnData.criticality_analysis?.critical_count || 0,
-                    low_stock_items: yarnData.criticality_analysis?.yarns_with_shortage || 0
+                    total_items: yarnData.summary?.total_items ||
+                                yarnData.criticality_analysis?.total_yarns || 0,
+                    critical_items: yarnData.summary?.critical_items ||
+                                   yarnData.criticality_analysis?.critical_count || 0,
+                    low_stock_items: yarnData.summary?.critical_items ||
+                                    yarnData.criticality_analysis?.yarns_with_shortage || 0
                 };
-                
+
                 let recommendations = [];
-                
-                if (yarnData && yarnData.criticality_analysis && yarnData.criticality_analysis.yarns) {
+
+                // Check for yarn items in various possible locations
+                const yarnItems = yarnData.yarn_items ||
+                                 (yarnData.criticality_analysis && yarnData.criticality_analysis.yarns) ||
+                                 [];
+
+                if (Array.isArray(yarnItems) && yarnItems.length > 0) {
                     // Process live yarn criticality data for safety stock recommendations
-                    const yarns = yarnData.criticality_analysis.yarns.slice(0, 5);
+                    const yarns = yarnItems.slice(0, 5);
                     
                     yarns.forEach(yarn => {
                         const yarnId = yarn.yarn || 'YARN-' + Math.random().toString(36).substr(2, 9);
@@ -9465,7 +9226,7 @@ const dataSafetyMonitor = {
                     <div class="yarn-item ${riskClass}">
                         <div class="flex justify-between items-start">
                             <div>
-                                <div class="font-semibold text-gray-800">${yarn.yarn_id}</div>
+                                <div class="font-semibold text-gray-800">${yarn.desc_number}</div>
                                 <div class="text-xs text-gray-600">${yarn.description}</div>
                                 <div class="text-xs text-gray-500 mt-1">Supplier: ${yarn.supplier}</div>
                             </div>
@@ -9578,7 +9339,7 @@ const dataSafetyMonitor = {
                     <div class="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <span class="font-semibold text-gray-800">Yarn ${opp.shortage_yarn_id}</span>
+                                <span class="font-semibold text-gray-800">Yarn ${opp.shortage_desc_number}</span>
                                 <span class="ml-2 px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
                                     ${opp.shortage_amount.toFixed(0)} lbs short
                                 </span>
@@ -9595,7 +9356,7 @@ const dataSafetyMonitor = {
                         <div class="flex justify-between items-center py-1">
                             <span class="text-xs text-gray-600">
                                 <i class="fas fa-check text-green-500 mr-1"></i>
-                                Yarn ${sub.yarn_id}: ${sub.description.substring(0, 30)}...
+                                Yarn ${sub.desc_number}: ${sub.description.substring(0, 30)}...
                             </span>
                             <span class="text-xs font-bold text-green-600">
                                 ${sub.available_balance.toFixed(0).toLocaleString()} lbs
@@ -9634,7 +9395,7 @@ const dataSafetyMonitor = {
                 html += `
                     <div class="procurement-card ${urgencyColor}">
                         <div class="flex justify-between items-start mb-2">
-                            <div class="font-semibold text-gray-800">${rec.yarn_id}</div>
+                            <div class="font-semibold text-gray-800">${rec.desc_number}</div>
                             <span class="px-2 py-1 bg-red-500 text-white text-xs rounded">
                                 ${rec.urgency}
                             </span>
@@ -9780,7 +9541,7 @@ const dataSafetyMonitor = {
                         html += `
                             <div class="p-4 bg-gradient-to-r from-indigo-50 to-transparent rounded-lg mb-4 border-l-4 border-indigo-500">
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="font-bold text-indigo-700">AI Opportunity: ${opp.yarn_id}</span>
+                                    <span class="font-bold text-indigo-700">AI Opportunity: ${opp.desc_number}</span>
                                     <span class="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
                                         High Impact
                                     </span>
@@ -11163,10 +10924,7 @@ const dataSafetyMonitor = {
         
         // Display Production Pipeline orders for current page
         function displayPipelinePage() {
-            // Production pipeline table removed - data available in Knit Orders tab
-            console.log('displayPipelinePage: Table removed to avoid redundancy with Knit Orders tab');
-            return;
-            
+            // Re-enabled to display production data
             const tbody = document.getElementById('productionTableBody');
             if (!tbody) return;
             
@@ -11508,7 +11266,7 @@ const dataSafetyMonitor = {
                                     </span>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <div class="text-sm font-medium text-gray-900">${shortage.yarn_id || 'N/A'}</div>
+                                    <div class="text-sm font-medium text-gray-900">${shortage.desc_number || 'N/A'}</div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="text-sm text-gray-600">${shortage.description || 'N/A'}</div>
@@ -11577,7 +11335,7 @@ const dataSafetyMonitor = {
                                 capacityHtml += `
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-4 py-3 text-sm font-medium text-gray-900">${order['Order #'] || 'N/A'}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-600">${order['Style#'] || 'N/A'}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-600">${order.style || 'N/A'}</td>
                                         <td class="px-4 py-3 text-sm text-gray-600">${order['Qty Ordered (lbs)'] || 0} lbs</td>
                                         <td class="px-4 py-3 text-sm text-gray-600">${order['Quoted Date'] || 'N/A'}</td>
                                         <td class="px-4 py-3 text-sm">
@@ -11794,9 +11552,8 @@ const dataSafetyMonitor = {
         });
         
         function updateProductionTable(data) {
-            // Production table removed - data available in Knit Orders tab
-            console.log('updateProductionTable: Table removed to avoid redundancy with Knit Orders tab');
-            return;
+            // Update the production table with real data
+            console.log('Updating production table with data:', data);
             
             const tableBody = document.getElementById('productionTableBody');
             if (!tableBody) return;
@@ -12745,41 +12502,95 @@ const dataSafetyMonitor = {
                 const data = await fetchAPI('/api/yarn-intelligence?include_timing=true');
                 
                 console.log('Yarn intelligence response:', data);
+                console.log('Has shortages array:', !!data.shortages);
+                console.log('Shortages count:', data.shortages?.length || 0);
                 console.log('Has criticality_analysis:', !!data.criticality_analysis);
                 console.log('Has yarns array:', !!(data.criticality_analysis && data.criticality_analysis.yarns));
-                console.log('Yarns count:', data.criticality_analysis?.yarns?.length || 0);
-                
+
                 tbody.innerHTML = '';
-                
-                if (data.criticality_analysis && data.criticality_analysis.yarns) {
-                    console.log('Processing yarns array...');
-                    let allYarns = data.criticality_analysis.yarns;
+
+                // Prefer pre-filtered shortages from backend
+                let allYarns = [];
+                if (data.shortages && data.shortages.length > 0) {
+                    console.log('Using pre-filtered shortages from backend...');
+                    allYarns = data.shortages;
+                } else if (data.criticality_analysis && data.criticality_analysis.yarns) {
+                    console.log('Using full yarns array from criticality_analysis...');
+                    allYarns = data.criticality_analysis.yarns;
+                }
+
+                if (allYarns.length > 0) {
                     console.log('Total yarns before deduplication:', allYarns.length);
                     
                     // Apply deduplication to prevent duplicate yarns
-                    allYarns = deduplicateByKey(allYarns, 'yarn_id');
+                    allYarns = deduplicateByKey(allYarns, 'desc_number');
                     console.log('Total yarns after deduplication:', allYarns.length);
                     
                     // Validate table data
                     allYarns = validateTableData(allYarns, 'currentShortagesTable');
-                    
+
                     // Check for duplicate columns
                     checkDuplicateColumns(allYarns, 'currentShortagesTable');
-                    
-                    // Filter for yarns with shortages that affect actual orders
-                    const shortageYarns = allYarns.filter(yarn => {
-                        // Check if yarn has a shortage
-                        const hasShortage = yarn.planning_balance < 0 || (yarn.weeks_of_supply !== undefined && yarn.weeks_of_supply < 2);
-                        
-                        // Check if yarn affects any orders
-                        // Use multiple indicators: affected_orders, affected_orders_list, or negative allocation
-                        const affectsOrders = yarn.affected_orders > 0 || 
-                                            (yarn.affected_orders_list && yarn.affected_orders_list.length > 0) ||
-                                            (yarn.allocated && yarn.allocated < 0); // Negative allocation means committed to orders
-                        
-                        // Only include if there's a shortage AND it affects orders
-                        return hasShortage && affectsOrders;
-                    });
+
+                    // === DIAGNOSTIC LOGGING: Identify actual API fields ===
+                    console.log('=== SHORTAGE DETECTION DEBUG (with order filter) ===');
+                    if (allYarns.length > 0) {
+                        console.log('Sample yarn #1:', allYarns[0]);
+                        console.log('  All available fields:', Object.keys(allYarns[0]).sort());
+                        console.log('  planning_balance:', allYarns[0].planning_balance);
+                        console.log('  qty_planning:', allYarns[0].qty_planning);
+                        console.log('  theoretical_balance:', allYarns[0].theoretical_balance);
+                        console.log('  qty_theoretical:', allYarns[0].qty_theoretical);
+                        console.log('  affected_orders:', allYarns[0].affected_orders);
+                        console.log('  allocated:', allYarns[0].allocated);
+                        console.log('  weeks_of_supply:', allYarns[0].weeks_of_supply);
+                        console.log('  risk_level:', allYarns[0].risk_level);
+                    }
+                    console.log('================================');
+
+                    // If using pre-filtered shortages, skip filtering; otherwise filter manually
+                    let shortageYarns;
+                    if (data.shortages && data.shortages.length > 0) {
+                        console.log('Using backend-filtered shortages directly (no client-side filtering needed)');
+                        shortageYarns = allYarns; // Already filtered by backend
+                    } else {
+                        console.log('Applying client-side shortage filtering (with order-affecting filter)...');
+                        // Filter for yarns with shortages that affect actual orders
+                        shortageYarns = allYarns.filter(yarn => {
+                            // Check for shortage using both wrapper and eFab field names
+                            const onHand = yarn.on_hand ?? yarn.reconciled_qty ?? 0;
+                            const allocated = yarn.allocated ?? 0;
+                            const onOrder = yarn.on_order ?? yarn.onorder ?? 0;
+                            const planningBalance = yarn.planning_balance ?? yarn.qty_planning ?? (onHand + allocated);
+                            const theoreticalBalance = yarn.theoretical_balance ?? yarn.qty_theoretical ?? (onHand + allocated + onOrder);
+                            const weeksSupply = yarn.weeks_of_supply ?? yarn.weeks_supply ?? Infinity;
+                            const shortageQty = yarn.shortage ?? 0;
+                            const status = yarn.status ?? '';
+                            const riskLevel = yarn.risk_level ?? '';
+
+                            // Calculate net available (on_hand + allocated, where allocated is negative for committed)
+                            const netAvailable = onHand + allocated;
+
+                            const hasShortage = planningBalance < 0 ||
+                                              theoreticalBalance < 0 ||
+                                              netAvailable < 0 ||
+                                              shortageQty > 0 ||
+                                              status === 'shortage' ||
+                                              status === 'SHORTAGE' ||
+                                              weeksSupply < 2 ||
+                                              riskLevel === 'CRITICAL' ||
+                                              riskLevel === 'HIGH';
+
+                            // Check if yarn affects any orders
+                            // Use multiple indicators: affected_orders, affected_orders_list, or negative allocation
+                            const affectsOrders = yarn.affected_orders > 0 ||
+                                                (yarn.affected_orders_list && yarn.affected_orders_list.length > 0) ||
+                                                (yarn.allocated && yarn.allocated < 0); // Negative allocation means committed to orders
+
+                            // Only include if there's a shortage AND it affects orders
+                            return hasShortage && affectsOrders;
+                        });
+                    }
                     
                     console.log(`Yarns with shortages or low supply: ${shortageYarns.length}`);
                     
@@ -12804,8 +12615,8 @@ const dataSafetyMonitor = {
                         if (sortedYarns[0]) {
                             console.log('=== DEBUG: First yarn data structure ===');
                             console.log('Full yarn object:', sortedYarns[0]);
-                            console.log('yarn_id value:', sortedYarns[0].yarn_id);
-                            console.log('typeof yarn_id:', typeof sortedYarns[0].yarn_id);
+                            console.log('desc_number value:', sortedYarns[0].desc_number);
+                            console.log('typeof desc_number:', typeof sortedYarns[0].desc_number);
                             console.log('All keys:', Object.keys(sortedYarns[0]));
                             console.log('===========================');
                         }
@@ -12923,7 +12734,7 @@ const dataSafetyMonitor = {
                             const runRateClass = runRate > 1000 ? 'text-orange-600 font-medium' : runRate > 500 ? 'text-yellow-600' : '';
                             
                             row.innerHTML = `
-                                <td class="px-4 py-2 font-medium">${yarn.yarn_id || 'N/A'}</td>
+                                <td class="px-4 py-2 font-medium">${yarn.desc_number || 'N/A'}</td>
                                 <td class="px-4 py-2 text-sm" title="${yarn.description || ''}">${(yarn.description || '').substring(0, 30)}${(yarn.description || '').length > 30 ? '...' : ''}</td>
                                 <td class="px-4 py-2 text-right ${theoreticalClass}">${theoreticalBalance.toFixed(2)}</td>
                                 <td class="px-4 py-2 text-right ${onOrderClass}">${onOrder > 0 ? onOrder.toFixed(2) : '-'}</td>
@@ -12937,7 +12748,7 @@ const dataSafetyMonitor = {
                                     <span class="px-2 py-1 text-xs font-medium rounded-full ${urgencyClass}">${urgency}</span>
                                 </td>
                                 <td class="px-4 py-2 text-center">
-                                    <button onclick="orderYarn('${yarn.yarn_id}')" class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors">Order Now</button>
+                                    <button onclick="orderYarn('${yarn.desc_number}')" class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors">Order Now</button>
                                 </td>
                             `;
                             tbody.appendChild(row);
@@ -13259,7 +13070,7 @@ const dataSafetyMonitor = {
                             let expediteHTML = '<ul class="space-y-1">';
                             expediteRecommendations.slice(0, 5).forEach(rec => {
                                 expediteHTML += `
-                                    <li>• Expedite ${rec.expedite_amount.toFixed(0)} lbs of Yarn ${rec.yarn_id} from ${rec.expedite_from_week} to ${rec.expedite_to_week}</li>
+                                    <li>• Expedite ${rec.expedite_amount.toFixed(0)} lbs of Yarn ${rec.desc_number} from ${rec.expedite_from_week} to ${rec.expedite_to_week}</li>
                                 `;
                             });
                             if (expediteRecommendations.length > 5) {
@@ -13357,7 +13168,7 @@ const dataSafetyMonitor = {
                     
                     // Apply deduplication to prevent duplicate yarns
                     console.log('Forecast shortages before deduplication:', yarnShortages.length);
-                    yarnShortages = deduplicateByKey(yarnShortages, 'yarn_id');
+                    yarnShortages = deduplicateByKey(yarnShortages, 'desc_number');
                     console.log('Forecast shortages after deduplication:', yarnShortages.length);
                     
                     // Validate table data
@@ -13406,7 +13217,7 @@ const dataSafetyMonitor = {
                                            'bg-green-100 text-green-800';
                         
                         // Handle potential missing fields gracefully
-                        const yarnId = yarn.yarn_id || yarn.id || 'N/A';
+                        const yarnId = yarn.desc_number || yarn.id || 'N/A';
                         const description = (yarn.description || '').substring(0, 50);
                         const forecastReq = (yarn.forecasted_requirement || 0).toFixed(2);
                         const currentInv = (yarn.current_inventory || 0).toFixed(2);
@@ -13559,11 +13370,11 @@ const dataSafetyMonitor = {
                                     row.className = 'hover:bg-gray-50';
                                     row.innerHTML = `
                                         <td class="px-4 py-2">
-                                            <div class="font-medium">${opp.yarn_id}</div>
+                                            <div class="font-medium">${opp.desc_number}</div>
                                             <div class="text-sm text-red-600">Shortage: ${(opp.shortage_qty || opp.shortage_amount || 0).toFixed(0)} lbs</div>
                                         </td>
                                         <td class="px-4 py-2">
-                                            <div class="font-medium">${sub.substitute_id || sub.yarn_id || 'N/A'}</div>
+                                            <div class="font-medium">${sub.substitute_id || sub.desc_number || 'N/A'}</div>
                                             <div class="text-sm text-gray-600">${sub.description || ''}</div>
                                         </td>
                                         <td class="px-4 py-2 text-right text-green-600 font-medium">${(sub.available_qty || 0).toFixed(0)} lbs</td>
@@ -13679,7 +13490,7 @@ const dataSafetyMonitor = {
                         alertDiv.style.display = 'block';
                         listDiv.innerHTML = data.critical_materials
                             .slice(0, 5)
-                            .map(m => `• Yarn ${m.yarn_id}: Shortage of ${m.shortage.toFixed(0)} lbs (Need ${m.required.toFixed(0)}, Have ${m.available.toFixed(0)})`)
+                            .map(m => `• Yarn ${m.desc_number}: Shortage of ${m.shortage.toFixed(0)} lbs (Need ${m.required.toFixed(0)}, Have ${m.available.toFixed(0)})`)
                             .join('<br>');
                     }
                 } else {
@@ -13738,7 +13549,7 @@ const dataSafetyMonitor = {
                             
                             html += `
                                 <tr>
-                                    <td class="font-medium">${yarn.yarn_id || '-'}</td>
+                                    <td class="font-medium">${yarn.desc_number || '-'}</td>
                                     <td class="text-sm" title="${yarn.description}">${(yarn.description || '-').substring(0, 40)}...</td>
                                     <td class="${yarn.balance < 0 ? 'text-red-600 font-bold' : ''}">${(yarn.balance || 0).toFixed(0)}</td>
                                     <td>${Math.abs(yarn.allocated || 0).toFixed(0)}</td>
@@ -13913,7 +13724,7 @@ const dataSafetyMonitor = {
                                        'bg-yellow-100 text-yellow-800';
                     tableHTML += `
                         <tr>
-                            <td class="px-4 py-2">${yarn.yarn_id}</td>
+                            <td class="px-4 py-2">${yarn.desc_number}</td>
                             <td class="px-4 py-2">${yarn.description}</td>
                             <td class="px-4 py-2 text-right">${yarn.shortage.toFixed(0)} lbs</td>
                             <td class="px-4 py-2">${yarn.supplier}</td>
@@ -14002,7 +13813,7 @@ const dataSafetyMonitor = {
                 data.shortages.slice(0, 3).forEach(item => {
                     html += `
                         <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span class="text-sm font-medium">${item.yarn_id}</span>
+                            <span class="text-sm font-medium">${item.desc_number}</span>
                             <span class="text-xs text-red-600">${item.shortage} lbs short</span>
                         </div>
                     `;
@@ -15295,7 +15106,7 @@ const dataSafetyMonitor = {
                         for (const order of window.currentProductionData.schedule) {
                             // Find matching prediction
                             const prediction = predictions.find(p => 
-                                p.style === order.style || p.yarn_id === order.style
+                                p.style === order.style || p.desc_number === order.style
                             );
                             
                             if (prediction) {

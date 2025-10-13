@@ -1,21 +1,26 @@
 # Fabric Mapping Reference Guide
 
+```
+
+```
+
 ## Overview
+
 Different data sources use different column names for style/fabric identifiers. This reference shows the exact mapping for each source.
 
 ## Mapping Table
 
-| Data Source | Style Column Name | Maps To | Description |
-|------------|-------------------|---------|-------------|
-| **eFab_SO_List_** | `cFVersion` + `fBase` | `cFVersion` + `fBase` | Has both fabric version and base |
-| **eFab_Knit_Orders_** | `Style #` | `Style#` | Style number in knit orders |
-| **eFab_Inventory_I01_** | `Style #` | `Style#` | Style in QC inspection inventory |
-| **eFab_Inventory_G00_** | `Style #` | `Style#` | Style in greige stage 1 |
-| **eFab_Inventory_G02_** | `fStyle` | `fStyle#` | Fabric style in greige stage 2 |
-| **eFab_Inventory_F01_** | `Style #` | `Style#` | Style in finished goods |
-| **QuadS_finishedFabricList_** | `Style#` | `Style#` | Style in QuadS fabric list |
-| **BOM_updated** | `Style#` | `Style#` | Style in bill of materials |
-| **Sales Activity Report** | `Style` | `cFVersion` | Style in sales = cFVersion |
+| Data Source                                                          | Style Column Name         | Maps To                   | Description                      |
+| -------------------------------------------------------------------- | ------------------------- | ------------------------- | -------------------------------- |
+| /api/sales-order/plan/list                                           | `cFVersion` + `fBase` | `cFVersion` + `fBase` | Has both fabric version and base |
+| `GET /api/knitorder/list`                                          | `Style #`               | `Style#`                | Style number in knit orders      |
+| `GET /api/finished/i01`                                            | `Style #`               | `Style#`                | Style in QC inspection inventory |
+| `GET /api/greige/g00`                                              | `Style #`               | `Style#`                | Style in greige stage 1          |
+| `GET /api/greige/g02`                                              | `fStyle`                | `fStyle#`               | Fabric style in greige stage 2   |
+| `GET /api/finished/f01`                                            | `Style #`               | `Style#`                | Style in finished goods          |
+| `GET /api/styles/greige/active`<br />/api/styles/finished/active  | `Style#`                | `Style#`                | Style in QuadS fabric list       |
+| **BOM_updated**                                                | `Style#`                | `Style#`                | Style in bill of materials       |
+| `GET /api/styles`                                                 | `Style`                 | `cFVersion`             | Style in sales = cFVersion       |
 
 ## Standardized Output Columns
 
@@ -26,23 +31,7 @@ After processing, all style-related columns are mapped to these standard names:
 - **`fBase`** - Fabric base (used in SO List)
 - **`cFVersion`** - Fabric version (used in eFab Styles)
 - **`Desc#`** - Yarn/component identifier (standardized across all files)
-
-## File-Specific Rules
-
-### Files using `fStyle#`:
-- eFab_Inventory_G02_*.xlsx (Only G02 uses fStyle)
-
-### Files using `Style#`:
-- eFab_Knit_Orders_*.xlsx
-- eFab_Inventory_I01_*.xlsx
-- eFab_Inventory_G00_*.xlsx
-- eFab_Inventory_F01_*.xlsx
-- QuadS_finishedFabricList_*.csv
-- BOM_updated.csv
-
-### Special Cases:
-- **eFab_SO_List_**: Contains BOTH `cFVersion` and `fBase` columns
-- **Sales Activity Report**: `Style` column maps to `cFVersion`
+- 
 
 ## Data Flow Example
 
@@ -67,13 +56,13 @@ Inventory Stages:
 
 The parser handles these common variations automatically:
 
-| Original | Cleaned To |
-|----------|------------|
-| `Style #` | `Style#` |
-| `Style Number` | `Style#` |
-| `StyleNumber` | `Style#` |
-| `fStyle` | `fStyle#` |
-| `fStyle #` | `fStyle#` |
+| Original         | Cleaned To  |
+| ---------------- | ----------- |
+| `Style #`      | `Style#`  |
+| `Style Number` | `Style#`  |
+| `StyleNumber`  | `Style#`  |
+| `fStyle`       | `fStyle#` |
+| `fStyle #`     | `fStyle#` |
 | `Fabric Style` | `fStyle#` |
 
 ## Processing Order
