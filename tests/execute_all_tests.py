@@ -15,6 +15,7 @@ import time
 class CompleteTestExecutor:
     def __init__(self):
         self.base_path = Path(__file__).parent
+        self.repo_root = self.base_path.parent
         self.results = {
             'execution_date': datetime.now().isoformat(),
             'test_categories': {},
@@ -28,8 +29,10 @@ class CompleteTestExecutor:
             }
         }
         
-        # Set Python path
-        os.environ['PYTHONPATH'] = str(self.base_path / 'src')
+        # Set Python path to repository root so tests import project modules
+        existing_path = os.environ.get('PYTHONPATH', '')
+        new_path = str(self.repo_root)
+        os.environ['PYTHONPATH'] = f"{new_path}{os.pathsep}{existing_path}" if existing_path else new_path
     
     def run_all_tests(self):
         """Execute all test categories"""

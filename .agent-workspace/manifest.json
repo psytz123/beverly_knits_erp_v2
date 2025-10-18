@@ -13,8 +13,6 @@
   "agents": {
     "active": [
       "data-engineer",
-      "security-engineer",
-      "qa-expert",
       "technical-writer"
     ],
     "completed": [
@@ -25,7 +23,8 @@
       "devops-engineer",
       "microservices-architect",
       "database-administrator",
-      "security-engineer"
+      "security-engineer",
+      "qa-expert"
     ],
     "registry": {
       "backend-developer": {
@@ -98,9 +97,13 @@
         ]
       },
       "qa-expert": {
-        "invoked": null,
-        "status": "pending",
-        "outputs": []
+        "invoked": "2025-10-13T08:41:42Z",
+        "status": "completed",
+        "outputs": [
+          "tests/execute_all_tests.py",
+          ".coveragerc",
+          ".agent-workspace/outputs/testing/2025-10-13-qa-expert-test-plan.md"
+        ]
       },
       "technical-writer": {
         "invoked": null,
@@ -110,11 +113,11 @@
     }
   },
   "context": {
-    "last_updated": "2025-10-13T09:55:00Z",
+    "last_updated": "2025-10-13T10:05:00Z",
     "checksum": ""
   },
   "handoffs": {
-    "pending": 3,
-    "completed": 6
+    "pending": 2,
+    "completed": 7
   }
 }

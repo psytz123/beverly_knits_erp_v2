@@ -42,7 +42,13 @@ CORS(app)
 
 # Rate limiting configuration
 ENABLE_RATE_LIMITING = os.getenv("ENABLE_RATE_LIMITING", "true").lower() == "true"
-DEFAULT_RATE = os.getenv("API_RATE_LIMIT", "60 per minute")
+# Ensure rate limit is properly formatted (e.g., "60 per minute")
+rate_limit_env = os.getenv("API_RATE_LIMIT", "60 per minute")
+if rate_limit_env.isdigit():
+    # If just a number, append "per minute"
+    DEFAULT_RATE = f"{rate_limit_env} per minute"
+else:
+    DEFAULT_RATE = rate_limit_env
 RATE_LIMIT_STORAGE = os.getenv("RATE_LIMIT_STORAGE_URI", "memory://")
 
 if ENABLE_RATE_LIMITING:
