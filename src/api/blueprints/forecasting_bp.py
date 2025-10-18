@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 # Create the blueprint
 forecasting_bp = Blueprint("forecasting", __name__)
 
-# Global handler
+# Global handler and forecast generator
 handler = None
+forecast_generator = None  # WeeklyForecastGenerator instance
 
 
 class ForecastingAPIHandler:
@@ -36,14 +37,15 @@ class ForecastingAPIHandler:
         return None
 
 
-def init_blueprint(forecasting_service, data_loader, ml_integration=None):
+def init_blueprint(forecasting_service, data_loader, ml_integration=None, weekly_forecast_generator=None):
     """Initialize blueprint with services"""
-    global handler
+    global handler, forecast_generator
     handler = ForecastingAPIHandler(
         forecasting_service=forecasting_service,
         data_loader=data_loader,
         ml_integration=ml_integration,
     )
+    forecast_generator = weekly_forecast_generator
 
 
 # --- ML Forecasting Endpoints ---
@@ -446,3 +448,181 @@ def backtest_full_report():
     except Exception as e:
         logger.error(f"Error generating backtest report: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# --- NEW: Training Endpoints ---
+
+
+@forecasting_bp.route("/api/forecast/train", methods=["POST"])
+def train_forecast_models():
+    """
+    Manually trigger ML model training
+
+    Request body (optional):
+    {
+        "force": bool,  # Force retraining even if models are up to date
+        "styles": ["STYLE001", ...]  # Optional list of specific styles to train
+    }
+
+    Returns:
+        Training results with accuracy metrics and weight adjustments
+    """
+    try:
+        if not forecast_generator:
+            return jsonify({
+                "error": "Forecast generator not initialized",
+                "status": "unavailable"
+            }), 503
+
+        # Get request parameters
+        data = request.get_json() or {}
+        force = data.get('force', False)
+        styles = data.get('styles')  # Optional list of styles
+
+        logger.info(f"Training request received (force={force}, styles={styles})")
+
+        # Trigger training
+        results = forecast_generator.train_models(
+            styles=styles,
+            force_retrain=force
+        )
+
+        # Return results
+        if results.get('status') == 'success':
+            return jsonify(results), 200
+        elif results.get('status') == 'skipped':
+            return jsonify(results), 200
+        elif results.get('status') == 'failed':
+            return jsonify(results), 400
+        else:
+            return jsonify(results), 500
+
+    except Exception as e:
+        logger.exception(f"Error in training endpoint: {e}")
+        return jsonify({
+            "error": str(e),
+            "status": "error",
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+
+@forecasting_bp.route("/api/forecast/training-status", methods=["GET"])
+def get_forecast_training_status():
+    """
+    Get current training status and metrics
+
+    Returns:
+        {
+            "timestamp": "2025-10-18T...",
+            "needs_training": bool,
+            "last_training_date": "2025-10-15T...",
+            "days_since_training": 3,
+            "ensemble_weights": {...},
+            "blend_weights": {...},
+            "accuracy_report": {...}
+        }
+    """
+    try:
+        if not forecast_generator:
+            return jsonify({
+                "error": "Forecast generator not initialized",
+                "status": "unavailable"
+            }), 503
+
+        # Get training status
+        status = forecast_generator.get_training_status()
+
+        return jsonify(status), 200
+
+    except Exception as e:
+        logger.exception(f"Error getting training status: {e}")
+        return jsonify({
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+
+@forecasting_bp.route("/api/forecast/tune-weights", methods=["POST"])
+def tune_forecast_blend_weights():
+    """
+    Manually trigger blend weight tuning based on accuracy
+
+    Request body (optional):
+    {
+        "lookback_weeks": 13  # Number of weeks to analyze (default 13)
+    }
+
+    Returns:
+        Weight tuning results with old/new weights and improvement percentage
+    """
+    try:
+        if not forecast_generator:
+            return jsonify({
+                "error": "Forecast generator not initialized",
+                "status": "unavailable"
+            }), 503
+
+        # Get request parameters
+        data = request.get_json() or {}
+        lookback_weeks = data.get('lookback_weeks', 13)
+
+        logger.info(f"Weight tuning request received (lookback_weeks={lookback_weeks})")
+
+        # Tune weights
+        results = forecast_generator._tune_blend_weights()
+
+        return jsonify(results), 200
+
+    except Exception as e:
+        logger.exception(f"Error tuning blend weights: {e}")
+        return jsonify({
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+
+@forecasting_bp.route("/api/forecast/accuracy-history", methods=["GET"])
+def get_forecast_accuracy_history():
+    """
+    Get forecast accuracy history for analysis
+
+    Query parameters:
+        - weeks: Number of weeks to look back (default 13)
+        - source: Filter by forecast source (optional)
+
+    Returns:
+        Accuracy metrics by source and overall performance
+    """
+    try:
+        if not forecast_generator:
+            return jsonify({
+                "error": "Forecast generator not initialized",
+                "status": "unavailable"
+            }), 503
+
+        # Get query parameters
+        weeks = int(request.args.get('weeks', 13))
+        source = request.args.get('source')  # Optional filter
+
+        # Get accuracy report
+        report = forecast_generator.accuracy_tracker.generate_accuracy_report(
+            lookback_weeks=weeks
+        )
+
+        # Filter by source if requested
+        if source and report.get('source_performance'):
+            if source in report['source_performance']:
+                report['source_performance'] = {
+                    source: report['source_performance'][source]
+                }
+            else:
+                report['source_performance'] = {}
+
+        return jsonify(report), 200
+
+    except Exception as e:
+        logger.exception(f"Error getting accuracy history: {e}")
+        return jsonify({
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500

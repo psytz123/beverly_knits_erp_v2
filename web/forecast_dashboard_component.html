@@ -1,0 +1,650 @@
+<!--
+    13-WEEK FORECAST DASHBOARD COMPONENT
+
+    This component should be inserted into consolidated_dashboard.html
+    after the "Time-Phased Yarn Purchase Orders" section (around line 1960)
+
+    Features:
+    - 13-week rolling forecast view
+    - Color-coded: Green (actual orders) | Blue (high-confidence forecast) | Yellow (medium confidence)
+    - Multi-source blending display
+    - Proactive production alerts
+    - Variance warnings
+-->
+
+<!-- 13-Week Forecast & Production Planning -->
+<div class="bg-white rounded-xl shadow-md p-6 mb-6" id="forecastSection">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">
+        <i class="fas fa-chart-line mr-3 text-blue-600"></i>
+        13-Week Forecast & Production Planning
+        <button onclick="loadComprehensiveForecast()" class="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+            <i class="fas fa-sync-alt mr-1"></i>Refresh Forecast
+        </button>
+        <span class="ml-4 text-sm text-gray-500" id="forecastLastUpdated"></span>
+    </h2>
+
+    <!-- Forecast Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-lg">
+            <div class="text-2xl font-bold" id="actualOrdersCount">0</div>
+            <div class="text-sm opacity-90">✅ Confirmed Orders</div>
+        </div>
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-lg">
+            <div class="text-2xl font-bold" id="highConfidenceForecastCount">0</div>
+            <div class="text-sm opacity-90">🔮 High-Confidence Forecasts</div>
+        </div>
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 rounded-lg">
+            <div class="text-2xl font-bold" id="proactiveProductionCount">0</div>
+            <div class="text-sm opacity-90">⚡ Proactive Production Items</div>
+        </div>
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-lg">
+            <div class="text-2xl font-bold" id="forecastAccuracyPct">--</div>
+            <div class="text-sm opacity-90">📊 Forecast Accuracy (MAPE)</div>
+        </div>
+    </div>
+
+    <!-- Forecast Controls -->
+    <div class="flex gap-4 mb-4">
+        <select id="blendingStrategy" class="px-3 py-2 border rounded-lg" onchange="loadComprehensiveForecast()">
+            <option value="weighted_average">Weighted Average</option>
+            <option value="highest_confidence">Highest Confidence</option>
+            <option value="conservative">Conservative (Min)</option>
+            <option value="aggressive">Aggressive (Max)</option>
+        </select>
+
+        <button onclick="showProactiveProduction()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg">
+            <i class="fas fa-bolt mr-2"></i>Proactive Production
+        </button>
+
+        <button onclick="showVarianceAlerts()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
+            <i class="fas fa-exclamation-triangle mr-2"></i>Variance Alerts
+        </button>
+
+        <button onclick="showAccuracyReport()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+            <i class="fas fa-chart-bar mr-2"></i>Accuracy Report
+        </button>
+    </div>
+
+    <!-- 13-Week Forecast Table -->
+    <div class="table-container">
+        <div class="table-scroll-wrapper">
+            <table class="data-table" id="forecast13WeekTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Style</th>
+                        <th rowspan="2">Description</th>
+                        <th rowspan="2">Total (13 Weeks)</th>
+                        <th colspan="13" class="text-center bg-blue-50">Weekly Demand (Yards)</th>
+                    </tr>
+                    <tr id="forecast13WeekHeaders">
+                        <!-- Dynamic week headers will be inserted here -->
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="16" class="text-center text-gray-500 py-4">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading 13-week forecast data...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+        <div class="flex flex-wrap gap-6 items-center text-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-green-100 border-2 border-green-500 rounded"></div>
+                <span>✅ Actual Confirmed Order</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-blue-100 border-2 border-blue-500 rounded"></div>
+                <span>🔮 High Confidence Forecast (≥85%)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-yellow-100 border-2 border-yellow-500 rounded"></div>
+                <span>⚡ Medium Confidence Forecast (70-85%)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded"></div>
+                <span>❓ Low Confidence (<70%)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="forecast13WeekPagination" class="mt-4"></div>
+</div>
+
+<!-- Proactive Production Modal -->
+<div id="proactiveProductionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-bolt mr-2 text-orange-600"></i>
+                Proactive Production Recommendations
+            </h3>
+            <button onclick="closeModal('proactiveProductionModal')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+
+        <p class="text-sm text-gray-600 mb-4">
+            High-confidence forecasted demand without confirmed orders. Consider scheduling for proactive production.
+        </p>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Priority</th>
+                        <th>Style</th>
+                        <th>Week</th>
+                        <th>Forecasted Yards</th>
+                        <th>Confidence</th>
+                        <th>Dominant Source</th>
+                        <th>Source Agreement</th>
+                        <th>Risk Level</th>
+                        <th>Recommended Action</th>
+                    </tr>
+                </thead>
+                <tbody id="proactiveProductionTableBody">
+                    <tr><td colspan="9" class="text-center text-gray-500 py-4">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Variance Alerts Modal -->
+<div id="varianceAlertsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-exclamation-triangle mr-2 text-yellow-600"></i>
+                Forecast vs Actual Variance Alerts
+            </h3>
+            <button onclick="closeModal('varianceAlertsModal')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+
+        <p class="text-sm text-gray-600 mb-4">
+            Significant discrepancies (>30%) between forecasted and actual demand. Review for forecast model improvements.
+        </p>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Style</th>
+                        <th>Week</th>
+                        <th>Forecasted</th>
+                        <th>Actual</th>
+                        <th>Variance %</th>
+                        <th>Variance (Yards)</th>
+                        <th>Alert Type</th>
+                        <th>Severity</th>
+                        <th>Dominant Source</th>
+                    </tr>
+                </thead>
+                <tbody id="varianceAlertsTableBody">
+                    <tr><td colspan="9" class="text-center text-gray-500 py-4">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Accuracy Report Modal -->
+<div id="accuracyReportModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-chart-bar mr-2 text-purple-600"></i>
+                Forecast Accuracy Report
+            </h3>
+            <button onclick="closeModal('accuracyReportModal')" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+
+        <!-- Source Performance -->
+        <div class="mb-6">
+            <h4 class="text-lg font-semibold mb-3">Performance by Source (Last 13 Weeks)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="sourcePerformanceCards">
+                <div class="text-center text-gray-500 py-4">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Weight Recommendations -->
+        <div class="mb-6">
+            <h4 class="text-lg font-semibold mb-3">Recommended Weight Adjustments</h4>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Current Weight</th>
+                            <th>Recommended Weight</th>
+                            <th>Change</th>
+                            <th>MAPE</th>
+                            <th>Hit Rate</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="weightRecommendationsTableBody">
+                        <tr><td colspan="7" class="text-center text-gray-500 py-4">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Best/Worst Performers -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="text-lg font-semibold mb-3 text-green-700">🏆 Best Performer</h4>
+                <div id="bestPerformer" class="p-4 bg-green-50 rounded-lg"></div>
+            </div>
+            <div>
+                <h4 class="text-lg font-semibold mb-3 text-red-700">⚠️ Worst Performer</h4>
+                <div id="worstPerformer" class="p-4 bg-red-50 rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== 13-WEEK FORECAST FUNCTIONS =====
+
+let forecastData = null;
+let currentPage = 1;
+const rowsPerPage = 20;
+
+// Load comprehensive 13-week forecast
+async function loadComprehensiveForecast() {
+    console.log('=== Loading 13-Week Comprehensive Forecast ===');
+
+    const tbody = document.querySelector('#forecast13WeekTable tbody');
+    if (!tbody) {
+        console.error('ERROR: Cannot find #forecast13WeekTable tbody');
+        return;
+    }
+
+    // Show loading state
+    tbody.innerHTML = '<tr><td colspan="16" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Generating comprehensive forecast...</td></tr>';
+
+    try {
+        const blendingStrategy = document.getElementById('blendingStrategy')?.value || 'weighted_average';
+
+        // Call comprehensive forecast API
+        const response = await fetchAPI(`/api/forecast/comprehensive?blending_strategy=${blendingStrategy}&forecast_weeks=13`);
+
+        console.log('Comprehensive forecast response:', response);
+
+        if (response.error) {
+            throw new Error(response.message || 'Forecast generation failed');
+        }
+
+        // Store forecast data
+        forecastData = response;
+
+        // Update summary cards
+        document.getElementById('actualOrdersCount').textContent = response.actual_orders || 0;
+        document.getElementById('highConfidenceForecastCount').textContent = response.blended_forecasts || 0;
+        document.getElementById('proactiveProductionCount').textContent = response.proactive_production_count || 0;
+
+        // Update last updated time
+        const lastUpdated = new Date(response.timestamp).toLocaleString();
+        document.getElementById('forecastLastUpdated').textContent = `Updated: ${lastUpdated}`;
+
+        // Render 13-week table
+        render13WeekForecastTable(response.data);
+
+        console.log('✓ 13-week forecast loaded successfully');
+
+    } catch (error) {
+        console.error('Error loading comprehensive forecast:', error);
+        tbody.innerHTML = '<tr><td colspan="16" class="text-center text-red-600 py-4">Error loading forecast data</td></tr>';
+    }
+}
+
+// Render 13-week forecast table
+function render13WeekForecastTable(data) {
+    const tbody = document.querySelector('#forecast13WeekTable tbody');
+    const headersRow = document.getElementById('forecast13WeekHeaders');
+
+    if (!tbody || !headersRow || !data || !data.combined_schedule) {
+        console.error('Missing required elements or data');
+        return;
+    }
+
+    // Generate dynamic week headers
+    const currentWeek = new Date().toISOString().split('W')[1] || 42;
+    let weekHeaders = '';
+    for (let i = 0; i < 13; i++) {
+        const weekNum = (parseInt(currentWeek) + i) % 53 || 1;
+        weekHeaders += `<th class="text-center bg-blue-50">W${weekNum}</th>`;
+    }
+    headersRow.innerHTML = weekHeaders;
+
+    // Render rows from combined_schedule
+    const combinedSchedule = data.combined_schedule;
+    const styles = Object.keys(combinedSchedule);
+
+    if (styles.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="16" class="text-center text-gray-500 py-4">No forecast data available</td></tr>';
+        return;
+    }
+
+    // Pagination
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const pageStyles = styles.slice(start, end);
+
+    let tableHTML = '';
+
+    for (const style of pageStyles) {
+        const weekData = combinedSchedule[style];
+        let total13Weeks = 0;
+        let weekCells = '';
+
+        // Generate cells for each week
+        for (let i = 0; i < 13; i++) {
+            const weekNum = (parseInt(currentWeek) + i) % 53 || 1;
+            const weekInfo = weekData[weekNum];
+
+            if (weekInfo) {
+                const yards = weekInfo.yards || 0;
+                const source = weekInfo.source || 'unknown';
+                const confidence = weekInfo.confidence || 0;
+
+                total13Weeks += yards;
+
+                // Color code based on source and confidence
+                let cellClass = '';
+                let icon = '';
+                let title = '';
+
+                if (source === 'actual_order') {
+                    cellClass = 'bg-green-100 border-2 border-green-500 font-bold';
+                    icon = '✅';
+                    title = 'Confirmed Order';
+                } else if (source === 'forecast') {
+                    if (confidence >= 0.85) {
+                        cellClass = 'bg-blue-100 border-2 border-blue-500';
+                        icon = '🔮';
+                        title = `High Confidence (${(confidence * 100).toFixed(0)}%)`;
+                    } else if (confidence >= 0.70) {
+                        cellClass = 'bg-yellow-100 border-2 border-yellow-500';
+                        icon = '⚡';
+                        title = `Medium Confidence (${(confidence * 100).toFixed(0)}%)`;
+                    } else {
+                        cellClass = 'bg-gray-100 border-2 border-gray-300';
+                        icon = '❓';
+                        title = `Low Confidence (${(confidence * 100).toFixed(0)}%)`;
+                    }
+                }
+
+                weekCells += `<td class="text-center ${cellClass}" title="${title}">${icon} ${yards.toFixed(0)}</td>`;
+            } else {
+                weekCells += `<td class="text-center text-gray-300">-</td>`;
+            }
+        }
+
+        tableHTML += `
+            <tr>
+                <td class="font-medium">${style}</td>
+                <td class="text-gray-600">-</td>
+                <td class="font-bold text-blue-600">${total13Weeks.toFixed(0)}</td>
+                ${weekCells}
+            </tr>
+        `;
+    }
+
+    tbody.innerHTML = tableHTML;
+
+    // Update pagination
+    renderPagination('forecast13WeekPagination', styles.length, currentPage, rowsPerPage, (page) => {
+        currentPage = page;
+        render13WeekForecastTable(data);
+    });
+}
+
+// Show proactive production modal
+function showProactiveProduction() {
+    if (!forecastData || !forecastData.data || !forecastData.data.proactive_production) {
+        alert('No proactive production data available. Please load forecast first.');
+        return;
+    }
+
+    const modal = document.getElementById('proactiveProductionModal');
+    const tbody = document.getElementById('proactiveProductionTableBody');
+
+    const recommendations = forecastData.data.proactive_production;
+
+    if (recommendations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-500 py-4">No proactive production recommendations at this time.</td></tr>';
+    } else {
+        let html = '';
+        for (const rec of recommendations) {
+            const riskColor = rec.risk_level === 'very_low' ? 'green' :
+                            rec.risk_level === 'low' ? 'blue' :
+                            rec.risk_level === 'medium' ? 'yellow' : 'red';
+
+            html += `
+                <tr>
+                    <td class="font-bold">${rec.priority}</td>
+                    <td>${rec.style}</td>
+                    <td>W${rec.week}</td>
+                    <td class="text-right">${rec.forecasted_yards.toFixed(0)}</td>
+                    <td class="text-center">
+                        <span class="px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
+                            ${(rec.confidence * 100).toFixed(0)}%
+                        </span>
+                    </td>
+                    <td>${rec.dominant_source}</td>
+                    <td class="text-center">${(rec.source_agreement * 100).toFixed(0)}%</td>
+                    <td class="text-center">
+                        <span class="px-2 py-1 rounded text-sm bg-${riskColor}-100 text-${riskColor}-800">
+                            ${rec.risk_level.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="text-sm">${rec.action}</td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+    }
+
+    modal.classList.remove('hidden');
+}
+
+// Show variance alerts modal
+function showVarianceAlerts() {
+    if (!forecastData || !forecastData.data || !forecastData.data.variance_alerts) {
+        alert('No variance alert data available. Please load forecast first.');
+        return;
+    }
+
+    const modal = document.getElementById('varianceAlertsModal');
+    const tbody = document.getElementById('varianceAlertsTableBody');
+
+    const alerts = forecastData.data.variance_alerts;
+
+    if (alerts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-gray-500 py-4">No significant variance alerts.</td></tr>';
+    } else {
+        let html = '';
+        for (const alert of alerts) {
+            const severityColor = alert.severity === 'high' ? 'red' :
+                                alert.severity === 'medium' ? 'orange' : 'yellow';
+
+            const alertTypeIcon = alert.alert_type === 'under_forecast' ? '📉' : '📈';
+
+            html += `
+                <tr>
+                    <td>${alert.style}</td>
+                    <td>W${alert.week}</td>
+                    <td class="text-right">${alert.forecasted_yards.toFixed(0)}</td>
+                    <td class="text-right">${alert.actual_yards.toFixed(0)}</td>
+                    <td class="text-center ${alert.variance_pct < 0 ? 'text-red-600' : 'text-blue-600'} font-bold">
+                        ${alert.variance_pct > 0 ? '+' : ''}${alert.variance_pct.toFixed(1)}%
+                    </td>
+                    <td class="text-right">${alert.variance_pct > 0 ? '+' : ''}${(alert.forecasted_yards - alert.actual_yards).toFixed(0)}</td>
+                    <td class="text-center">${alertTypeIcon} ${alert.alert_type.replace('_', ' ').toUpperCase()}</td>
+                    <td class="text-center">
+                        <span class="px-2 py-1 rounded text-sm bg-${severityColor}-100 text-${severityColor}-800">
+                            ${alert.severity.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="text-sm">${alert.dominant_source}</td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+    }
+
+    modal.classList.remove('hidden');
+}
+
+// Show accuracy report modal
+async function showAccuracyReport() {
+    const modal = document.getElementById('accuracyReportModal');
+    modal.classList.remove('hidden');
+
+    try {
+        // Fetch accuracy report
+        const report = await fetchAPI('/api/forecast/accuracy-report?lookback_weeks=13');
+
+        if (report.error) {
+            throw new Error(report.error);
+        }
+
+        // Render source performance cards
+        renderSourcePerformance(report.report);
+
+        // Fetch weight recommendations
+        const weights = await fetchAPI('/api/forecast/weight-recommendations?lookback_weeks=13');
+
+        if (!weights.error) {
+            renderWeightRecommendations(weights);
+        }
+
+        // Render best/worst performers
+        if (report.report.best_performer) {
+            document.getElementById('bestPerformer').innerHTML = `
+                <div class="text-lg font-bold text-green-700">${report.report.best_performer.source}</div>
+                <div class="text-2xl font-bold">${report.report.best_performer.mape.toFixed(1)}% MAPE</div>
+            `;
+        }
+
+        if (report.report.worst_performer) {
+            document.getElementById('worstPerformer').innerHTML = `
+                <div class="text-lg font-bold text-red-700">${report.report.worst_performer.source}</div>
+                <div class="text-2xl font-bold">${report.report.worst_performer.mape.toFixed(1)}% MAPE</div>
+            `;
+        }
+
+    } catch (error) {
+        console.error('Error loading accuracy report:', error);
+        alert('Failed to load accuracy report');
+    }
+}
+
+// Render source performance cards
+function renderSourcePerformance(report) {
+    const container = document.getElementById('sourcePerformanceCards');
+    const sourcePerf = report.source_performance || {};
+
+    let html = '';
+    for (const [source, metrics] of Object.entries(sourcePerf)) {
+        if (metrics.sample_size > 0) {
+            html += `
+                <div class="p-4 bg-white border rounded-lg">
+                    <div class="font-semibold text-gray-700 mb-2">${source.replace('_', ' ').toUpperCase()}</div>
+                    <div class="text-2xl font-bold text-blue-600">${metrics.mape.toFixed(1)}%</div>
+                    <div class="text-xs text-gray-500">MAPE</div>
+                    <div class="mt-2 text-sm">
+                        <div>Hit Rate: ${(metrics.hit_rate * 100).toFixed(0)}%</div>
+                        <div>Bias: ${metrics.bias > 0 ? '+' : ''}${metrics.bias.toFixed(1)}%</div>
+                        <div>Samples: ${metrics.sample_size}</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    if (html === '') {
+        html = '<div class="text-center text-gray-500 py-4">No performance data available</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+// Render weight recommendations
+function renderWeightRecommendations(data) {
+    const tbody = document.getElementById('weightRecommendationsTableBody');
+    const changes = data.changes || [];
+
+    if (changes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-4">No weight adjustments recommended</td></tr>';
+        return;
+    }
+
+    let html = '';
+    for (const change of changes) {
+        const changeArrow = change.new_weight > change.old_weight ? '↑' : '↓';
+        const changeColor = change.new_weight > change.old_weight ? 'text-green-600' : 'text-red-600';
+
+        html += `
+            <tr>
+                <td>${change.source.replace('_', ' ').toUpperCase()}</td>
+                <td class="text-center">${(change.old_weight * 100).toFixed(0)}%</td>
+                <td class="text-center font-bold">${(change.new_weight * 100).toFixed(0)}%</td>
+                <td class="text-center ${changeColor} font-bold">
+                    ${changeArrow} ${(Math.abs(change.new_weight - change.old_weight) * 100).toFixed(1)}%
+                </td>
+                <td class="text-center">${change.mape.toFixed(1)}%</td>
+                <td class="text-center">${((data.source_metrics[change.source]?.hit_rate || 0) * 100).toFixed(0)}%</td>
+                <td class="text-sm">${change.reason}</td>
+            </tr>
+        `;
+    }
+
+    tbody.innerHTML = html;
+}
+
+// Close modal
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+}
+
+// Auto-load forecast on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit for other data to load first
+    setTimeout(() => {
+        loadComprehensiveForecast();
+    }, 2000);
+});
+
+</script>
+
+<style>
+/* Additional styles for forecast section */
+#forecast13WeekTable th {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+}
+
+#forecast13WeekTable td {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+}
+
+.table-scroll-wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+}
+</style>

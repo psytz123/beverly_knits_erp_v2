@@ -4039,7 +4039,7 @@ const dataSafetyMonitor = {
                 // Try to load styles separately (optional enhancement)
                 let stylesData = null;
                 try {
-                    stylesData = await fetchAPI('knit-orders-styles');
+                    stylesData = await fetchAPI('styles');
                 } catch (styleError) {
                     console.warn('Style mapping endpoint not available, using fallback:', styleError);
                     stylesData = { styles: {} };
@@ -4196,9 +4196,10 @@ const dataSafetyMonitor = {
                 console.log('Knit orders before deduplication:', orders.length);
                 
                 // Deduplicate using order number (handle multiple possible field names)
-                const orderKey = orders[0]?.order_number ? 'order_number' : 
-                                orders[0]?.['Order #'] ? 'Order #' : 
-                                orders[0]?.ko_id ? 'ko_id' : 
+                const orderKey = orders[0]?.order_number ? 'order_number' :
+                                orders[0]?.['Order #'] ? 'Order #' :
+                                orders[0]?.ko_id ? 'ko_id' :
+                                orders[0]?.id ? 'id' :
                                 'order_id';
                 orders = deduplicateByKey(orders, orderKey);
                 console.log('Knit orders after deduplication:', orders.length);

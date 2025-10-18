@@ -4334,7 +4334,7 @@ const dataSafetyMonitor = {
                 // Try to load styles separately (optional enhancement)
                 let stylesData = null;
                 try {
-                    stylesData = await fetchAPI('knit-orders-styles');
+                    stylesData = await fetchAPI('styles');
                 } catch (styleError) {
                     console.warn('Style mapping endpoint not available, using fallback:', styleError);
                     stylesData = { styles: {} };

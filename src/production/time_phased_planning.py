@@ -25,7 +25,7 @@ class TimePhasedPlanning:
         """Initialize Time-Phased Planning Engine"""
 
         # Week configuration
-        self.current_week = 36  # Starting week number
+        self.current_week = self._get_current_week()  # Dynamic current week
         self.planning_horizon = 13  # Weeks to plan ahead
         self.confirmed_demand_horizon = 9  # Weeks with confirmed orders
 
@@ -33,18 +33,31 @@ class TimePhasedPlanning:
         self.safety_stock_weeks = 2  # Weeks of safety stock
         self.safety_stock_multiplier = 1.2
 
-        # Week number to date mapping (as per Expected_Yarn_Report structure)
-        self.week_dates = {
-            36: "9/5/2025",
-            37: "9/12/2025",
-            38: "9/19/2025",
-            39: "9/26/2025",
-            40: "10/3/2025",
-            41: "10/10/2025",
-            42: "10/17/2025",
-            43: "10/24/2025",
-            44: "10/31/2025",  # Extended for later weeks
-        }
+        # Week number to date mapping (dynamically generated)
+        self.week_dates = self._generate_week_dates()
+
+    def _get_current_week(self) -> int:
+        """Get current ISO week number"""
+        return datetime.now().isocalendar()[1]
+
+    def _generate_week_dates(self) -> Dict[int, str]:
+        """
+        Generate dynamic week number to date mapping
+
+        Returns:
+            Dictionary mapping week numbers to Monday dates
+        """
+        week_dates = {}
+        current_date = datetime.now()
+
+        for i in range(self.planning_horizon + 5):  # Extra weeks for 'later' bucket
+            week_date = current_date + timedelta(weeks=i)
+            week_num = week_date.isocalendar()[1]
+            # Get Monday of that week
+            monday = week_date - timedelta(days=week_date.weekday())
+            week_dates[week_num] = monday.strftime("%m/%d/%Y")
+
+        return week_dates
 
     def calculate_weekly_balance(
         self,
@@ -52,7 +65,7 @@ class TimePhasedPlanning:
         starting_balance: float,
         weekly_receipts: Dict[str, float],
         weekly_demand: Dict[str, float],
-        start_week: int = 36,
+        start_week: Optional[int] = None,
         horizon: int = 9,
     ) -> Dict[str, float]:
         """
@@ -64,12 +77,16 @@ class TimePhasedPlanning:
             starting_balance: Current theoretical balance
             weekly_receipts: PO receipts by week {week_36: amount, etc.}
             weekly_demand: Production demand by week
-            start_week: First week number to calculate
+            start_week: First week number to calculate (defaults to current week)
             horizon: Number of weeks to calculate
 
         Returns:
             Weekly balance amounts {week_36: balance, etc.}
         """
+        # Use current week if not specified
+        if start_week is None:
+            start_week = self.current_week
+
         weekly_balances = {}
         current_balance = starting_balance
 
@@ -305,7 +322,8 @@ class TimePhasedPlanning:
         # Find next receipt week
         next_receipt_week = None
         next_receipt_amount = 0
-        for week_num in range(36, 50):
+        for week_offset in range(self.planning_horizon):
+            week_num = self.current_week + week_offset
             week_key = f"week_{week_num}"
             if weekly_receipts.get(week_key, 0) > 0:
                 next_receipt_week = week_key
@@ -382,7 +400,7 @@ class TimePhasedPlanning:
 
 
 def create_mock_demand_schedule(
-    yarn_id: str, total_allocated: float, horizon_weeks: int = 9
+    yarn_id: str, total_allocated: float, horizon_weeks: int = 9, start_week: Optional[int] = None
 ) -> Dict[str, float]:
     """
     Create mock weekly demand schedule for testing
@@ -392,11 +410,16 @@ def create_mock_demand_schedule(
         yarn_id: Yarn identifier
         total_allocated: Total allocated amount (negative value)
         horizon_weeks: Number of weeks to spread demand
+        start_week: Starting week number (defaults to current week)
 
     Returns:
         Weekly demand schedule
     """
     weekly_demand = {}
+
+    # Use current week if not specified
+    if start_week is None:
+        start_week = datetime.now().isocalendar()[1]
 
     # Convert allocated to positive demand
     total_demand = abs(total_allocated)
@@ -405,7 +428,7 @@ def create_mock_demand_schedule(
     weekly_amount = total_demand / horizon_weeks if horizon_weeks > 0 else 0
 
     for week_offset in range(horizon_weeks):
-        week_num = 36 + week_offset  # Start at week 36
+        week_num = start_week + week_offset
         week_key = f"week_{week_num}"
         weekly_demand[week_key] = weekly_amount
 
@@ -426,18 +449,19 @@ def main():
         "planning_balance": 7807.68,
     }
 
-    # Test weekly receipts (from plan document example)
+    # Test weekly receipts (using dynamic weeks)
+    current_week = planner.current_week
     test_receipts = {
         "past_due": 20161.30,
-        "week_36": 0,
-        "week_37": 0,
-        "week_38": 0,
-        "week_39": 0,
-        "week_40": 0,
-        "week_41": 0,
-        "week_42": 0,
-        "week_43": 4000,
-        "week_44": 4000,
+        f"week_{current_week}": 0,
+        f"week_{current_week + 1}": 0,
+        f"week_{current_week + 2}": 0,
+        f"week_{current_week + 3}": 0,
+        f"week_{current_week + 4}": 0,
+        f"week_{current_week + 5}": 0,
+        f"week_{current_week + 6}": 0,
+        f"week_{current_week + 7}": 4000,
+        f"week_{current_week + 8}": 4000,
         "later": 8000,
     }
 

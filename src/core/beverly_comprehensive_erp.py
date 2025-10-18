@@ -152,7 +152,7 @@ try:
 
     style_mapper = get_style_mapper()
     STYLE_MAPPER_AVAILABLE = True
-    print("[OK] Style mapper loaded for fStyle# → BOM Style# mapping")
+    print("[OK] Style mapper loaded for fStyle# -> BOM Style# mapping")
 except ImportError as e:
     style_mapper = None
     STYLE_MAPPER_AVAILABLE = False
@@ -767,6 +767,15 @@ if DATA_CONSISTENCY_AVAILABLE:
         ml_logger.warning(f"Could not register Data Consistency APIs: {e}")
 else:
     ml_logger.warning("Planning APIs not available")
+
+# Register Fabric Inquiry API
+try:
+    from api.blueprints.fabric_inquiry_bp import fabric_inquiry_bp
+
+    app.register_blueprint(fabric_inquiry_bp)
+    ml_logger.info("Fabric Inquiry APIs registered successfully")
+except Exception as e:
+    ml_logger.warning(f"Could not register Fabric Inquiry APIs: {e}")
 # Detect if running on Windows or WSL/Linux
 import platform
 
@@ -4109,7 +4118,7 @@ class ManufacturingSupplyChainAI:
                     and "Style#" not in self.sales_data.columns
                 ):
                     self.sales_data.rename(columns={"fStyle#": "Style#"}, inplace=True)
-                    print(f"[OK] Renamed sales column: fStyle# → Style#")
+                    print(f"[OK] Renamed sales column: fStyle# -> Style#")
 
                 # Initialize style mapper with BOM styles if available
                 if STYLE_MAPPER_AVAILABLE and style_mapper and not self.bom_data.empty:
@@ -4314,7 +4323,7 @@ class ManufacturingSupplyChainAI:
                     and "Style#" not in self.sales_data.columns
                 ):
                     self.sales_data.rename(columns={"fStyle#": "Style#"}, inplace=True)
-                    print(f"[OK] Renamed: fStyle# → Style#")
+                    print(f"[OK] Renamed: fStyle# -> Style#")
                 elif (
                     "Style#" in self.sales_data.columns
                     and "fStyle#" not in self.sales_data.columns
@@ -11032,6 +11041,20 @@ def test_dashboard():
 
             return Response(f.read(), mimetype="text/html")
     return "Test dashboard not found", 404
+
+
+@app.route("/fabric-inquiry")
+def fabric_inquiry_page():
+    """Serve fabric inventory inquiry page"""
+    from pathlib import Path
+
+    inquiry_file = Path(__file__).parent.parent.parent / "web" / "fabric_inquiry.html"
+    if inquiry_file.exists():
+        with open(inquiry_file, "r", encoding="utf-8") as f:
+            from flask import Response
+
+            return Response(f.read(), mimetype="text/html")
+    return "Fabric Inquiry page not found", 404
 
 
 # API Routes for data access

@@ -17,6 +17,7 @@ import sqlite3
 
 from .enhanced_forecasting_engine import EnhancedForecastingEngine, ForecastConfig
 from .forecast_accuracy_monitor import ForecastAccuracyMonitor
+from ..database.turso_client import get_turso_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ class AutomaticRetrainingSystem:
         Initialize automatic retraining system
 
         Args:
-            data_path: Path to ERP data files
+            data_path: Path to ERP data files (deprecated - now uses Turso)
             retrain_schedule: Frequency of retraining (weekly/daily/monthly)
             retrain_day: Day of week for weekly retraining
             retrain_hour: Hour of day for retraining (24-hour format)
@@ -48,6 +49,9 @@ class AutomaticRetrainingSystem:
         self.retrain_schedule = retrain_schedule
         self.retrain_day = retrain_day.lower()
         self.retrain_hour = retrain_hour
+
+        # Initialize Turso client for database access
+        self.turso_client = get_turso_client()
 
         # Initialize forecasting engine
         self.forecast_config = ForecastConfig(
@@ -73,82 +77,126 @@ class AutomaticRetrainingSystem:
             f"Schedule: {retrain_schedule} on {retrain_day} at {retrain_hour:02d}:00"
         )
 
-    def load_training_data(self) -> Dict[str, pd.DataFrame]:
+    def load_training_data(self, min_records: int = 10, lookback_days: int = 180) -> Dict[str, pd.DataFrame]:
         """
-        Load training data from ERP files
+        Load training data from Turso database
+
+        Args:
+            min_records: Minimum number of historical records required for training
+            lookback_days: Number of days of history to load
 
         Returns:
-            Dictionary of yarn_id -> historical data
+            Dictionary of style_id -> historical data DataFrame
         """
         training_data = {}
 
         try:
-            # Load yarn inventory with consumption data
-            inventory_files = list(self.data_path.glob("yarn_inventory*.xlsx")) + list(
-                self.data_path.glob("yarn_inventory*.csv")
-            )
+            # Get all styles with sufficient historical data
+            trainable_styles = self._get_trainable_styles(min_records)
 
-            if inventory_files:
-                inventory_file = inventory_files[0]
-                logger.info(f"Loading inventory data from {inventory_file}")
+            if not trainable_styles:
+                logger.warning("No trainable styles found in database")
+                return training_data
 
-                if inventory_file.suffix == ".xlsx":
-                    df = pd.read_excel(inventory_file)
+            logger.info(f"Loading training data for {len(trainable_styles)} styles from Turso")
+
+            # Load historical sales data for each style
+            for style in trainable_styles:
+                historical_data = self._load_historical_sales_from_turso(style, lookback_days)
+
+                if not historical_data.empty and len(historical_data) >= min_records:
+                    training_data[style] = historical_data
                 else:
-                    df = pd.read_csv(inventory_file)
+                    logger.debug(f"Insufficient data for style {style}: {len(historical_data)} records")
 
-                # Group by yarn ID and prepare historical data
-                if "Desc#" in df.columns:
-                    yarn_col = "Desc#"
-                elif "Yarn_ID" in df.columns:
-                    yarn_col = "Yarn_ID"
-                else:
-                    yarn_col = df.columns[0]  # Use first column as fallback
-
-                # Get consumed data for each yarn
-                for yarn_id in df[yarn_col].unique():
-                    if pd.notna(yarn_id):
-                        yarn_data = df[df[yarn_col] == yarn_id].copy()
-
-                        # Create time series from consumed data
-                        if "Consumed" in yarn_data.columns:
-                            # Generate weekly time series
-                            dates = pd.date_range(
-                                end=datetime.now(), periods=52, freq="W"
-                            )
-
-                            # Use consumed values or simulate if needed
-                            consumed_values = yarn_data["Consumed"].values
-                            if len(consumed_values) > 0:
-                                # Extend or truncate to 52 weeks
-                                if len(consumed_values) < 52:
-                                    # Repeat pattern if not enough data
-                                    consumed_values = np.tile(
-                                        consumed_values, 52 // len(consumed_values) + 1
-                                    )[:52]
-                                else:
-                                    consumed_values = consumed_values[-52:]
-
-                                historical_df = pd.DataFrame(
-                                    {"date": dates, "Consumed": consumed_values}
-                                )
-
-                                training_data[str(yarn_id)] = historical_df
-
-            # Load sales data for order-based forecasting
-            sales_files = list(self.data_path.glob("Sales*.csv"))
-            if sales_files:
-                sales_file = sales_files[0]
-                logger.info(f"Loading sales data from {sales_file}")
-                sales_df = pd.read_csv(sales_file)
-                # Process sales data as needed
-
-            logger.info(f"Loaded training data for {len(training_data)} yarns")
+            logger.info(f"✓ Loaded training data for {len(training_data)} styles")
 
         except Exception as e:
-            logger.error(f"Error loading training data: {e}")
+            logger.exception(f"Error loading training data from Turso: {e}")
 
         return training_data
+
+    def _get_trainable_styles(self, min_records: int = 10) -> List[str]:
+        """
+        Get list of styles with sufficient historical data for training
+
+        Args:
+            min_records: Minimum number of historical records required
+
+        Returns:
+            List of style codes that can be trained
+        """
+        try:
+            sql = """
+                SELECT style, COUNT(*) as record_count
+                FROM historical_sales
+                WHERE units = 'yards'
+                GROUP BY style
+                HAVING record_count >= ?
+                ORDER BY record_count DESC
+            """
+
+            rows = self.turso_client.execute(sql, [min_records])
+
+            if not rows:
+                logger.warning("No styles with sufficient historical data found")
+                return []
+
+            styles = [row['style'] for row in rows]
+            logger.info(f"Found {len(styles)} styles with >= {min_records} historical records")
+
+            return styles
+
+        except Exception as e:
+            logger.exception(f"Error getting trainable styles: {e}")
+            return []
+
+    def _load_historical_sales_from_turso(self, style: str, lookback_days: int = 180) -> pd.DataFrame:
+        """
+        Load historical sales data for a specific style from Turso
+
+        Args:
+            style: Style code to load
+            lookback_days: Number of days of history to retrieve
+
+        Returns:
+            DataFrame with columns: date, quantity (in yards)
+        """
+        try:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+            start_date = (datetime.now() - timedelta(days=lookback_days)).strftime('%Y-%m-%d')
+
+            sql = """
+                SELECT date, SUM(quantity) as quantity
+                FROM historical_sales
+                WHERE style = ?
+                  AND date >= ?
+                  AND date <= ?
+                  AND units = 'yards'
+                GROUP BY date
+                ORDER BY date ASC
+            """
+
+            rows = self.turso_client.execute(sql, [style, start_date, end_date])
+
+            if not rows:
+                return pd.DataFrame()
+
+            # Convert to DataFrame
+            df = pd.DataFrame(rows)
+            df['date'] = pd.to_datetime(df['date'])
+            df['quantity'] = df['quantity'].astype(float)
+
+            # Rename quantity to match expected format
+            df = df.rename(columns={'quantity': 'Consumed'})
+
+            logger.debug(f"Loaded {len(df)} records for style {style}")
+
+            return df[['date', 'Consumed']]
+
+        except Exception as e:
+            logger.exception(f"Error loading historical sales for {style}: {e}")
+            return pd.DataFrame()
 
     def retrain_models(self) -> Dict[str, Any]:
         """

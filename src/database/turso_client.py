@@ -161,8 +161,94 @@ class TursoClient:
                 ON historical_sales(style);
             """)
 
+            # Style Mappings table (replaces eFab_Styles Excel file)
+            self.execute("""
+                CREATE TABLE IF NOT EXISTS style_mappings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    fstyle TEXT NOT NULL,
+                    gbase TEXT NOT NULL,
+                    style TEXT,
+                    description TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(fstyle, gbase)
+                );
+            """)
+
+            self.execute("""
+                CREATE INDEX IF NOT EXISTS idx_style_mappings_fstyle
+                ON style_mappings(fstyle);
+            """)
+
+            self.execute("""
+                CREATE INDEX IF NOT EXISTS idx_style_mappings_gbase
+                ON style_mappings(gbase);
+            """)
+
+            # External Forecasts table (uploaded forecasts from sales team/customers)
+            self.execute("""
+                CREATE TABLE IF NOT EXISTS external_forecasts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    style TEXT NOT NULL,
+                    week_number INTEGER NOT NULL,
+                    forecasted_quantity REAL NOT NULL,
+                    confidence REAL,
+                    source TEXT NOT NULL,
+                    notes TEXT,
+                    uploaded_by TEXT,
+                    uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+
+            self.execute("""
+                CREATE INDEX IF NOT EXISTS idx_external_forecasts_style_week
+                ON external_forecasts(style, week_number);
+            """)
+
+            # Forecast Accuracy table (tracks forecast vs actual for tuning)
+            self.execute("""
+                CREATE TABLE IF NOT EXISTS forecast_accuracy (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    style TEXT NOT NULL,
+                    week_number INTEGER NOT NULL,
+                    forecast_date TEXT NOT NULL,
+                    forecasted_quantity REAL NOT NULL,
+                    actual_quantity REAL,
+                    source TEXT NOT NULL,
+                    error_pct REAL,
+                    absolute_error REAL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+
+            self.execute("""
+                CREATE INDEX IF NOT EXISTS idx_forecast_accuracy_source
+                ON forecast_accuracy(source);
+            """)
+
+            self.execute("""
+                CREATE INDEX IF NOT EXISTS idx_forecast_accuracy_date
+                ON forecast_accuracy(forecast_date);
+            """)
+
+            # Forecast Blend Weights table (weight tuning history)
+            self.execute("""
+                CREATE TABLE IF NOT EXISTS forecast_blend_weights (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    effective_date TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    weight REAL NOT NULL,
+                    reason TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+
+            self.execute("""
+                CREATE INDEX IF NOT EXISTS idx_blend_weights_date
+                ON forecast_blend_weights(effective_date);
+            """)
+
             # Yarn Inventory table
-            cursor.execute("""
+            self.execute("""
                 CREATE TABLE IF NOT EXISTS yarn_inventory (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     yarn_id TEXT NOT NULL UNIQUE,
@@ -179,7 +265,7 @@ class TursoClient:
             """)
 
             # Knit Orders table
-            cursor.execute("""
+            self.execute("""
                 CREATE TABLE IF NOT EXISTS knit_orders (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     order_id TEXT NOT NULL UNIQUE,
@@ -193,7 +279,7 @@ class TursoClient:
             """)
 
             # BOM (Bill of Materials) table
-            cursor.execute("""
+            self.execute("""
                 CREATE TABLE IF NOT EXISTS bom (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     style TEXT NOT NULL,
@@ -204,7 +290,7 @@ class TursoClient:
             """)
 
             # Fabric Specifications table
-            cursor.execute("""
+            self.execute("""
                 CREATE TABLE IF NOT EXISTS fabric_specs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     style TEXT NOT NULL UNIQUE,
@@ -217,7 +303,7 @@ class TursoClient:
             """)
 
             # Forecast Results table (ML predictions)
-            cursor.execute("""
+            self.execute("""
                 CREATE TABLE IF NOT EXISTS forecast_results (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     style TEXT NOT NULL,
@@ -230,13 +316,13 @@ class TursoClient:
                 );
             """)
 
-            cursor.execute("""
+            self.execute("""
                 CREATE INDEX IF NOT EXISTS idx_forecast_style_week
                 ON forecast_results(style, week_number);
             """)
 
             # Yarn Demand Forecast table
-            cursor.execute("""
+            self.execute("""
                 CREATE TABLE IF NOT EXISTS yarn_demand_forecast (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     yarn_id TEXT NOT NULL,
@@ -247,7 +333,7 @@ class TursoClient:
                 );
             """)
 
-            self.conn.commit()
+            # No commit needed for HTTP API
             logger.info("✓ Turso schema initialized successfully")
 
         except Exception as e:

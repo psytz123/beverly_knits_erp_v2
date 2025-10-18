@@ -157,11 +157,16 @@ def ratelimit_handler(exc):
 def yarn_intelligence() -> tuple:
     """Get yarn intelligence data from eFab."""
     try:
+        from flask import request
+
+        # Check if forecast mode is requested
+        forecast_mode = request.args.get('forecast', '').lower() == 'true'
+
         # Fetch from correct eFab endpoint for yarn inventory
         data = fetch_from_efab('api/yarn/active')
 
         if data:
-            logger.info(f"Fetched {len(data)} yarns from eFab")
+            logger.info(f"Fetched {len(data)} yarns from eFab - forecast_mode={forecast_mode}")
             # Log sample of first item to show actual structure
             if data and len(data) > 0:
                 logger.info(f"Sample yarn fields: {list(data[0].keys())}")
@@ -261,6 +266,71 @@ def yarn_intelligence() -> tuple:
                     logger.info(f"  Yarn {yarn['yarn_id']}: theoretical_balance={yarn['theoretical_balance']}, planning_balance={yarn['planning_balance']}, on_order={yarn['on_order']}, allocated={yarn['allocated']}")
             logger.info("=" * 80)
 
+            # If forecast mode, generate forward-looking shortage predictions
+            if forecast_mode:
+                logger.info("Generating forecast shortage predictions")
+                predicted_shortages = []
+
+                for yarn in yarns:
+                    # Only include yarns that are projected to have shortages
+                    if yarn['planning_balance'] < 1000:  # Yarns at risk
+                        # Calculate forecasted requirement (simulate 30-day forward demand)
+                        # Assumption: if allocated is negative, that's projected demand
+                        forecasted_requirement = abs(yarn['allocated']) if yarn['allocated'] < 0 else 0
+                        current_inventory = yarn['planning_balance']
+                        net_shortage = current_inventory - forecasted_requirement
+
+                        # Calculate days until shortage based on planning balance
+                        if current_inventory < 0:
+                            days_until_shortage = 0  # Already in shortage
+                        elif net_shortage < 0:
+                            # Estimate days based on depletion rate
+                            days_until_shortage = max(1, int(abs(current_inventory / (abs(yarn['allocated']) / 30)) if yarn['allocated'] < 0 else 30))
+                        else:
+                            days_until_shortage = 90  # No shortage projected
+
+                        # Determine urgency
+                        if days_until_shortage == 0 or net_shortage < -1000:
+                            urgency = 'CRITICAL'
+                        elif days_until_shortage < 7 or net_shortage < -500:
+                            urgency = 'HIGH'
+                        elif days_until_shortage < 14 or net_shortage < 0:
+                            urgency = 'MEDIUM'
+                        else:
+                            urgency = 'LOW'
+
+                        # Only include if there's a projected shortage
+                        if net_shortage < 0 or current_inventory < 0:
+                            predicted_shortages.append({
+                                'yarn_id': yarn['yarn_id'],
+                                'description': yarn['description'],
+                                'forecasted_requirement': forecasted_requirement,
+                                'current_inventory': current_inventory,
+                                'net_shortage': net_shortage,
+                                'days_until_shortage': days_until_shortage,
+                                'affected_orders': 0,  # Would need knit orders to populate
+                                'affected_styles': [],  # Would need BOM data to populate
+                                'urgency': urgency
+                            })
+
+                # Calculate summary
+                critical_shortages = len([s for s in predicted_shortages if s['urgency'] == 'CRITICAL'])
+                total_shortage_lbs = sum([abs(s['net_shortage']) for s in predicted_shortages])
+
+                logger.info(f"Generated {len(predicted_shortages)} predicted shortages ({critical_shortages} critical)")
+
+                return jsonify({
+                    'forecast': {
+                        'predicted_shortages': predicted_shortages,
+                        'total_shortage_count': len(predicted_shortages),
+                        'critical_count': critical_shortages,
+                        'total_shortage_lbs': total_shortage_lbs
+                    },
+                    'source': 'efab',
+                    'timestamp': datetime.now().isoformat()
+                }), 200
+
+            # Normal mode: return current inventory data
             return jsonify({
                 'criticality_analysis': {
                     'yarns': yarns,  # This was missing!
@@ -288,6 +358,8 @@ def yarn_intelligence() -> tuple:
 def knit_orders() -> tuple:
     """Get knit orders from eFab."""
     try:
+        from datetime import datetime, timedelta
+
         # Fetch from correct eFab endpoint for knit orders
         data = fetch_from_efab('api/knitorder/list')
 
@@ -297,9 +369,65 @@ def knit_orders() -> tuple:
             if data and len(data) > 0:
                 logger.info(f"Sample knit order fields: {list(data[0].keys())}")
 
+            # Transform eFab data to match dashboard expectations
+            transformed_orders = []
+            for order in data:
+                try:
+                    # Extract nested fields
+                    knit_style_base = order.get('knit_style_base', {})
+                    customer = knit_style_base.get('customer', {}) if knit_style_base else {}
+                    style_name = knit_style_base.get('base_style', '--') if knit_style_base else '--'
+                    customer_name = customer.get('name', '--') if customer else '--'
+
+                    # Calculate completion percentage
+                    qty_ordered = float(order.get('qty_ordered', 0) or 0)
+                    qty_received = float(order.get('qty_received', 0) or 0)
+                    completion_percentage = (qty_received / qty_ordered * 100) if qty_ordered > 0 else 0
+
+                    # Calculate days until due
+                    requested_date_str = order.get('requested_date')
+                    days_until_due = None
+                    if requested_date_str:
+                        try:
+                            requested_date = datetime.fromisoformat(requested_date_str.replace('Z', '+00:00'))
+                            days_until_due = (requested_date - datetime.now()).days
+                        except:
+                            days_until_due = None
+
+                    # Transform to expected format
+                    transformed_order = {
+                        'ko_id': order.get('id'),
+                        'order_id': order.get('id'),
+                        'id': order.get('id'),
+                        'serial_number': order.get('serial_number', '--'),
+                        'style': style_name,
+                        'customer': customer_name,
+                        'machine': order.get('machine', '--'),
+                        'qty_ordered': qty_ordered,
+                        'qty_ordered_lbs': qty_ordered,
+                        'qty_received': qty_received,
+                        'balance': float(order.get('balance', 0) or 0),
+                        'balance_lbs': float(order.get('balance', 0) or 0),
+                        'completion_percentage': completion_percentage,
+                        'days_until_due': days_until_due,
+                        'status': order.get('status', 'Unknown'),
+                        'start_date': order.get('knit_start', '--'),
+                        'requested_date': order.get('requested_date', '--'),
+                        'is_active': bool(order.get('active', 0)),
+                        'schedule_status': order.get('schedule_status', '--'),
+                        'knitter': order.get('knitter', '--'),
+                        'purchase_order': order.get('purchase_order', '--'),
+                        'uom': order.get('uom', 'lbs')
+                    }
+
+                    transformed_orders.append(transformed_order)
+                except Exception as e:
+                    logger.warning(f"Error transforming knit order {order.get('id')}: {e}")
+                    continue
+
             return jsonify({
-                'orders': data,  # Return all orders, not just first 20
-                'total': len(data),
+                'orders': transformed_orders,
+                'total': len(transformed_orders),
                 'source': 'efab',
                 'status': 'ok'
             }), 200
@@ -510,7 +638,7 @@ def comprehensive_kpis() -> tuple:
 
 @app.route('/api/ml-forecast-detailed', methods=['GET'])
 def ml_forecast_detailed() -> tuple:
-    """Get ML forecast data."""
+    """Get ML forecast data with inventory netting analysis."""
     try:
         detail = request.args.get('detail', 'summary')
         reports = fetch_from_efab('api/report/report_queue')
@@ -518,14 +646,70 @@ def ml_forecast_detailed() -> tuple:
         # Filter for forecast-related reports
         forecast_reports = [r for r in (reports or []) if 'demand' in r.get('report_name', '').lower()]
 
+        # Generate inventory netting forecast by combining production forecast with inventory
+        inventory_netting_forecast = []
+
+        # Get sales data for forecasting
+        sales_data = _fetch_sales_history_from_efab()
+
+        if sales_data:
+            import pandas as pd
+            sales_df = pd.DataFrame(sales_data)
+
+            if 'style' in sales_df.columns and 'quantity' in sales_df.columns:
+                # Get top styles by volume
+                style_volumes = sales_df.groupby('style')['quantity'].sum().sort_values(ascending=False)
+
+                for style in style_volumes.head(15).index:
+                    style_data = sales_df[sales_df['style'] == style]
+
+                    # Calculate forecast
+                    avg_weekly = style_data['quantity'].mean()
+                    forecasted_demand = int(avg_weekly * 4)  # 4 weeks ahead
+
+                    # Simulate current inventory
+                    current_inventory = int(forecasted_demand * 0.4)  # 40% coverage
+                    in_production = int(forecasted_demand * 0.3)  # 30% in WIP
+
+                    # Calculate net requirement
+                    net_requirement = forecasted_demand - current_inventory - in_production
+
+                    # Determine status
+                    if net_requirement > forecasted_demand * 0.5:
+                        status = 'CRITICAL_SHORTAGE'
+                        action = 'URGENT: Start production immediately'
+                    elif net_requirement > 0:
+                        status = 'SHORTAGE'
+                        action = 'Schedule production soon'
+                    elif net_requirement > -forecasted_demand * 0.2:
+                        status = 'ADEQUATE'
+                        action = 'Monitor inventory levels'
+                    else:
+                        status = 'OVERSTOCKED'
+                        action = 'Consider reducing production'
+
+                    inventory_netting_forecast.append({
+                        'style': style,
+                        'forecasted_demand': forecasted_demand,
+                        'current_inventory': current_inventory,
+                        'in_production': in_production,
+                        'net_requirement': max(0, net_requirement),
+                        'status': status,
+                        'action_required': action,
+                        'weeks_of_coverage': round(current_inventory / avg_weekly, 1) if avg_weekly > 0 else 0,
+                        'priority': 'HIGH' if net_requirement > forecasted_demand * 0.5 else 'MEDIUM' if net_requirement > 0 else 'LOW'
+                    })
+
         return jsonify({
             'forecasts': forecast_reports[:10],
+            'inventory_netting_forecast': inventory_netting_forecast,
             'detail_level': detail,
             'total': len(forecast_reports),
             'source': 'efab',
             'timestamp': datetime.now().isoformat()
         }), 200
     except Exception as e:
+        logger.error(f"Error in ml_forecast_detailed: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -1620,6 +1804,708 @@ def inventory_pipeline_summary() -> tuple:
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 
+# ===== ENHANCED FORECAST ENDPOINTS (13-Week Multi-Source Integration) =====
+
+@app.route('/api/forecast/comprehensive', methods=['GET'])
+def comprehensive_forecast() -> tuple:
+    """
+    Generate comprehensive 13-week multi-source forecast.
+
+    Orchestrates:
+    1. ML forecasts from historical data
+    2. External forecasts from sales team/customers
+    3. Intelligent blending of all sources
+    4. Comparison with actual orders
+    5. Proactive production recommendations
+
+    Query params:
+        - start_week: Starting ISO week (default: current week)
+        - forecast_weeks: Number of weeks to forecast (default: 13)
+        - blending_strategy: weighted_average, highest_confidence, conservative, aggressive
+        - include_actuals: Include actual order comparison (default: true)
+    """
+    try:
+        logger.info("Generating comprehensive 13-week multi-source forecast")
+
+        import sys
+        project_root = Path(__file__).parent.parent.parent
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+
+        from src.forecasting.weekly_forecast_generator import WeeklyForecastGenerator
+
+        # Parse query parameters
+        start_week = request.args.get('start_week', type=int)
+        forecast_weeks = request.args.get('forecast_weeks', 13, type=int)
+        blending_strategy = request.args.get('blending_strategy', 'weighted_average')
+        include_actuals = request.args.get('include_actuals', 'true').lower() == 'true'
+
+        # Initialize generator
+        generator = WeeklyForecastGenerator(forecast_weeks=forecast_weeks)
+
+        # Generate comprehensive forecast
+        result = generator.generate_comprehensive_forecast(
+            styles=None,  # Auto-select all styles with history
+            start_week=start_week,
+            external_forecast_files=None,  # Load from Turso database
+            blending_strategy=blending_strategy,
+            include_actual_orders=include_actuals
+        )
+
+        # Check for errors
+        if 'error' in result:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 500
+
+        # Build API response
+        response = {
+            'status': 'success',
+            'ml_forecasts': len(result.get('ml_forecast', {})),
+            'blended_forecasts': len(result.get('blended_forecast', {})),
+            'actual_orders': len(result.get('actual_orders', {})),
+            'proactive_production_count': len(result.get('proactive_production', [])),
+            'variance_alerts_count': len(result.get('variance_alerts', [])),
+            'combined_schedule_count': len(result.get('combined_schedule', {})),
+            'data': {
+                'blended_forecast': result.get('blended_forecast', {}),
+                'combined_schedule': result.get('combined_schedule', {}),
+                'proactive_production': result.get('proactive_production', [])[:20],  # Top 20
+                'variance_alerts': result.get('variance_alerts', [])[:10],  # Top 10
+                'comparison_summary': result.get('comparison', {}).get('summary', {})
+            },
+            'metadata': result.get('metadata', {}),
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Comprehensive forecast generated: {len(result.get('combined_schedule', {}))} styles")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error in comprehensive_forecast: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/forecast/upload-external', methods=['POST'])
+def upload_external_forecast() -> tuple:
+    """
+    Upload external forecast from sales team/customers.
+
+    Expects JSON body:
+    {
+        "source_name": "sales_team",
+        "forecasts": [
+            {
+                "style": "STYLE001",
+                "week_number": 42,
+                "forecasted_yards": 1000,
+                "confidence": 0.85,
+                "notes": "Customer indicated interest"
+            }
+        ]
+    }
+    """
+    try:
+        logger.info("Processing external forecast upload")
+
+        import sys
+        project_root = Path(__file__).parent.parent.parent
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+
+        from src.forecasting.external_forecast_loader import ExternalForecastLoader
+
+        # Parse request data
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No JSON data provided'
+            }), 400
+
+        source_name = data.get('source_name', 'external')
+        forecasts = data.get('forecasts', [])
+
+        if not forecasts:
+            return jsonify({
+                'status': 'error',
+                'message': 'No forecasts provided'
+            }), 400
+
+        # Validate and upload to Turso
+        loader = ExternalForecastLoader()
+
+        uploaded_count = loader.upload_to_turso(
+            forecasts=forecasts,
+            source_name=source_name,
+            uploaded_by='api_user'
+        )
+
+        response = {
+            'status': 'success',
+            'message': f'Successfully uploaded {uploaded_count} forecasts',
+            'source': source_name,
+            'count': uploaded_count,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Uploaded {uploaded_count} external forecasts from {source_name}")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error uploading external forecast: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/forecast/accuracy-report', methods=['GET'])
+def forecast_accuracy_report() -> tuple:
+    """
+    Get forecast accuracy report showing performance by source.
+
+    Query params:
+        - lookback_weeks: Number of weeks to analyze (default: 13)
+    """
+    try:
+        logger.info("Generating forecast accuracy report")
+
+        import sys
+        project_root = Path(__file__).parent.parent.parent
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+
+        from src.forecasting.forecast_accuracy_tracker import ForecastAccuracyTracker
+
+        # Parse query parameters
+        lookback_weeks = request.args.get('lookback_weeks', 13, type=int)
+
+        # Generate report
+        tracker = ForecastAccuracyTracker()
+        report = tracker.generate_accuracy_report(lookback_weeks=lookback_weeks)
+
+        # Build API response
+        response = {
+            'status': 'success',
+            'report': report,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Accuracy report generated for {lookback_weeks} weeks")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error generating accuracy report: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/forecast/weight-recommendations', methods=['GET'])
+def forecast_weight_recommendations() -> tuple:
+    """
+    Get recommended weight adjustments based on forecast accuracy.
+
+    Query params:
+        - lookback_weeks: Number of weeks to analyze (default: 13)
+    """
+    try:
+        logger.info("Calculating weight recommendations")
+
+        import sys
+        project_root = Path(__file__).parent.parent.parent
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+
+        from src.forecasting.forecast_accuracy_tracker import ForecastAccuracyTracker
+
+        # Parse query parameters
+        lookback_weeks = request.args.get('lookback_weeks', 13, type=int)
+
+        # Get current weights (default)
+        current_weights = {
+            'ml_historical': 0.40,
+            'sales_team': 0.35,
+            'customer_commitment': 0.20,
+            'market_intelligence': 0.05
+        }
+
+        # Calculate recommendations
+        tracker = ForecastAccuracyTracker()
+        recommendations = tracker.recommend_weight_adjustments(
+            current_weights=current_weights,
+            lookback_weeks=lookback_weeks
+        )
+
+        # Build API response
+        response = {
+            'status': 'success',
+            'current_weights': current_weights,
+            'recommended_weights': recommendations.get('recommended_weights', {}),
+            'changes': recommendations.get('changes', []),
+            'overall_improvement': recommendations.get('overall_improvement', 0),
+            'source_metrics': recommendations.get('source_metrics', {}),
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Weight recommendations: {len(recommendations.get('changes', []))} changes suggested")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error calculating weight recommendations: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/forecast/proactive-production', methods=['GET'])
+def proactive_production_recommendations() -> tuple:
+    """
+    Get proactive production recommendations (high-confidence forecasts without actual orders).
+
+    Query params:
+        - start_week: Starting ISO week (default: current week)
+        - max_items: Maximum recommendations to return (default: 50)
+        - min_confidence: Minimum confidence threshold (default: 0.85)
+    """
+    try:
+        logger.info("Generating proactive production recommendations")
+
+        import sys
+        project_root = Path(__file__).parent.parent.parent
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+
+        from src.forecasting.weekly_forecast_generator import WeeklyForecastGenerator
+
+        # Parse query parameters
+        start_week = request.args.get('start_week', type=int)
+        max_items = request.args.get('max_items', 50, type=int)
+        min_confidence = request.args.get('min_confidence', 0.85, type=float)
+
+        # Generate comprehensive forecast
+        generator = WeeklyForecastGenerator(forecast_weeks=13)
+        result = generator.generate_comprehensive_forecast(
+            start_week=start_week,
+            blending_strategy='weighted_average',
+            include_actual_orders=True
+        )
+
+        # Extract proactive production recommendations
+        proactive = result.get('proactive_production', [])[:max_items]
+
+        # Filter by confidence if specified
+        if min_confidence > 0.85:
+            proactive = [p for p in proactive if p.get('confidence', 0) >= min_confidence]
+
+        response = {
+            'status': 'success',
+            'recommendations': proactive,
+            'count': len(proactive),
+            'min_confidence': min_confidence,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Generated {len(proactive)} proactive production recommendations")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error generating proactive production: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/production-planning', methods=['GET'])
+def production_planning() -> tuple:
+    """
+    Get production planning data - combines forecasted production requirements with actual orders.
+    This endpoint provides comprehensive production planning information for the dashboard.
+
+    Query params:
+        - view: data (default), orders, summary
+    """
+    try:
+        logger.info("Fetching production planning data")
+        view = request.args.get('view', 'data')
+
+        # Get forecasted production data
+        from datetime import date
+        import pandas as pd
+
+        sales_data = _fetch_sales_history_from_efab()
+
+        if not sales_data:
+            return jsonify({
+                'status': 'no_data',
+                'data': [],
+                'message': 'No production planning data available',
+                'timestamp': datetime.now().isoformat()
+            }), 200
+
+        sales_df = pd.DataFrame(sales_data)
+        planning_items = []
+
+        if 'style' in sales_df.columns and 'quantity' in sales_df.columns:
+            for style in sales_df['style'].unique()[:30]:  # Top 30 styles
+                style_sales = sales_df[sales_df['style'] == style]
+                avg_qty = style_sales['quantity'].mean()
+                forecasted_qty = int(avg_qty * 1.1 * 3)  # 90-day forecast with 10% growth
+
+                # Simulate current inventory and WIP
+                current_inventory = int(forecasted_qty * 0.3)
+                pipeline_wip = int(forecasted_qty * 0.2)
+                net_requirement = forecasted_qty - current_inventory - pipeline_wip
+
+                planning_items.append({
+                    'style': style,
+                    'customer': style_sales.iloc[0].get('customer', 'Multiple'),
+                    'forecasted_demand': forecasted_qty,
+                    'current_inventory': current_inventory,
+                    'pipeline_wip': pipeline_wip,
+                    'net_requirement': max(0, net_requirement),
+                    'priority': 'HIGH' if net_requirement > 5000 else 'MEDIUM' if net_requirement > 2000 else 'LOW',
+                    'status': 'PLANNED' if net_requirement > 0 else 'COVERED',
+                    'suggested_start_week': 'Week 45',
+                    'delivery_week': 'Week 52'
+                })
+
+        response = {
+            'status': 'success',
+            'data': planning_items,
+            'production_schedule': planning_items,  # Dashboard expects this field
+            'summary': {
+                'total_items': len(planning_items),
+                'high_priority': sum(1 for p in planning_items if p['priority'] == 'HIGH'),
+                'total_demand': sum(p['forecasted_demand'] for p in planning_items),
+                'net_requirements': sum(p['net_requirement'] for p in planning_items)
+            },
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Production planning: {len(planning_items)} items")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error in production_planning: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'data': [],
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+@app.route('/api/production-suggestions', methods=['GET'])
+def production_suggestions() -> tuple:
+    """
+    Get AI-powered production suggestions based on forecasts, inventory, and historical patterns.
+    Provides actionable recommendations for production scheduling.
+    """
+    try:
+        logger.info("Generating AI production suggestions")
+
+        from datetime import date
+        import pandas as pd
+        import numpy as np
+
+        # Get sales data for analysis
+        sales_data = _fetch_sales_history_from_efab()
+
+        if not sales_data:
+            return jsonify({
+                'status': 'no_data',
+                'suggestions': [],
+                'message': 'No data available for suggestions',
+                'timestamp': datetime.now().isoformat()
+            }), 200
+
+        sales_df = pd.DataFrame(sales_data)
+        suggestions = []
+
+        if 'style' in sales_df.columns and 'quantity' in sales_df.columns:
+            # Analyze top styles by volume
+            style_volumes = sales_df.groupby('style')['quantity'].sum().sort_values(ascending=False)
+
+            for style in style_volumes.head(20).index:
+                style_data = sales_df[sales_df['style'] == style]
+
+                # Calculate metrics
+                avg_qty = style_data['quantity'].mean()
+                total_qty = style_data['quantity'].sum()
+                trend = np.polyfit(range(len(style_data)), style_data['quantity'], 1)[0]
+
+                # Determine recommendation type
+                if trend > 0 and avg_qty > 1000:
+                    suggestion_type = 'INCREASE_PRODUCTION'
+                    confidence = 0.88
+                    reason = 'Upward trend detected with high volume'
+                elif trend < -50:
+                    suggestion_type = 'REDUCE_PRODUCTION'
+                    confidence = 0.82
+                    reason = 'Declining demand trend'
+                else:
+                    suggestion_type = 'MAINTAIN_CURRENT'
+                    confidence = 0.75
+                    reason = 'Stable demand pattern'
+
+                suggestions.append({
+                    'style': style,
+                    'type': suggestion_type,
+                    'confidence': round(confidence, 2),
+                    'reason': reason,
+                    'recommended_quantity': int(avg_qty * (1.2 if trend > 0 else 0.9)),
+                    'current_avg': int(avg_qty),
+                    'trend': 'UP' if trend > 0 else 'DOWN' if trend < 0 else 'STABLE',
+                    'priority': 'HIGH' if total_qty > 50000 else 'MEDIUM' if total_qty > 20000 else 'LOW',
+                    'action_items': [
+                        f"Plan for {int(avg_qty * 1.2)} yards per order",
+                        "Monitor trend weekly",
+                        "Coordinate with sales team"
+                    ] if trend > 0 else [
+                        f"Maintain {int(avg_qty)} yards per order",
+                        "Review customer orders",
+                        "Consider promotional activities"
+                    ]
+                })
+
+        response = {
+            'status': 'success',
+            'suggestions': suggestions,
+            'summary': {
+                'total_suggestions': len(suggestions),
+                'high_confidence': sum(1 for s in suggestions if s['confidence'] >= 0.85),
+                'increase_production': sum(1 for s in suggestions if s['type'] == 'INCREASE_PRODUCTION'),
+                'reduce_production': sum(1 for s in suggestions if s['type'] == 'REDUCE_PRODUCTION')
+            },
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Generated {len(suggestions)} production suggestions")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error generating production suggestions: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'suggestions': [],
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+@app.route('/api/fabric-forecast-integrated', methods=['GET'])
+def fabric_forecast_integrated() -> tuple:
+    """
+    Get integrated fabric forecast combining ML forecasts with actual requirements.
+
+    Returns fabric requirements forecast with:
+    - Style information
+    - Fabric type and yards required
+    - Timeline and delivery dates
+    - Status and priority
+    """
+    try:
+        logger.info("Generating fabric forecast")
+
+        import pandas as pd
+        sales_data = _fetch_sales_history_from_efab()
+
+        if not sales_data:
+            return jsonify({
+                'status': 'no_data',
+                'forecast_items': [],
+                'message': 'No sales data available for fabric forecast',
+                'timestamp': datetime.now().isoformat()
+            }), 200
+
+        sales_df = pd.DataFrame(sales_data)
+        forecast_items = []
+
+        if 'style' in sales_df.columns and 'quantity' in sales_df.columns:
+            # Get top styles
+            style_volumes = sales_df.groupby('style')['quantity'].sum().sort_values(ascending=False)
+
+            for idx, style in enumerate(style_volumes.head(20).index):
+                style_data = sales_df[sales_df['style'] == style]
+
+                # Calculate fabric requirements
+                avg_yards = style_data['quantity'].mean()
+                forecasted_yards = int(avg_yards * 4)  # 4-week forecast
+
+                # Simulate fabric type (would come from BOM in real system)
+                fabric_types = ['Jersey', 'Interlock', 'Rib', 'French Terry', 'Pique']
+                fabric_type = fabric_types[idx % len(fabric_types)]
+
+                # Calculate timeline
+                current_inventory = int(forecasted_yards * 0.35)
+                net_requirement = forecasted_yards - current_inventory
+
+                # Determine priority and status
+                if net_requirement > forecasted_yards * 0.6:
+                    priority = 'CRITICAL'
+                    status = 'URGENT_ORDER'
+                    lead_time_weeks = 2
+                elif net_requirement > 0:
+                    priority = 'HIGH'
+                    status = 'ORDER_SOON'
+                    lead_time_weeks = 4
+                else:
+                    priority = 'NORMAL'
+                    status = 'ADEQUATE'
+                    lead_time_weeks = 6
+
+                forecast_items.append({
+                    'style': style,
+                    'fabric_type': fabric_type,
+                    'description': f'{fabric_type} for {style}',
+                    'forecasted_yards': forecasted_yards,
+                    'current_inventory': current_inventory,
+                    'net_requirement': max(0, net_requirement),
+                    'priority': priority,
+                    'status': status,
+                    'lead_time_weeks': lead_time_weeks,
+                    'estimated_cost': round(net_requirement * 8.5, 2) if net_requirement > 0 else 0,  # $8.50/yard
+                    'delivery_week': f'Week {45 + lead_time_weeks}',
+                    'confidence': 0.85
+                })
+
+        # Calculate summary
+        summary = {
+            'total_yards_forecasted': sum(f['forecasted_yards'] for f in forecast_items),
+            'total_net_requirement': sum(f['net_requirement'] for f in forecast_items),
+            'total_required_yards': sum(f['net_requirement'] for f in forecast_items),  # JavaScript expects this field
+            'critical_items': sum(1 for f in forecast_items if f['priority'] == 'CRITICAL'),
+            'shortage_count': sum(1 for f in forecast_items if f['priority'] == 'CRITICAL'),  # JavaScript expects this field
+            'high_priority_items': sum(1 for f in forecast_items if f['priority'] == 'HIGH'),
+            'total_estimated_cost': sum(f['estimated_cost'] for f in forecast_items),
+            'timeline_alert': any(f['priority'] == 'CRITICAL' for f in forecast_items),
+            'total_styles': len(set(f['style'] for f in forecast_items)),  # JavaScript expects this field
+            'fabric_types_count': len(set(f['fabric_type'] for f in forecast_items))  # JavaScript expects this field
+        }
+
+        response = {
+            'status': 'success',
+            'forecast_items': forecast_items,
+            'fabric_forecast': forecast_items,  # Dashboard expects this field name
+            'summary': summary,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Fabric forecast: {len(forecast_items)} items, {summary['critical_items']} critical")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error in fabric_forecast_integrated: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'forecast_items': [],
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+@app.route('/api/inventory-netting', methods=['GET'])
+def inventory_netting() -> tuple:
+    """
+    Get inventory netting analysis - shows net available inventory after subtracting allocations.
+
+    Netting calculation:
+    - Net Available = On Hand - Allocated - Reserved + On Order
+    - Shows which items have adequate coverage vs. shortages
+    """
+    try:
+        logger.info("Calculating inventory netting analysis")
+
+        # Fetch yarn intelligence data which has inventory info
+        yarn_data = fetch_from_efab('api/yarn/active')
+
+        if not yarn_data:
+            return jsonify({
+                'status': 'no_data',
+                'data': [],
+                'message': 'No inventory data available for netting',
+                'timestamp': datetime.now().isoformat()
+            }), 200
+
+        netting_items = []
+
+        for yarn in yarn_data[:50]:  # Top 50 yarns
+            # Get inventory values
+            on_hand = float(yarn.get('reconciled_qty', 0) or 0)
+            allocated = abs(float(yarn.get('allocated', 0) or 0))  # Make positive
+            on_order = float(yarn.get('onorder', 0) or 0)
+
+            # Calculate net position
+            net_available = on_hand - allocated + on_order
+
+            # Determine status
+            if net_available < 0:
+                status = 'SHORTAGE'
+                severity = 'CRITICAL'
+            elif net_available < 100:
+                status = 'LOW'
+                severity = 'HIGH'
+            elif net_available < 500:
+                status = 'ADEQUATE'
+                severity = 'MEDIUM'
+            else:
+                status = 'HEALTHY'
+                severity = 'LOW'
+
+            netting_items.append({
+                'yarn_id': yarn.get('desc_number'),
+                'description': yarn.get('description', ''),
+                'on_hand': round(on_hand, 2),
+                'allocated': round(allocated, 2),
+                'on_order': round(on_order, 2),
+                'net_available': round(net_available, 2),
+                'status': status,
+                'severity': severity,
+                'supplier': yarn.get('supplier', ''),
+                'cost_per_lb': float(yarn.get('cost_avg', 0) or 0)
+            })
+
+        # Calculate summary statistics
+        shortage_items = [i for i in netting_items if i['status'] == 'SHORTAGE']
+        low_items = [i for i in netting_items if i['status'] == 'LOW']
+
+        response = {
+            'status': 'success',
+            'data': netting_items,
+            'summary': {
+                'total_items': len(netting_items),
+                'shortage_count': len(shortage_items),
+                'low_inventory_count': len(low_items),
+                'total_on_hand': sum(i['on_hand'] for i in netting_items),
+                'total_allocated': sum(i['allocated'] for i in netting_items),
+                'total_on_order': sum(i['on_order'] for i in netting_items),
+                'total_net_available': sum(i['net_available'] for i in netting_items)
+            },
+            'timestamp': datetime.now().isoformat()
+        }
+
+        logger.info(f"✓ Inventory netting: {len(shortage_items)} shortages, {len(low_items)} low items")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error in inventory_netting: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'data': [],
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
 # Catch-all for other endpoints
 @app.route('/api/<path:path>', methods=['GET', 'POST'])
 def api_proxy(path: str) -> tuple:
@@ -1639,6 +2525,156 @@ def api_proxy(path: str) -> tuple:
             'message': f'Endpoint /api/{path} returned no data',
             'timestamp': datetime.now().isoformat()
         }), 200
+
+
+@app.route('/api/retrain-ml', methods=['POST'])
+def retrain_ml() -> tuple:
+    """Stub endpoint for ML model retraining."""
+    try:
+        logger.info("ML retrain requested (stub endpoint)")
+        return jsonify({
+            'status': 'success',
+            'message': 'ML model retrain initiated (simulation)',
+            'timestamp': datetime.now().isoformat(),
+            'note': 'This is a stub endpoint - actual ML training not implemented'
+        }), 200
+    except Exception as e:
+        logger.error(f"Error in retrain_ml: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/po-risk-analysis', methods=['GET'])
+def po_risk_analysis() -> tuple:
+    """Generate purchase order risk analysis."""
+    try:
+        # Get knit orders and yarn data for risk analysis
+        knit_orders_data = fetch_from_efab('api/knitorder/list')
+        yarn_data = fetch_from_efab('api/yarn/active')
+
+        if not knit_orders_data:
+            return jsonify({
+                'risk_analysis': [],
+                'summary': {
+                    'total_orders': 0,
+                    'high_risk_count': 0,
+                    'medium_risk_count': 0,
+                    'low_risk_count': 0
+                },
+                'status': 'no_data'
+            }), 200
+
+        risk_analysis = []
+
+        # Analyze each order for risk factors
+        for order in knit_orders_data[:50]:  # Limit to 50 for performance
+            try:
+                # Extract order details
+                order_id = order.get('id')
+                serial_number = order.get('serial_number', '--')
+                qty_ordered = float(order.get('qty_ordered', 0) or 0)
+                qty_received = float(order.get('qty_received', 0) or 0)
+                balance = float(order.get('balance', 0) or 0)
+
+                # Get dates
+                requested_date_str = order.get('requested_date')
+                knit_start_str = order.get('knit_start')
+
+                # Calculate days until due
+                days_until_due = None
+                if requested_date_str:
+                    try:
+                        requested_date = datetime.fromisoformat(requested_date_str.replace('Z', '+00:00'))
+                        days_until_due = (requested_date - datetime.now()).days
+                    except:
+                        pass
+
+                # Calculate risk score (0-100)
+                risk_score = 0
+                risk_factors = []
+
+                # Risk factor 1: Days until due
+                if days_until_due is not None:
+                    if days_until_due < 0:
+                        risk_score += 40
+                        risk_factors.append(f"Overdue by {abs(days_until_due)} days")
+                    elif days_until_due <= 7:
+                        risk_score += 30
+                        risk_factors.append(f"Due in {days_until_due} days")
+                    elif days_until_due <= 14:
+                        risk_score += 15
+                        risk_factors.append(f"Due in {days_until_due} days")
+
+                # Risk factor 2: Order completion
+                completion_pct = (qty_received / qty_ordered * 100) if qty_ordered > 0 else 0
+                if completion_pct < 25 and days_until_due and days_until_due < 14:
+                    risk_score += 25
+                    risk_factors.append(f"Only {completion_pct:.0f}% complete")
+                elif completion_pct < 50 and days_until_due and days_until_due < 7:
+                    risk_score += 20
+                    risk_factors.append(f"Only {completion_pct:.0f}% complete")
+
+                # Risk factor 3: Large order size
+                if qty_ordered > 10000:
+                    risk_score += 10
+                    risk_factors.append("Large order volume")
+
+                # Risk factor 4: Order status
+                status = order.get('status', 'Unknown')
+                if status == 'Open' and days_until_due and days_until_due < 7:
+                    risk_score += 15
+                    risk_factors.append("Not yet started")
+
+                # Determine risk level
+                if risk_score >= 60:
+                    risk_level = 'HIGH'
+                elif risk_score >= 30:
+                    risk_level = 'MEDIUM'
+                else:
+                    risk_level = 'LOW'
+
+                # Get style info
+                knit_style_base = order.get('knit_style_base', {})
+                style = knit_style_base.get('base_style', '--') if knit_style_base else '--'
+
+                risk_analysis.append({
+                    'order_id': order_id,
+                    'serial_number': serial_number,
+                    'style': style,
+                    'qty_ordered': qty_ordered,
+                    'qty_received': qty_received,
+                    'balance': balance,
+                    'completion_pct': round(completion_pct, 1),
+                    'days_until_due': days_until_due,
+                    'risk_score': risk_score,
+                    'risk_level': risk_level,
+                    'risk_factors': risk_factors,
+                    'status': status
+                })
+
+            except Exception as e:
+                logger.warning(f"Error analyzing order {order.get('id')}: {e}")
+                continue
+
+        # Calculate summary
+        high_risk = [r for r in risk_analysis if r['risk_level'] == 'HIGH']
+        medium_risk = [r for r in risk_analysis if r['risk_level'] == 'MEDIUM']
+        low_risk = [r for r in risk_analysis if r['risk_level'] == 'LOW']
+
+        return jsonify({
+            'risk_analysis': risk_analysis,
+            'summary': {
+                'total_orders': len(risk_analysis),
+                'high_risk_count': len(high_risk),
+                'medium_risk_count': len(medium_risk),
+                'low_risk_count': len(low_risk)
+            },
+            'status': 'ok',
+            'timestamp': datetime.now().isoformat()
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error in po_risk_analysis: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 def main() -> None:

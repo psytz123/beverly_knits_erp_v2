@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabric Inventory Inquiry - Beverly Knits ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .stage-card {
+            transition: all 0.3s ease;
+        }
+        .stage-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .stage-active {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        }
+        .stage-inactive {
+            border-color: #e5e7eb;
+            background-color: #f9fafb;
+        }
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Fabric Inventory Inquiry</h1>
+                    <p class="text-sm text-gray-600">Beverly Knits ERP System</p>
+                </div>
+                <a href="/consolidated" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto p-6 max-w-7xl">
+        <!-- Search Panel -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Fabric ID
+                        <span class="text-gray-500 font-normal">(F ID for finished, G ID for greige)</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="fabricIdInput"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                        placeholder="e.g., 4025 or 2412"
+                        onkeypress="if(event.key==='Enter') searchFabric()"
+                        autofocus
+                    >
+                </div>
+                <div class="flex items-end">
+                    <button
+                        onclick="searchFabric()"
+                        id="searchBtn"
+                        class="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all font-medium"
+                    >
+                        <span class="flex items-center gap-2" id="searchBtnContent">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Search
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="resultsContainer" class="hidden space-y-6">
+            <!-- Fabric Specs Card -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">Fabric Specifications</h2>
+                    <span id="fabricTypeBadge" class="px-3 py-1 rounded-full text-sm font-medium"></span>
+                </div>
+                <div id="specsContent" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Specs will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Inventory Flow -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-6">Inventory by Production Stage</h2>
+
+                <!-- Stage Flow Diagram -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <!-- G00 Stage -->
+                    <div id="stage-G00" class="stage-card stage-inactive border-2 rounded-lg p-4 cursor-pointer" onclick="showStageDetails('G00')">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-xs font-semibold text-gray-500">STAGE 1</div>
+                            <div class="w-2 h-2 rounded-full bg-gray-300" id="indicator-G00"></div>
+                        </div>
+                        <div class="text-sm font-medium text-gray-700 mb-1">Raw Greige</div>
+                        <div class="text-xs text-gray-500 mb-3">G00</div>
+                        <div class="text-3xl font-bold text-gray-900" id="qty-G00">0</div>
+                        <div class="text-xs text-gray-500 mt-1" id="units-G00">yards</div>
+                    </div>
+
+                    <!-- G02 Stage -->
+                    <div id="stage-G02" class="stage-card stage-inactive border-2 rounded-lg p-4 cursor-pointer" onclick="showStageDetails('G02')">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-xs font-semibold text-gray-500">STAGE 2</div>
+                            <div class="w-2 h-2 rounded-full bg-gray-300" id="indicator-G02"></div>
+                        </div>
+                        <div class="text-sm font-medium text-gray-700 mb-1">Processed</div>
+                        <div class="text-xs text-gray-500 mb-3">G02</div>
+                        <div class="text-3xl font-bold text-gray-900" id="qty-G02">0</div>
+                        <div class="text-xs text-gray-500 mt-1" id="units-G02">yards</div>
+                    </div>
+
+                    <!-- I01 Stage -->
+                    <div id="stage-I01" class="stage-card stage-inactive border-2 rounded-lg p-4 cursor-pointer" onclick="showStageDetails('I01')">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-xs font-semibold text-gray-500">STAGE 3</div>
+                            <div class="w-2 h-2 rounded-full bg-gray-300" id="indicator-I01"></div>
+                        </div>
+                        <div class="text-sm font-medium text-gray-700 mb-1">QC Inspection</div>
+                        <div class="text-xs text-gray-500 mb-3">I01</div>
+                        <div class="text-3xl font-bold text-gray-900" id="qty-I01">0</div>
+                        <div class="text-xs text-gray-500 mt-1" id="units-I01">yards</div>
+                    </div>
+
+                    <!-- F01 Stage -->
+                    <div id="stage-F01" class="stage-card stage-inactive border-2 rounded-lg p-4 cursor-pointer" onclick="showStageDetails('F01')">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-xs font-semibold text-gray-500">STAGE 4</div>
+                            <div class="w-2 h-2 rounded-full bg-gray-300" id="indicator-F01"></div>
+                        </div>
+                        <div class="text-sm font-medium text-gray-700 mb-1">Finished</div>
+                        <div class="text-xs text-gray-500 mb-3">F01</div>
+                        <div class="text-3xl font-bold text-gray-900" id="qty-F01">0</div>
+                        <div class="text-xs text-gray-500 mt-1" id="units-F01">yards</div>
+                    </div>
+                </div>
+
+                <!-- Total Summary -->
+                <div class="border-t border-gray-200 pt-6">
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Total Yards</div>
+                            <div class="text-3xl font-bold text-blue-600" id="total-yards">0</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Total Pounds</div>
+                            <div class="text-3xl font-bold text-blue-600" id="total-lbs">0</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600 mb-1">Total Rolls</div>
+                            <div class="text-3xl font-bold text-blue-600" id="total-rolls">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movement History -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Recent Movement History</h2>
+                <div id="movementHistory" class="space-y-2">
+                    <!-- Movement history will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-16">
+            <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">Search Fabric Inventory</h3>
+            <p class="text-gray-500">Enter a Fabric ID above to view inventory across production stages</p>
+        </div>
+    </div>
+
+    <script>
+        let currentFabricId = null;
+
+        async function searchFabric() {
+            const fabricId = document.getElementById('fabricIdInput').value.trim();
+
+            if (!fabricId) {
+                alert('Please enter a Fabric ID');
+                return;
+            }
+
+            currentFabricId = fabricId;
+
+            // Show loading state
+            const searchBtn = document.getElementById('searchBtn');
+            const searchBtnContent = document.getElementById('searchBtnContent');
+            searchBtn.disabled = true;
+            searchBtnContent.innerHTML = `
+                <svg class="w-5 h-5 loading" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Searching...
+            `;
+
+            try {
+                // Hide empty state
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('resultsContainer').classList.remove('hidden');
+
+                // Fetch fabric data
+                const response = await fetch('/api/fabric-inquiry/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fabric_id: fabricId,
+                        include_specs: true
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Fabric not found');
+                }
+
+                const data = await response.json();
+
+                // Display results
+                displaySpecs(data.specs, data.fabric_type);
+                displayInventory(data.inventory_by_stage, data.total);
+                await loadMovementHistory(fabricId);
+
+            } catch (error) {
+                console.error('Search failed:', error);
+                alert(`Error: ${error.message}`);
+                document.getElementById('resultsContainer').classList.add('hidden');
+                document.getElementById('emptyState').classList.remove('hidden');
+            } finally {
+                // Restore button
+                searchBtn.disabled = false;
+                searchBtnContent.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Search
+                `;
+            }
+        }
+
+        function displaySpecs(specs, fabricType) {
+            const container = document.getElementById('specsContent');
+            const badge = document.getElementById('fabricTypeBadge');
+
+            // Set badge
+            if (fabricType === 'finished') {
+                badge.className = 'px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800';
+                badge.textContent = 'Finished Fabric';
+            } else {
+                badge.className = 'px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800';
+                badge.textContent = 'Greige Fabric';
+            }
+
+            container.innerHTML = '';
+
+            if (fabricType === 'finished') {
+                container.innerHTML = `
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Fabric ID</div>
+                        <div class="font-semibold text-gray-900">${specs.id}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Name</div>
+                        <div class="font-semibold text-gray-900">${specs.name || 'N/A'}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">GSM</div>
+                        <div class="font-semibold text-gray-900">${specs.gsm || 'N/A'}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Width</div>
+                        <div class="font-semibold text-gray-900">${specs.width ? specs.width + '"' : 'N/A'}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Yds/Lb</div>
+                        <div class="font-semibold text-gray-900">${specs.yds_per_lb ? specs.yds_per_lb.toFixed(2) : 'N/A'}</div>
+                    </div>
+                    <div class="col-span-3">
+                        <div class="text-xs text-gray-500 mb-1">Construction</div>
+                        <div class="font-semibold text-gray-900">${specs.construction || 'N/A'}</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Greige ID</div>
+                        <div class="font-semibold text-gray-900">${specs.id}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">G Base</div>
+                        <div class="font-semibold text-gray-900">${specs.g_base || 'N/A'}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Customer</div>
+                        <div class="font-semibold text-gray-900">${specs.customer || 'N/A'}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 mb-1">Knit Price</div>
+                        <div class="font-semibold text-gray-900">${specs.knit_price ? '$' + specs.knit_price : 'N/A'}</div>
+                    </div>
+                    <div class="col-span-4">
+                        <div class="text-xs text-gray-500 mb-1">Construction</div>
+                        <div class="font-semibold text-gray-900">${specs.construction || 'N/A'}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function displayInventory(inventoryByStage, total) {
+            const stages = ['G00', 'G02', 'I01', 'F01'];
+
+            stages.forEach(stage => {
+                const stageData = inventoryByStage[stage];
+                const card = document.getElementById(`stage-${stage}`);
+                const qtyEl = document.getElementById(`qty-${stage}`);
+                const unitsEl = document.getElementById(`units-${stage}`);
+                const indicator = document.getElementById(`indicator-${stage}`);
+
+                if (stageData && stageData.yards > 0) {
+                    qtyEl.textContent = stageData.yards.toFixed(1);
+                    unitsEl.textContent = `${stageData.lbs.toFixed(1)} lbs | ${stageData.rolls} rolls`;
+                    card.classList.remove('stage-inactive');
+                    card.classList.add('stage-active');
+                    indicator.className = 'w-2 h-2 rounded-full bg-green-500';
+                } else {
+                    qtyEl.textContent = '0';
+                    unitsEl.textContent = 'yards';
+                    card.classList.remove('stage-active');
+                    card.classList.add('stage-inactive');
+                    indicator.className = 'w-2 h-2 rounded-full bg-gray-300';
+                }
+            });
+
+            // Update totals
+            document.getElementById('total-yards').textContent = total.yards.toFixed(1);
+            document.getElementById('total-lbs').textContent = total.lbs.toFixed(1);
+            document.getElementById('total-rolls').textContent = total.rolls;
+        }
+
+        async function loadMovementHistory(fabricId) {
+            try {
+                const response = await fetch(`/api/fabric-inquiry/movement-history/${fabricId}?limit=10`);
+                const data = await response.json();
+
+                const container = document.getElementById('movementHistory');
+
+                if (data.movements && data.movements.length > 0) {
+                    container.innerHTML = data.movements.map(m => `
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 text-xs font-medium bg-white border border-gray-300 rounded">
+                                        ${m.from_stage || 'RECEIVING'}
+                                    </span>
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                                    </svg>
+                                    <span class="px-2 py-1 text-xs font-medium bg-blue-50 border border-blue-200 rounded text-blue-700">
+                                        ${m.to_stage}
+                                    </span>
+                                </div>
+                                <div class="text-sm text-gray-700 font-medium">
+                                    ${m.quantity_yards} yds | ${m.quantity_lbs} lbs
+                                </div>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                ${new Date(m.date).toLocaleDateString()} ${new Date(m.date).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <svg class="w-12 h-12 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p class="text-gray-500">No movement history available</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load movement history:', error);
+                document.getElementById('movementHistory').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        Failed to load movement history
+                    </div>
+                `;
+            }
+        }
+
+        function showStageDetails(stage) {
+            console.log('Show details for stage:', stage);
+            // Future: Could show detailed lot breakdown, location info, etc.
+        }
+
+        // Focus input on load
+        document.getElementById('fabricIdInput').focus();
+    </script>
+</body>
+</html>

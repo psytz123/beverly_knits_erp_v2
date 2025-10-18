@@ -1,11 +1,8 @@
 """
 Style Mapping Module for Beverly Knits ERP
-Maps between fStyle# (sales) and Style# (BOM) using eFab_Styles mapping file
+Maps between fStyle# (sales) and Style# (BOM) using Turso database
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
 from typing import Dict, List, Optional, Set
 import logging
 
@@ -15,46 +12,70 @@ logger = logging.getLogger(__name__)
 class StyleMapper:
     """Maps between different style naming conventions across the ERP system"""
 
-    def __init__(self, mapping_file_path: Optional[str] = None):
-        """Initialize the style mapper with optional mapping file"""
-        self.mapping_df = None
+    def __init__(self, turso_client=None):
+        """
+        Initialize the style mapper with Turso database client
+
+        Args:
+            turso_client: TursoClient instance (will be auto-loaded if None)
+        """
         self.fstyle_to_gbase = {}
         self.gbase_to_bom_styles = {}
         self.direct_mappings = {}
+        self.turso_client = turso_client
 
-        if mapping_file_path:
-            self.load_mapping_file(mapping_file_path)
+        # Load mappings from Turso database
+        self._load_from_turso()
 
-    def load_mapping_file(self, file_path: str) -> bool:
-        """Load the eFab_Styles mapping file"""
+    def _load_from_turso(self) -> bool:
+        """Load style mappings from Turso database"""
         try:
-            if Path(file_path).exists():
-                self.mapping_df = pd.read_excel(file_path)
-                self._build_mappings()
-                logger.info(f"Loaded style mappings from {file_path}")
-                return True
-            else:
-                logger.warning(f"Mapping file not found: {file_path}")
+            # Lazy load turso_client if not provided
+            if self.turso_client is None:
+                from src.database.turso_client import get_turso_client
+                self.turso_client = get_turso_client()
+
+            # Query all style mappings
+            sql = "SELECT fstyle, gbase, style FROM style_mappings"
+            rows = self.turso_client.execute(sql)
+
+            if not rows:
+                logger.warning("No style mappings found in Turso database")
+                logger.warning("Run: python scripts/import_style_mappings_to_turso.py")
                 return False
+
+            # Build internal mappings
+            for row in rows:
+                fstyle = row.get('fstyle', '')
+                gbase = row.get('gbase', '')
+                style = row.get('style', '')
+
+                if fstyle and gbase:
+                    self.fstyle_to_gbase[fstyle] = gbase
+
+                    if style:
+                        self.direct_mappings[fstyle] = style
+
+            logger.info(f"✓ Loaded {len(self.fstyle_to_gbase)} style mappings from Turso")
+            return True
+
         except Exception as e:
-            logger.error(f"Error loading mapping file: {e}")
+            logger.error(f"Error loading style mappings from Turso: {e}")
+            logger.error("Make sure to run: python scripts/import_style_mappings_to_turso.py")
             return False
 
+    def reload_mappings(self) -> bool:
+        """Reload mappings from Turso database"""
+        self.fstyle_to_gbase.clear()
+        self.gbase_to_bom_styles.clear()
+        self.direct_mappings.clear()
+        return self._load_from_turso()
+
     def _build_mappings(self):
-        """Build internal mapping dictionaries for fast lookup"""
-        if self.mapping_df is None:
-            return
-
-        # Build fStyle to gBase mapping
-        for _, row in self.mapping_df.iterrows():
-            fstyle = str(row.get("fStyle", ""))
-            gbase = str(row.get("gBase", ""))
-
-            if fstyle and gbase:
-                self.fstyle_to_gbase[fstyle] = gbase
-                # Also store direct mapping if style column exists
-                if "style" in row:
-                    self.direct_mappings[fstyle] = str(row["style"])
+        """Build internal mapping dictionaries (deprecated - now loads from Turso)"""
+        # This method is kept for backward compatibility but does nothing
+        # Mappings are now loaded directly from Turso in __init__
+        pass
 
     def set_bom_styles(self, bom_styles: Set[str]):
         """Set the available BOM styles for matching"""
@@ -144,7 +165,8 @@ class StyleMapper:
             "total_fstyles": len(self.fstyle_to_gbase),
             "unique_gbases": len(set(self.fstyle_to_gbase.values())),
             "bom_bases_mapped": len(self.gbase_to_bom_styles),
-            "mapping_file_loaded": self.mapping_df is not None,
+            "mappings_loaded": len(self.fstyle_to_gbase) > 0,
+            "source": "turso_database"
         }
 
 
@@ -152,15 +174,19 @@ class StyleMapper:
 _style_mapper = None
 
 
-def get_style_mapper(mapping_file_path: Optional[str] = None) -> StyleMapper:
-    """Get or create the global style mapper instance"""
+def get_style_mapper(turso_client=None) -> StyleMapper:
+    """
+    Get or create the global style mapper instance
+
+    Args:
+        turso_client: Optional TursoClient instance (auto-loaded if None)
+
+    Returns:
+        StyleMapper singleton instance
+    """
     global _style_mapper
 
     if _style_mapper is None:
-        # Default path
-        if mapping_file_path is None:
-            mapping_file_path = "/mnt/c/finalee/beverly_knits_erp_v2/data/production/5/ERP Data/eFab_Styles_20250902.xlsx"
-
-        _style_mapper = StyleMapper(mapping_file_path)
+        _style_mapper = StyleMapper(turso_client)
 
     return _style_mapper

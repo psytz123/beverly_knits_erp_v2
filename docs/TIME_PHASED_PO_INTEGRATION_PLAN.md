@@ -7,7 +7,8 @@ This document outlines the plan to integrate time-phased Purchase Order (PO) del
 ## Current State Analysis
 
 ### Manual/CSV Process (Working)
-- **Data Sources**: 
+
+- **Data Sources**:
   - `Yarn_Demand_By_Style_KO.csv` - Production demand by style
   - `Expected_Yarn_Report.xlsx` - PO delivery schedules with weekly buckets
   - `Yarn_Demand.csv` - Consolidated report
@@ -16,7 +17,8 @@ This document outlines the plan to integrate time-phased Purchase Order (PO) del
 - **Weaknesses**: Manual process, limited yarn coverage, point-in-time snapshot
 
 ### ERP System (Gap)
-- **Current Capability**: 
+
+- **Current Capability**:
   - Shows total "On Order" as single value
   - Formula: `Planning Balance = Theoretical + On Order + Allocated`
   - Real-time updates with 1-2 second cache
@@ -26,6 +28,7 @@ This document outlines the plan to integrate time-phased Purchase Order (PO) del
 ### Business Impact Example
 
 **Yarn 18884 Case Study:**
+
 - Total On Order: 36,161 lbs
 - Total Demand: 30,860 lbs
 - **Without Timing**: Appears sufficient (36,161 > 30,860)
@@ -39,12 +42,13 @@ This document outlines the plan to integrate time-phased Purchase Order (PO) del
 ## Integration Architecture
 
 ### Data Flow
+
 ```
-Expected_Yarn_Report.xlsx (PO Deliveries)
+`/api/report/yarn_expected` (PO Deliveries)
            +
-eFab_Knit_Orders.csv (Production Demand)
+`/api/knitorder/list` (Production Demand)
            +
-BOM_updated.csv (Yarn Requirements)
+BOM_updated 'TURSO DATABASE' (Yarn Requirements)
            ↓
     [Time-Phased Planning Engine]
            ↓
@@ -58,6 +62,7 @@ BOM_updated.csv (Yarn Requirements)
 ### Phase 1: Data Integration Layer (Week 1)
 
 #### 1.1 PO Delivery Loader Module
+
 **New File**: `src/data_loaders/po_delivery_loader.py`
 
 ```python
@@ -74,24 +79,26 @@ class PODeliveryLoader:
             '10/24/2025', '10/31/2025',
             'Later'
         ]
-    
+  
     def load_po_deliveries(self, file_path):
         """Load Expected_Yarn_Report.xlsx with delivery timing"""
         pass
-    
+  
     def map_to_weekly_buckets(self, po_data):
         """Convert date columns to week numbers"""
         pass
-    
+  
     def aggregate_by_yarn(self, po_data):
         """Group PO deliveries by yarn with weekly totals"""
         pass
 ```
 
 #### 1.2 Data Model Extension
+
 **Modified File**: `src/core/beverly_comprehensive_erp.py`
 
 Add to yarn data structure:
+
 ```python
 yarn_data = {
     'yarn_id': 18884,
@@ -118,6 +125,7 @@ yarn_data = {
 ### Phase 2: Time-Phased Calculation Engine (Week 1-2)
 
 #### 2.1 Weekly Planning Calculator
+
 **New File**: `src/production/time_phased_planning.py`
 
 ```python
@@ -125,21 +133,21 @@ class TimePhasedPlanning:
     """
     Calculates weekly planning balance and shortage timeline
     """
-    
+  
     def calculate_weekly_balance(self, yarn_id, start_week=36, horizon=9):
         """
         Calculate rolling balance for each week
         Balance[Week N] = Balance[Week N-1] + Receipts[N] - Demand[N]
         """
         pass
-    
+  
     def identify_shortage_periods(self, weekly_balances):
         """
         Find weeks where balance < 0
         Return: [(week_num, shortage_amount, recovery_week)]
         """
         pass
-    
+  
     def calculate_expedite_requirements(self, shortage_timeline):
         """
         Determine which POs need expediting to prevent shortages
@@ -148,21 +156,22 @@ class TimePhasedPlanning:
 ```
 
 #### 2.2 Integration with Existing Systems
+
 **Modified**: `src/core/beverly_comprehensive_erp.py`
 
 ```python
 def calculate_yarn_shortages_enhanced(self):
     """Enhanced shortage detection with timing"""
     shortages = []
-    
+  
     for yarn in self.yarn_data:
         # Existing calculation
         current_shortage = yarn['planning_balance'] < 0
-        
+      
         # NEW: Time-phased analysis
         weekly_balance = self.calculate_weekly_balance(yarn)
         shortage_weeks = [w for w, bal in weekly_balance.items() if bal < 0]
-        
+      
         shortage_data = {
             'yarn_id': yarn['yarn_id'],
             'current_shortage': current_shortage,
@@ -172,13 +181,14 @@ def calculate_yarn_shortages_enhanced(self):
             'expedite_needed': len(shortage_weeks) > 0
         }
         shortages.append(shortage_data)
-    
+  
     return shortages
 ```
 
 ### Phase 3: API Enhancement (Week 2)
 
 #### 3.1 New Endpoints
+
 **New File**: `src/api/blueprints/time_phased_bp.py`
 
 ```python
@@ -220,28 +230,30 @@ def time_phased_planning():
 ```
 
 #### 3.2 Enhanced Existing Endpoints
+
 **Modified**: `src/api/blueprints/yarn_bp.py`
 
 ```python
 @bp.route('/api/yarn-intelligence')
 def yarn_intelligence_enhanced():
     include_timing = request.args.get('include_timing', 'false') == 'true'
-    
+  
     response = existing_yarn_intelligence()
-    
+  
     if include_timing:
         # Add time-phased data
         for yarn in response['yarn_analysis']:
             yarn['next_receipt_week'] = get_next_receipt_week(yarn['yarn_id'])
             yarn['weeks_until_receipt'] = calculate_weeks_until_receipt(yarn['yarn_id'])
             yarn['shortage_timeline'] = get_shortage_timeline(yarn['yarn_id'])
-    
+  
     return response
 ```
 
 ### Phase 4: ML Forecast Integration (Week 2-3)
 
 #### 4.1 Forecast-Driven Planning
+
 **Modified**: `src/forecasting/enhanced_forecasting_engine.py`
 
 ```python
@@ -253,7 +265,7 @@ def generate_forecasted_demand_weekly(self, yarn_id, horizon_weeks=13):
     """
     actual_demand = self.get_actual_weekly_demand(yarn_id, weeks=9)
     forecasted_demand = self.ml_forecast_weekly(yarn_id, weeks=4)
-    
+  
     return {
         'confirmed': actual_demand,
         'forecasted': forecasted_demand,
@@ -262,6 +274,7 @@ def generate_forecasted_demand_weekly(self, yarn_id, horizon_weeks=13):
 ```
 
 #### 4.2 Predictive PO Generation
+
 **New**: `src/production/po_recommendation_engine.py`
 
 ```python
@@ -269,13 +282,13 @@ class PORecommendationEngine:
     """
     Generates optimal PO timing recommendations
     """
-    
+  
     def calculate_reorder_point(self, yarn_id):
         """
         ROP = (Lead Time Demand) + Safety Stock
         """
         pass
-    
+  
     def recommend_po_timing(self, yarn_id):
         """
         Based on:
@@ -290,21 +303,22 @@ class PORecommendationEngine:
 ### Phase 5: Dashboard Integration (Week 3)
 
 #### 5.1 Time-Phased View Tab
+
 **Modified**: `web/consolidated_dashboard.html`
 
 ```javascript
 // New tab for time-phased planning
 function renderTimePhasedView() {
     const weekColumns = ['Current', 'W37', 'W38', 'W39', 'W40', 'W41', 'W42', 'W43', 'W44', 'Later'];
-    
+  
     // Create weekly grid
     data.forEach(yarn => {
         const row = createYarnRow(yarn);
-        
+      
         weekColumns.forEach(week => {
             const balance = yarn.weekly_balance[week];
             const cell = createBalanceCell(balance);
-            
+          
             // Color coding
             if (balance < 0) {
                 cell.classList.add('shortage');  // Red
@@ -313,7 +327,7 @@ function renderTimePhasedView() {
             } else {
                 cell.classList.add('ok');        // Green
             }
-            
+          
             row.appendChild(cell);
         });
     });
@@ -321,7 +335,9 @@ function renderTimePhasedView() {
 ```
 
 #### 5.2 Enhanced Yarn Intelligence Display
+
 Add columns:
+
 - "Weeks Until Shortage"
 - "Next Receipt Date"
 - "Coverage Weeks"
@@ -330,6 +346,7 @@ Add columns:
 ### Phase 6: Testing & Validation (Week 3-4)
 
 #### 6.1 Unit Tests
+
 **New File**: `tests/test_time_phased_planning.py`
 
 ```python
@@ -347,6 +364,7 @@ def test_po_delivery_aggregation():
 ```
 
 #### 6.2 Integration Tests
+
 ```python
 def test_manual_excel_comparison():
     """
@@ -365,6 +383,7 @@ def test_api_performance():
 ## Success Metrics
 
 ### Quantitative Metrics
+
 - ✅ **Accuracy**: 100% match with manual Excel calculations
 - ✅ **Performance**: <2 second API response time
 - ✅ **Coverage**: All 184 priority yarns, expandable to 1,199
@@ -372,6 +391,7 @@ def test_api_performance():
 - ✅ **Reduction**: 30% fewer false shortage alerts
 
 ### Qualitative Metrics
+
 - ✅ **Visibility**: Clear view of WHEN shortages occur
 - ✅ **Actionability**: Specific POs to expedite identified
 - ✅ **Proactivity**: 9-week advance warning of shortages
@@ -380,45 +400,53 @@ def test_api_performance():
 ## Risk Mitigation
 
 ### Technical Risks
+
 1. **Performance Impact**
+
    - Mitigation: Implement aggressive caching for weekly calculations
    - Cache TTL: 5 minutes for time-phased data
-
 2. **Data Quality**
+
    - Mitigation: Validate PO dates, handle missing/invalid entries
    - Fallback: Use "Later" bucket for unparseable dates
-
 3. **Backward Compatibility**
+
    - Mitigation: Keep existing "On Order" field
    - Add new fields without breaking existing APIs
 
 ### Business Risks
+
 1. **User Adoption**
+
    - Mitigation: Parallel run with manual process for 2 weeks
    - Training: Create user guide with examples
-
 2. **Data Synchronization**
+
    - Mitigation: Daily validation against source systems
    - Alert: Email if discrepancies > 1%
 
 ## Implementation Timeline
 
 ### Week 1: Foundation
+
 - ✓ Create PO delivery loader
 - ✓ Extend data model
 - ✓ Basic weekly calculation engine
 
 ### Week 2: Integration
+
 - ✓ API endpoints
 - ✓ ML forecast integration
 - ✓ Enhanced shortage detection
 
 ### Week 3: User Interface
+
 - ✓ Dashboard updates
 - ✓ Testing suite
 - ✓ Documentation
 
 ### Week 4: Deployment
+
 - ✓ UAT with business users
 - ✓ Performance optimization
 - ✓ Production deployment

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+  <title>QuadS</title>
+  <link rel="stylesheet" href="/css/vendor/font-awesome.min.cc-db92f060566b5841262927658e18b9890279a92f-cc.css">
+  <link rel="stylesheet" href="/css/quads.cc-db92f060566b5841262927658e18b9890279a92f-cc.css">
+  <link rel="stylesheet" href="/css/print.cc-db92f060566b5841262927658e18b9890279a92f-cc.css" media="print">
+
+  <link rel="stylesheet" type="text/css" href="/css/vendor/dx.common.cc-db92f060566b5841262927658e18b9890279a92f-cc.css" />
+  <link rel="dx-theme" data-theme="generic.light" href="/css/vendor/dx.light.cc-db92f060566b5841262927658e18b9890279a92f-cc.css" />
+  <link rel="stylesheet" type="text/css" href="/css/vendor/dx.light.cc-db92f060566b5841262927658e18b9890279a92f-cc.css" />
+
+  <script src="/js/vendor/jquery.min.cc-db92f060566b5841262927658e18b9890279a92f-cc.js"></script>
+  <script src="/asset/vendor.cc-db92f060566b5841262927658e18b9890279a92f-cc.js"></script>
+  <script src="/js/vendor/jszip.min.cc-db92f060566b5841262927658e18b9890279a92f-cc.js" ></script>
+  <script src="/js/vendor/dx.all.cc-db92f060566b5841262927658e18b9890279a92f-cc.js" ></script>
+  <link rel="stylesheet" href="/css/vendor/kendo.common.min.cc-db92f060566b5841262927658e18b9890279a92f-cc.css" />
+  <link rel="stylesheet" href="/css/vendor/kendo.default.min.cc-db92f060566b5841262927658e18b9890279a92f-cc.css" />
+  <script src="/js/vendor/kendo.all.min.cc-db92f060566b5841262927658e18b9890279a92f-cc.js"></script>  <script src="/js/vendor/mousetrap.min.cc-db92f060566b5841262927658e18b9890279a92f-cc.js"></script>
+  <script src="/ttjs/quads.cc-db92f060566b5841262927658e18b9890279a92f-cc.js?noload_kendo=0" ></script>
+</head>
+<body class="">
+  
+
+<header class="generic">
+  <div class="row">
+    <div class="small-3 columns">
+     
+      <a href="/"><img src="/img/Quads-Logo_blue.png"></a>
+      
+    </div>
+    <div class="small-9 columns subNav noPrint">
+      (<i>Parker Sytz - Readonly</i>)
+      <a href="/logout"><i class="fa fa-sign-out"></i>Logout</a>
+      
+      <a href="/my_account"><i class="fa fa-pencil-square-o"></i>My Account</a>
+      
+      <a href="/admin/" class="hideForReadonly"><i class="fa fa-cog"></i>Admin</a>
+    
+      <a href="/knit-style/list/greige"><i class="fa fa-home"></i>Greige</a>
+      <a href="/knit-style/list/finished"><i class="fa fa-home"></i>Finished</a>
+    
+    </div>
+  </div>
+</header>
+
+<div class="content">
+<style>
+  #styleList { font-size: 120%; } 
+  #styleList button { margin: 5px 10px; padding: 5px 10px; font-size: 95%; }
+  #styleList .dx-datagrid .dx-row > td { padding: 3px 7px; vertical-align: middle; }
+</style>
+
+
+
+
+<script src="/ttjs/list.js?view_level=finished"></script>
+
+<h1 style="display: inline-block; margin: 0;"><span class="filterSetting">Active</span> Finished Style List</h1>
+<p style="display: inline-block; margin: 10px 0 0 40px; vertical-align: top;" class="hideForReadyonly">
+<a href="/finished-fabric/create" class="standardButton"><i class="fa fa-plus"></i> Create New Style</a>
+ 
+ <a href="/img/finfab_styles_linking.png" class="standardButton" target="_blank"><i class="fa fa-info-circle"></i> Style Naming Schema</a>
+ 
+</p>
+<div class="filterBar" style="float: right; display: inline-block; width: 200px; padding-top: 10px; text-align: right;">
+  <button type="button" class="standardButton setActive" style="display:none;" onClick="grid.option('dataSource','/api/styles/finished/active');$(this).hide();$('.setInactive').show();$('.filterSetting').text('Active');"><i class="fa fa-search"></i> Show Actives</button>
+  <button type="button" class="standardButton setInactive" onClick="grid.option('dataSource','/api/styles/finished/inactive');$(this).hide();$('.setActive').show();$('.filterSetting').text('Inactive');"><i class="fa fa-search"></i> Show Inactives</button>
+</div>
+
+<br>
+
+<div id="styleList"></div>
+
+</div>
+
+<footer>
+  Style Spec Sheet System (QuadS). &copy; 2017 Beverly Knits.  CONFIDENTIAL
+</footer>
+
+</body>
+</html>
