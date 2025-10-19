@@ -1,0 +1,602 @@
+openapi: 3.0.3
+info:
+  title: eFab API Server
+  description: |
+    REST API proxy for eFab ERP system providing real-time manufacturing data
+    including knit orders, yarn inventory, and production pipeline tracking.
+
+    ## Features
+    - Real-time data from eFab ERP
+    - 5-minute response caching
+    - Rate limiting (60 req/min)
+    - CORS enabled
+    - No client authentication required
+
+    ## Base URL
+    http://localhost:5006
+
+  version: 2.0.0
+  contact:
+    name: Beverly Knits ERP Team
+    email: support@beverlyknits.com
+
+servers:
+  - url: http://localhost:5006
+    description: Local development server
+
+tags:
+  - name: Health
+    description: Server health and status
+  - name: Knit Orders
+    description: Knit order tracking and management
+  - name: Yarn Intelligence
+    description: Yarn inventory analysis and shortage prediction
+  - name: Inventory
+    description: Fabric inventory and pipeline tracking
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check server status and eFab connection
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                data_source: efab_direct
+                efab_connected: true
+                timestamp: '2025-10-19T14:30:45.123456'
+
+  /api/knit-orders:
+    get:
+      tags:
+        - Knit Orders
+      summary: Get knit orders
+      description: |
+        Retrieve all active knit orders from eFab with completion tracking.
+        Orders are sorted by urgency (overdue first, then by completion percentage).
+      operationId: getKnitOrders
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnitOrdersResponse'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/yarn-intelligence:
+    get:
+      tags:
+        - Yarn Intelligence
+      summary: Get yarn intelligence data
+      description: |
+        Retrieve comprehensive yarn inventory analysis with risk assessment.
+
+        **Normal Mode (forecast=false):**
+        Returns current inventory with risk levels (CRITICAL/HIGH/MEDIUM/LOW).
+
+        **Forecast Mode (forecast=true):**
+        Returns predicted shortages with urgency analysis.
+      operationId: getYarnIntelligence
+      parameters:
+        - name: forecast
+          in: query
+          description: Enable forecast mode for shortage predictions
+          required: false
+          schema:
+            type: string
+            enum: ['true', 'false']
+            default: 'false'
+          example: 'false'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/YarnIntelligenceNormalResponse'
+                  - $ref: '#/components/schemas/YarnIntelligenceForecastResponse'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/inventory/pipeline-summary:
+    get:
+      tags:
+        - Inventory
+      summary: Get inventory pipeline summary
+      description: |
+        Consolidated view of fabric inventory across all production stages.
+
+        **Production Flow:**
+        G00 (Raw Greige) → G02 (Processing) → I01 (QC) → F01 (Finished Goods)
+      operationId: getInventoryPipelineSummary
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineSummaryResponse'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: Server health status
+          example: healthy
+        data_source:
+          type: string
+          description: Data source identifier
+          example: efab_direct
+        efab_connected:
+          type: boolean
+          description: Whether eFab connection is active
+          example: true
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp (ISO 8601)
+          example: '2025-10-19T14:30:45.123456'
+      required:
+        - status
+        - data_source
+        - efab_connected
+        - timestamp
+
+    KnitOrdersResponse:
+      type: object
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/KnitOrder'
+        total:
+          type: integer
+          description: Total number of orders
+          example: 42
+        source:
+          type: string
+          description: Data source
+          example: efab
+        status:
+          type: string
+          description: Response status
+          example: ok
+      required:
+        - orders
+        - total
+        - source
+        - status
+
+    KnitOrder:
+      type: object
+      properties:
+        ko_id:
+          type: integer
+          description: Knit order ID
+          example: 12345
+        order_id:
+          type: integer
+          description: Alias for ko_id
+          example: 12345
+        id:
+          type: integer
+          description: Alias for ko_id
+          example: 12345
+        serial_number:
+          type: string
+          description: Human-readable order number
+          example: 'KO-2024-001'
+        style:
+          type: string
+          description: Style/product name
+          example: 'Style-ABC-123'
+        customer:
+          type: string
+          description: Customer name
+          example: 'Customer Name Inc.'
+        machine:
+          type: string
+          description: Assigned machine identifier
+          example: 'Machine-05'
+        qty_ordered:
+          type: number
+          format: float
+          description: Total quantity ordered (lbs)
+          example: 1500.0
+        qty_ordered_lbs:
+          type: number
+          format: float
+          description: Alias for qty_ordered
+          example: 1500.0
+        qty_received:
+          type: number
+          format: float
+          description: Quantity completed/received (lbs)
+          example: 750.0
+        balance:
+          type: number
+          format: float
+          description: Remaining quantity (ordered - received)
+          example: 750.0
+        balance_lbs:
+          type: number
+          format: float
+          description: Alias for balance
+          example: 750.0
+        completion_percentage:
+          type: number
+          format: float
+          description: Percentage complete (0-100)
+          minimum: 0
+          maximum: 100
+          example: 50.0
+        days_until_due:
+          type: integer
+          nullable: true
+          description: Days until due date (negative = overdue, null = no due date)
+          example: 5
+        status:
+          type: string
+          description: Order status
+          example: 'In Progress'
+        start_date:
+          type: string
+          format: date-time
+          description: Knit start date/time
+          example: '2024-10-01T08:00:00'
+        requested_date:
+          type: string
+          format: date-time
+          description: Due date/time
+          example: '2024-10-24T17:00:00'
+        is_active:
+          type: boolean
+          description: Whether order is active
+          example: true
+        schedule_status:
+          type: string
+          description: Schedule status description
+          example: 'On Schedule'
+        knitter:
+          type: string
+          description: Assigned knitter name
+          example: 'John Doe'
+        purchase_order:
+          type: string
+          description: Related purchase order number
+          example: 'PO-2024-456'
+        uom:
+          type: string
+          description: Unit of measure
+          example: 'lbs'
+
+    YarnIntelligenceNormalResponse:
+      type: object
+      properties:
+        criticality_analysis:
+          type: object
+          properties:
+            yarns:
+              type: array
+              items:
+                $ref: '#/components/schemas/YarnItem'
+            summary:
+              $ref: '#/components/schemas/YarnSummary'
+        source:
+          type: string
+          example: efab
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-10-19T14:30:45.123456'
+
+    YarnItem:
+      type: object
+      properties:
+        yarn_id:
+          type: integer
+          description: Yarn description number
+          example: 18865
+        description:
+          type: string
+          description: Yarn description/name
+          example: 'Cotton Blend 30/1'
+        supplier:
+          type: string
+          description: Yarn supplier name
+          example: 'ABC Yarn Co.'
+        color:
+          type: string
+          description: Yarn color name
+          example: 'Navy Blue'
+        theoretical_balance:
+          type: number
+          format: float
+          description: Current on-hand inventory (lbs)
+          example: 15353.22
+        balance:
+          type: number
+          format: float
+          description: Alias for theoretical_balance
+          example: 15353.22
+        allocated:
+          type: number
+          format: float
+          description: Allocated to orders (negative = committed)
+          example: -2500.0
+        planning_balance:
+          type: number
+          format: float
+          description: theoretical_balance + on_order + allocated
+          example: 12853.22
+        on_order:
+          type: number
+          format: float
+          description: Quantity on order from supplier
+          example: 0.0
+        cost_per_pound:
+          type: number
+          format: float
+          description: Average cost per pound
+          example: 3.45
+        total_cost:
+          type: number
+          format: float
+          description: Total inventory value
+          example: 52968.61
+        risk_level:
+          type: string
+          enum: [CRITICAL, HIGH, MEDIUM, LOW]
+          description: |
+            Risk level based on planning_balance:
+            - CRITICAL: planning_balance < 0
+            - HIGH: planning_balance < 100
+            - MEDIUM: planning_balance < 500
+            - LOW: planning_balance >= 500
+          example: LOW
+        priority_score:
+          type: number
+          format: float
+          description: Urgency score (higher = more urgent)
+          example: 87146.78
+
+    YarnSummary:
+      type: object
+      properties:
+        critical_count:
+          type: integer
+          description: Number of CRITICAL yarns
+          example: 5
+        high_count:
+          type: integer
+          description: Number of HIGH risk yarns
+          example: 12
+        medium_count:
+          type: integer
+          description: Number of MEDIUM risk yarns
+          example: 23
+        low_count:
+          type: integer
+          description: Number of LOW risk yarns
+          example: 145
+        yarns_with_shortage:
+          type: integer
+          description: Number of yarns with negative planning_balance
+          example: 8
+        total_yarns:
+          type: integer
+          description: Total number of yarns analyzed
+          example: 185
+        yarns_analyzed:
+          type: integer
+          description: Alias for total_yarns
+          example: 185
+
+    YarnIntelligenceForecastResponse:
+      type: object
+      properties:
+        forecast:
+          type: object
+          properties:
+            predicted_shortages:
+              type: array
+              items:
+                $ref: '#/components/schemas/PredictedShortage'
+            total_shortage_count:
+              type: integer
+              description: Total number of predicted shortages
+              example: 15
+            critical_count:
+              type: integer
+              description: Number of CRITICAL shortages
+              example: 5
+            total_shortage_lbs:
+              type: number
+              format: float
+              description: Total shortage quantity (lbs)
+              example: 12450.75
+        source:
+          type: string
+          example: efab
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-10-19T14:30:45.123456'
+
+    PredictedShortage:
+      type: object
+      properties:
+        yarn_id:
+          type: integer
+          description: Yarn description number
+          example: 11759
+        description:
+          type: string
+          description: Yarn description/name
+          example: 'Polyester 150D'
+        forecasted_requirement:
+          type: number
+          format: float
+          description: Projected 30-day demand
+          example: 2500.0
+        current_inventory:
+          type: number
+          format: float
+          description: Current planning_balance
+          example: -850.5
+        net_shortage:
+          type: number
+          format: float
+          description: current_inventory - forecasted_requirement
+          example: -3350.5
+        days_until_shortage:
+          type: integer
+          description: Estimated days until shortage (0 = already short)
+          minimum: 0
+          example: 0
+        affected_orders:
+          type: integer
+          description: Number of affected orders
+          example: 0
+        affected_styles:
+          type: array
+          items:
+            type: string
+          description: List of affected styles
+          example: []
+        urgency:
+          type: string
+          enum: [CRITICAL, HIGH, MEDIUM, LOW]
+          description: Shortage urgency level
+          example: CRITICAL
+        priority_score:
+          type: number
+          format: float
+          description: Urgency score for sorting
+          example: 1333550.0
+
+    PipelineSummaryResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        pipeline:
+          type: object
+          properties:
+            g00:
+              $ref: '#/components/schemas/PipelineStage'
+            g02:
+              $ref: '#/components/schemas/PipelineStage'
+            i01:
+              $ref: '#/components/schemas/PipelineStage'
+            f01:
+              $ref: '#/components/schemas/PipelineStage'
+        total_inventory_yards:
+          type: number
+          format: float
+          description: Sum of all on_hand quantities across stages
+          example: 143500.0
+        production_flow:
+          type: string
+          description: Visual representation of pipeline flow
+          example: 'G00 → G02 → I01 → F01'
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-10-19T14:30:45.123456'
+
+    PipelineStage:
+      type: object
+      properties:
+        stage:
+          type: string
+          description: Stage name and description
+          example: 'G00 - Raw Greige'
+        items_count:
+          type: integer
+          description: Number of inventory items in this stage
+          example: 156
+        total_on_hand:
+          type: number
+          format: float
+          description: Total quantity on hand (yards)
+          example: 45000.0
+        total_available:
+          type: number
+          format: float
+          description: Total available quantity (yards)
+          example: 42500.0
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: 'Failed to fetch from eFab'
+        status:
+          type: string
+          description: Error status
+          example: error
+
+    RateLimitErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: rate_limit_exceeded
+        message:
+          type: string
+          example: 'Too many requests, please slow down.'
+        retry_after:
+          type: string
+          nullable: true
+          example: '60 seconds'
+
+  responses:
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RateLimitErrorResponse'
+
+    ServerError:
+      description: Internal server error or eFab connection failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes: {}
+
+security: []
+
+externalDocs:
+  description: Full API documentation
+  url: file:///C:/finalee/beverly_knits_erp_v2/.agent-workspace/outputs/analysis/efab_api_integration_guide.md

@@ -1,0 +1,3 @@
+organizations/b8b336fa-177a-46ae-84fb-126d5944d59b/apiKeys/a8ccd088-17c1-44c6-8407-a55d3bca3ada 
+
+-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEIBsifmE7t8vHjnkGmHknyLRtREHNoaZVS8UoHgkmmW/boAoGCCqGSM49\nAwEHoUQDQgAEZvSFLPmUNXWVUUo4FYMZDLLrqUlCBlz+Kru+fBc4sZ+Ajc2eG7yl\njJx9YdOE4BPtSAk9BdQbdnAtkjpx4EUAAQ==\n-----END EC PRIVATE KEY-----\n

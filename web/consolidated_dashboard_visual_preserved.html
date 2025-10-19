@@ -14183,46 +14183,84 @@ const dataSafetyMonitor = {
         }
         
         function updateMachinePlanningDashboard(data) {
+            if (!data) {
+                console.error('No data provided to updateMachinePlanningDashboard');
+                return;
+            }
+
             // Update AI insights cards
-            updateMachinePlanningAIInsights(data.ai_analysis);
-            
+            if (data.ai_analysis) {
+                updateMachinePlanningAIInsights(data.ai_analysis);
+
+                // Update actionable insights
+                if (data.ai_analysis.actionable_insights) {
+                    updateMachinePlanningActionableInsights(data.ai_analysis.actionable_insights);
+                }
+            }
+
             // Update factory overview
-            updateMachinePlanningFactoryOverview(data.factory_overview);
-            
+            if (data.factory_overview) {
+                updateMachinePlanningFactoryOverview(data.factory_overview);
+            }
+
             // Update work centers
-            updateMachinePlanningWorkCenters(data.work_center_groups);
-            
-            // Update actionable insights
-            updateMachinePlanningActionableInsights(data.ai_analysis.actionable_insights);
+            if (data.work_center_groups) {
+                updateMachinePlanningWorkCenters(data.work_center_groups);
+            }
         }
         
         function updateMachinePlanningAIInsights(aiAnalysis) {
+            // Handle missing or incomplete aiAnalysis data
+            if (!aiAnalysis) {
+                console.warn('AI analysis data is missing');
+                return;
+            }
+
             // AI Analysis Card
-            safeUpdateElement('aiAnalysisStatus', `${aiAnalysis.bottlenecks.length} issues detected`);
-            safeUpdateElement('bottleneckCount', aiAnalysis.ai_kpis.bottleneck_summary.total);
-            safeUpdateElement('criticalCount', aiAnalysis.ai_kpis.bottleneck_summary.critical);
+            const bottlenecks = aiAnalysis.bottlenecks || [];
+            safeUpdateElement('aiAnalysisStatus', `${bottlenecks.length} issues detected`);
+
+            const bottleneckSummary = aiAnalysis.ai_kpis?.bottleneck_summary || {};
+            safeUpdateElement('bottleneckCount', bottleneckSummary.total || 0);
+            safeUpdateElement('criticalCount', bottleneckSummary.critical || 0);
             safeUpdateElement('modelConfidence', `85%`); // Default confidence
 
             // Optimization Card
-            safeUpdateElement('optimizationStatus', `${aiAnalysis.optimizations.length} opportunities found`);
-            safeUpdateElement('optimizationOpportunities', aiAnalysis.ai_kpis.optimization_potential.opportunities);
-            safeUpdateElement('avgImprovement', `${aiAnalysis.ai_kpis.optimization_potential.avg_improvement_percent}%`);
-            safeUpdateElement('capacityHealth', aiAnalysis.ai_kpis.capacity_health);
+            const optimizations = aiAnalysis.optimizations || [];
+            safeUpdateElement('optimizationStatus', `${optimizations.length} opportunities found`);
 
-            // Factory Status Card  
-            safeUpdateElement('factoryStatus', `Monitoring ${aiAnalysis.ai_kpis.optimization_potential.opportunities} opportunities`);
+            const optimizationPotential = aiAnalysis.ai_kpis?.optimization_potential || {};
+            safeUpdateElement('optimizationOpportunities', optimizationPotential.opportunities || 0);
+            safeUpdateElement('avgImprovement', `${optimizationPotential.avg_improvement_percent || 0}%`);
+            safeUpdateElement('capacityHealth', aiAnalysis.ai_kpis?.capacity_health || 'Unknown');
+
+            // Factory Status Card
+            safeUpdateElement('factoryStatus', `Monitoring ${optimizationPotential.opportunities || 0} opportunities`);
         }
         
         function updateMachinePlanningFactoryOverview(factoryOverview) {
-            safeUpdateElement('totalMachines', factoryOverview.total_machines);
-            safeUpdateElement('runningMachines', factoryOverview.running_machines);
-            safeUpdateElement('avgUtilization', `${factoryOverview.avg_utilization_percent.toFixed(1)}%`);
+            if (!factoryOverview) {
+                console.warn('Factory overview data is missing');
+                return;
+            }
+
+            safeUpdateElement('totalMachines', factoryOverview.total_machines || 0);
+            safeUpdateElement('runningMachines', factoryOverview.running_machines || 0);
+
+            const avgUtil = factoryOverview.avg_utilization_percent || 0;
+            safeUpdateElement('avgUtilization', `${avgUtil.toFixed(1)}%`);
         }
         
         function updateMachinePlanningWorkCenters(workCenterGroups) {
             const container = document.getElementById('workCentersContainer');
             if (!container) return;
-            
+
+            if (!workCenterGroups || !Array.isArray(workCenterGroups)) {
+                console.warn('Work center groups data is missing or invalid');
+                container.innerHTML = '<p class="text-gray-500">No work center data available</p>';
+                return;
+            }
+
             container.innerHTML = '';
 
             // Show work centers that have actual workload (assigned or suggested)
@@ -15002,7 +15040,7 @@ const dataSafetyMonitor = {
                 clearInterval(window.scheduleUpdateInterval);
             }
             
-            // Update every 30 seconds
+            // Update every 5 minutes
             window.scheduleUpdateInterval = setInterval(async () => {
                 try {
                     console.log('Live update: Refreshing production data...');
@@ -15010,17 +15048,17 @@ const dataSafetyMonitor = {
                         fetchAPI('production-planning'),
                         fetchAPI('factory-floor-ai-dashboard')
                     ]);
-                    
+
                     if (planningData && planningData.production_schedule) {
                         // Update global data
                         window.currentProductionData.schedule = planningData.production_schedule;
                         window.currentProductionData.factory = factoryData;
                         window.currentProductionData.lastUpdate = new Date();
-                        
+
                         // Update display without full reload
                         renderRealProductionSchedule(planningData.production_schedule);
                         updateLastRefreshTime();
-                        
+
                         // Show live update indicator
                         showLiveUpdateIndicator();
                     }
@@ -15028,7 +15066,7 @@ const dataSafetyMonitor = {
                     console.error('Live update failed:', error);
                     showLiveUpdateError();
                 }
-            }, 30000); // 30 seconds
+            }, 300000); // 5 minutes
         }
         
         // Show live update indicator
@@ -16420,12 +16458,12 @@ Customer: ${order.customer || 'Unknown'}
                 loadForecastingData();
             }
             
-            // Auto-refresh every 30 seconds
+            // Auto-refresh every 5 minutes
             setInterval(() => {
                 if (document.visibilityState === 'visible') {
                     refreshAllData();
                 }
-            }, 30000);
+            }, 300000);
         });
     </script>
 
