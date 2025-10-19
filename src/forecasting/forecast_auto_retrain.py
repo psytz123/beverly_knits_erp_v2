@@ -359,12 +359,7 @@ class AutomaticRetrainingSystem:
     def schedule_retraining(self):
         """Schedule automatic retraining based on configuration"""
         if self.retrain_schedule == "weekly":
-            # Schedule weekly retraining
-            schedule.every().week.at(f"{self.retrain_hour:02d}:00").do(
-                self.retrain_models
-            )
-
-            # Also schedule for specific day if provided
+            # Schedule for specific day (schedule library doesn't have .week, only .day and specific days)
             if self.retrain_day == "monday":
                 schedule.every().monday.at(f"{self.retrain_hour:02d}:00").do(
                     self.retrain_models

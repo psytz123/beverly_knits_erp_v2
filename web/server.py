@@ -33,7 +33,7 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         print(f"[HTTP] {format % args}")
 
 
-def run_server(port: int = 8080, directory: str = ".") -> None:
+def run_server(port: int = 8000, directory: str = ".") -> None:
     """
     Start the HTTP server.
 
@@ -54,7 +54,7 @@ def run_server(port: int = 8080, directory: str = ".") -> None:
     print(f"Serving files from: {os.getcwd()}")
     print(f"Dashboard URL: http://localhost:{port}/consolidated_dashboard_visual_preserved.html")
     print(f"=" * 70)
-    print(f"Note: Backend API should be running on port 5006")
+    print(f"Note: Backend API is running on port 5000")
     print(f"Press Ctrl+C to stop the server")
     print(f"=" * 70)
 
@@ -68,7 +68,7 @@ def run_server(port: int = 8080, directory: str = ".") -> None:
 
 if __name__ == "__main__":
     # Get port from command line argument or use default
-    port = 8080
+    port = 8000
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])

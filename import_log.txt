@@ -1,0 +1,78 @@
+INFO:__main__:\U0001f4ca Importing sales data from: c:\Users\psytz\Downloads\Sales Activity Report (17).xlsx
+INFO:__main__:\u2713 Loaded 10235 rows from Excel
+INFO:__main__:\u2713 Columns: ['Document', 'Invoice Date', 'Customer', 'Style', 'Qty Shipped', 'UOM', 'Unit Price', 'Line Price', '1st Invoice', 'Sales Rep', 'Commission', 'Selling Co', 'PO#']
+INFO:__main__:
+============================================================
+INFO:__main__:Sample data:
+INFO:__main__:   Document Invoice Date                     Customer      Style  Qty Shipped   UOM  Unit Price  Line Price 1st Invoice     Sales Rep Commission Selling Co            PO#
+0  S2212345   2023-01-04              Southerland Inc  CEE3466-1        158.0   yds       16.85     2662.30  INV0004744  Ashley Brown        2;1         CT         971908
+1  S2301001   2023-01-04                 Tempur Sealy   CT2155-1        150.0   yds        1.33      199.50  INV0004738         House        NaN         CT  PUR-2022-9026
+2  S2212347   2023-01-04              Southerland Inc  CEE3466-1        154.9   yds       16.85     2610.07  INV0004742  Ashley Brown        2;1         CT         971907
+3  S2212344   2023-01-04              Southerland Inc  CEE3466-1        372.5   yds       16.85     6276.63  INV0004741  Ashley Brown        2;1         CT         971902
+4  S2212351   2023-01-04  Hemingway Sewing Solutions   CEE2749-1        177.0  each       36.25     6416.25  INV0004747         House        NaN         CT          12/27
+INFO:__main__:============================================================
+
+INFO:__main__:Column mapping detected: {'date': 'Invoice Date', 'customer': 'Customer', 'style': 'Style', 'quantity': 'Qty Shipped'}
+INFO:__main__:\u2713 Prepared 10231 records for insertion
+INFO:__main__:\u26a0 Skipped 4 rows due to missing/invalid data
+INFO:__main__:Inserted batch 1: 200/10231 records
+INFO:__main__:Inserted batch 2: 400/10231 records
+INFO:__main__:Inserted batch 3: 600/10231 records
+INFO:__main__:Inserted batch 4: 800/10231 records
+INFO:__main__:Inserted batch 5: 1000/10231 records
+INFO:__main__:Inserted batch 6: 1200/10231 records
+INFO:__main__:Inserted batch 7: 1400/10231 records
+INFO:__main__:Inserted batch 8: 1600/10231 records
+INFO:__main__:Inserted batch 9: 1800/10231 records
+INFO:__main__:Inserted batch 10: 2000/10231 records
+INFO:__main__:Inserted batch 11: 2200/10231 records
+INFO:__main__:Inserted batch 12: 2400/10231 records
+INFO:__main__:Inserted batch 13: 2600/10231 records
+INFO:__main__:Inserted batch 14: 2800/10231 records
+INFO:__main__:Inserted batch 15: 3000/10231 records
+INFO:__main__:Inserted batch 16: 3200/10231 records
+INFO:__main__:Inserted batch 17: 3400/10231 records
+INFO:__main__:Inserted batch 18: 3600/10231 records
+INFO:__main__:Inserted batch 19: 3800/10231 records
+INFO:__main__:Inserted batch 20: 4000/10231 records
+INFO:__main__:Inserted batch 21: 4200/10231 records
+INFO:__main__:Inserted batch 22: 4400/10231 records
+INFO:__main__:Inserted batch 23: 4600/10231 records
+INFO:__main__:Inserted batch 24: 4800/10231 records
+INFO:__main__:Inserted batch 25: 5000/10231 records
+INFO:__main__:Inserted batch 26: 5200/10231 records
+INFO:__main__:Inserted batch 27: 5400/10231 records
+INFO:__main__:Inserted batch 28: 5600/10231 records
+INFO:__main__:Inserted batch 29: 5800/10231 records
+INFO:__main__:Inserted batch 30: 6000/10231 records
+INFO:__main__:Inserted batch 31: 6200/10231 records
+INFO:__main__:Inserted batch 32: 6400/10231 records
+INFO:__main__:Inserted batch 33: 6600/10231 records
+INFO:__main__:Inserted batch 34: 6800/10231 records
+INFO:__main__:Inserted batch 35: 7000/10231 records
+INFO:__main__:Inserted batch 36: 7200/10231 records
+INFO:__main__:Inserted batch 37: 7400/10231 records
+INFO:__main__:Inserted batch 38: 7600/10231 records
+INFO:__main__:Inserted batch 39: 7800/10231 records
+INFO:__main__:Inserted batch 40: 8000/10231 records
+INFO:__main__:Inserted batch 41: 8200/10231 records
+INFO:__main__:Inserted batch 42: 8400/10231 records
+INFO:__main__:Inserted batch 43: 8600/10231 records
+INFO:__main__:Inserted batch 44: 8800/10231 records
+INFO:__main__:Inserted batch 45: 9000/10231 records
+INFO:__main__:Inserted batch 46: 9200/10231 records
+INFO:__main__:Inserted batch 47: 9400/10231 records
+INFO:__main__:Inserted batch 48: 9600/10231 records
+INFO:__main__:Inserted batch 49: 9800/10231 records
+INFO:__main__:Inserted batch 50: 10000/10231 records
+INFO:__main__:Inserted batch 51: 10200/10231 records
+INFO:__main__:Inserted batch 52: 10231/10231 records
+ERROR:__main__:\u274c Error: 'list' object has no attribute 'get'
+Traceback (most recent call last):
+  File "C:\finalee\beverly_knits_erp_v2\scripts\import_sales_to_turso.py", line 235, in <module>
+    import_sales_report(file_path)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\finalee\beverly_knits_erp_v2\scripts\import_sales_to_turso.py", line 199, in import_sales_report
+    if result.get("results"):
+       ^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'get'

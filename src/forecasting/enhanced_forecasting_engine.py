@@ -445,12 +445,30 @@ class EnhancedForecastingEngine:
 
             if not backtest_forecast.empty and len(test_data) > 0:
                 # Align predictions with actuals
-                actuals = (
-                    test_data["demand"].values
-                    if "demand" in test_data.columns
-                    else test_data.values
-                )
-                predictions = backtest_forecast["forecast"].values[: len(actuals)]
+                # Extract actuals - handle different data shapes
+                if isinstance(test_data, pd.DataFrame):
+                    if "demand" in test_data.columns:
+                        actuals_raw = test_data["demand"]
+                    else:
+                        actuals_raw = test_data.iloc[:, 0] if len(test_data.columns) > 0 else test_data.values.flatten()
+                elif isinstance(test_data, pd.Series):
+                    actuals_raw = test_data
+                else:
+                    actuals_raw = test_data
+
+                # Convert to numeric array
+                if isinstance(actuals_raw, (pd.Series, pd.DataFrame)):
+                    actuals = pd.to_numeric(actuals_raw.squeeze(), errors='coerce').fillna(0).values.astype(np.float64)
+                else:
+                    actuals = np.asarray(actuals_raw, dtype=np.float64).flatten()
+
+                # Extract predictions
+                if isinstance(backtest_forecast, pd.DataFrame) and "forecast" in backtest_forecast.columns:
+                    predictions_raw = pd.to_numeric(backtest_forecast["forecast"], errors='coerce').fillna(0).values.astype(np.float64)
+                else:
+                    predictions_raw = np.asarray(backtest_forecast, dtype=np.float64).flatten()
+
+                predictions = predictions_raw[: len(actuals)]
 
                 # Calculate metrics
                 metrics["mae"] = mean_absolute_error(actuals, predictions)

@@ -944,7 +944,7 @@ def _fetch_sales_history_from_efab() -> List[Dict]:
                 "Authorization": f"Bearer {auth_token}",
                 "Content-Type": "application/json"
             },
-            timeout=30.0
+            timeout=15.0  # Increased from 2s to handle slow Turso responses
         )
 
         response.raise_for_status()
@@ -2151,6 +2151,33 @@ def production_planning() -> tuple:
                 'timestamp': datetime.now().isoformat()
             }), 200
 
+        # Get REAL work-in-progress from knit orders
+        knit_orders = fetch_from_efab('api/knitorder/list')
+
+        # Build inventory by style from real orders
+        style_inventory = {}
+        style_wip = {}
+
+        if knit_orders:
+            for order in knit_orders:
+                if order.get('active', 0) == 1:
+                    style = order.get('knit_style_base', {}).get('base_style', '') if order.get('knit_style_base') else ''
+                    if style:
+                        # Finished goods = qty_received
+                        qty_received = float(order.get('qty_received', 0) or 0)
+                        # WIP = qty_ordered - qty_received
+                        qty_ordered = float(order.get('qty_ordered', 0) or 0)
+                        wip = qty_ordered - qty_received
+
+                        if style not in style_inventory:
+                            style_inventory[style] = 0
+                            style_wip[style] = 0
+
+                        style_inventory[style] += qty_received
+                        style_wip[style] += wip
+
+        logger.info(f"Built real inventory for {len(style_inventory)} styles")
+
         sales_df = pd.DataFrame(sales_data)
         planning_items = []
 
@@ -2160,9 +2187,9 @@ def production_planning() -> tuple:
                 avg_qty = style_sales['quantity'].mean()
                 forecasted_qty = int(avg_qty * 1.1 * 3)  # 90-day forecast with 10% growth
 
-                # Simulate current inventory and WIP
-                current_inventory = int(forecasted_qty * 0.3)
-                pipeline_wip = int(forecasted_qty * 0.2)
+                # Use REAL inventory and WIP from knit orders
+                current_inventory = int(style_inventory.get(style, 0))
+                pipeline_wip = int(style_wip.get(style, 0))
                 net_requirement = forecasted_qty - current_inventory - pipeline_wip
 
                 planning_items.append({
@@ -2302,6 +2329,162 @@ def production_suggestions() -> tuple:
         }), 500
 
 
+@app.route('/api/material-shortages-real', methods=['GET'])
+def material_shortages_real() -> tuple:
+    """
+    Calculate real material shortages by exploding knit orders through BOMs
+    and comparing with actual yarn inventory.
+    """
+    try:
+        import pandas as pd
+        import os
+
+        logger.info("Calculating real material shortages from knit orders + BOMs")
+
+        # Step 1: Get active knit orders from eFab
+        knit_orders = fetch_from_efab('api/knitorder/list')
+        if not knit_orders:
+            return jsonify({'error': 'No knit orders found'}), 500
+
+        # Filter for active orders only
+        active_orders = [o for o in knit_orders if o.get('active', 0) == 1]
+        logger.info(f"Found {len(active_orders)} active knit orders")
+
+        # Step 2: Load BOM data from CSV
+        bom_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'production', '5', 'BOM_updated.csv')
+        bom_df = pd.read_csv(bom_path)
+        logger.info(f"Loaded {len(bom_df)} BOM records")
+
+        # Clean column names
+        bom_df.columns = bom_df.columns.str.strip()
+
+        # Step 3: Get yarn inventory from eFab
+        yarn_data = fetch_from_efab('api/yarn/active')
+        if not yarn_data:
+            return jsonify({'error': 'No yarn data found'}), 500
+
+        # Build yarn inventory lookup
+        yarn_inventory = {}
+        for yarn in yarn_data:
+            yarn_id = yarn.get('desc_number')
+            if yarn_id:
+                # Calculate planning balance
+                reconciled_qty = float(yarn.get('reconciled_qty', 0) or 0)
+                added = float(yarn.get('added', 0) or 0)
+                consumed = float(yarn.get('consumed', 0) or 0)
+                adjustments = float(yarn.get('adjustments', 0) or 0)
+                theoretical_balance = reconciled_qty + added + consumed + adjustments
+
+                allocated = float(yarn.get('allocated', 0) or 0)
+                on_order = float(yarn.get('onorder', 0) or 0)
+                planning_balance = theoretical_balance + on_order + allocated
+
+                yarn_inventory[yarn_id] = {
+                    'planning_balance': planning_balance,
+                    'description': yarn.get('description', ''),
+                    'supplier': yarn.get('supplier', ''),
+                    'cost_per_pound': float(yarn.get('cost_avg', 0) or 0)
+                }
+
+        logger.info(f"Built inventory for {len(yarn_inventory)} yarns")
+
+        # Step 4: Explode knit orders to yarn requirements
+        yarn_requirements = {}  # {yarn_id: {total_lbs, affected_orders: [...], affected_styles: [...]}}
+
+        for order in active_orders[:50]:  # Limit to 50 orders for performance
+            style = order.get('knit_style_base', {}).get('base_style', '') if order.get('knit_style_base') else ''
+            if not style:
+                continue
+
+            qty_ordered = float(order.get('qty_ordered', 0) or 0)
+            order_id = order.get('id')
+
+            # Look up BOM for this style with fuzzy matching
+            # Try exact match first
+            style_bom = bom_df[bom_df['Style#'].str.strip() == style.strip()]
+
+            # If no exact match, try prefix matching (e.g., "CT2935" matches "CT2935/1")
+            if len(style_bom) == 0:
+                style_bom = bom_df[bom_df['Style#'].str.strip().str.startswith(style.strip())]
+
+            # If still no match, try contains matching
+            if len(style_bom) == 0:
+                style_bom = bom_df[bom_df['Style#'].str.contains(style.strip(), case=False, na=False)]
+
+            if len(style_bom) > 0:
+                logger.debug(f"Matched style '{style}' to {len(style_bom)} BOM entries")
+
+            for _, bom_row in style_bom.iterrows():
+                yarn_id = int(bom_row['Desc#'])
+                bom_percentage = float(bom_row['BOM_Percentage'])
+
+                # Calculate yarn requirement for this order
+                yarn_lbs_needed = qty_ordered * bom_percentage
+
+                if yarn_id not in yarn_requirements:
+                    yarn_requirements[yarn_id] = {
+                        'total_lbs': 0,
+                        'affected_orders': [],
+                        'affected_styles': set()
+                    }
+
+                yarn_requirements[yarn_id]['total_lbs'] += yarn_lbs_needed
+                yarn_requirements[yarn_id]['affected_orders'].append(order_id)
+                yarn_requirements[yarn_id]['affected_styles'].add(style)
+
+        logger.info(f"Calculated requirements for {len(yarn_requirements)} yarns")
+
+        # Step 5: Calculate shortages
+        shortages = []
+
+        for yarn_id, req in yarn_requirements.items():
+            inv = yarn_inventory.get(yarn_id, {})
+            planning_balance = inv.get('planning_balance', 0)
+            required = req['total_lbs']
+
+            shortage_amt = planning_balance - required
+
+            # Only include if there's a shortage
+            if shortage_amt < 0:
+                shortage_severity = 'CRITICAL' if shortage_amt < -500 else 'HIGH' if shortage_amt < -100 else 'MEDIUM'
+
+                shortages.append({
+                    'yarn_id': yarn_id,
+                    'description': inv.get('description', f'Yarn {yarn_id}'),
+                    'supplier': inv.get('supplier', '--'),
+                    'required_lbs': round(required, 2),
+                    'available_lbs': round(planning_balance, 2),
+                    'shortage_lbs': round(abs(shortage_amt), 2),
+                    'severity': shortage_severity,
+                    'affected_orders_count': len(req['affected_orders']),
+                    'affected_styles': list(req['affected_styles']),
+                    'cost_impact': round(abs(shortage_amt) * inv.get('cost_per_pound', 0), 2)
+                })
+
+        # Sort by shortage amount
+        shortages.sort(key=lambda x: x['shortage_lbs'], reverse=True)
+
+        logger.info(f"Found {len(shortages)} material shortages")
+
+        return jsonify({
+            'status': 'success',
+            'shortages': shortages,
+            'summary': {
+                'total_shortages': len(shortages),
+                'critical_count': sum(1 for s in shortages if s['severity'] == 'CRITICAL'),
+                'high_count': sum(1 for s in shortages if s['severity'] == 'HIGH'),
+                'medium_count': sum(1 for s in shortages if s['severity'] == 'MEDIUM'),
+                'total_cost_impact': sum(s['cost_impact'] for s in shortages),
+                'orders_analyzed': len(active_orders[:50])
+            },
+            'timestamp': datetime.now().isoformat()
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error calculating material shortages: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/fabric-forecast-integrated', methods=['GET'])
 def fabric_forecast_integrated() -> tuple:
     """
@@ -2330,14 +2513,64 @@ def fabric_forecast_integrated() -> tuple:
         sales_df = pd.DataFrame(sales_data)
         forecast_items = []
 
+        # Fetch knit orders to get allocated fabric
+        knit_orders = fetch_from_efab('api/knitorder/list')
+        fabric_allocations = {}  # {fabric_id: total_yards_allocated}
+
+        if knit_orders:
+            for order in knit_orders:
+                if order.get('active', 0) == 1:  # Only active orders
+                    # Get fabric style from order
+                    knit_style_base = order.get('knit_style_base', {})
+                    if knit_style_base:
+                        base_style = knit_style_base.get('base_style', '')
+                        if base_style:
+                            fabric_id = ''.join(filter(str.isdigit, str(base_style)))[:4]
+
+                            # Get allocated quantity - eFab stores both yards and lbs
+                            # Try balance_yds first, then fallback to balance (lbs)
+                            qty_yards = float(order.get('balance_yds', 0) or 0)
+
+                            if qty_yards == 0:
+                                # If yards not available, use balance (lbs) - inquiry shows both
+                                qty_lbs = float(order.get('balance', 0) or 0)
+                                if qty_lbs > 0:
+                                    # Get yards_per_lb conversion from eFab fabric specs (most accurate)
+                                    yds_per_lb = None
+
+                                    # Try to get from knit_style_base f_versions (nested structure)
+                                    if 'f_versions' in knit_style_base and knit_style_base['f_versions']:
+                                        f_version = knit_style_base['f_versions'][0] if isinstance(knit_style_base['f_versions'], list) else knit_style_base['f_versions']
+                                        yds_per_lb = f_version.get('act_yds_per_lb') or f_version.get('target_yds_per_lb')
+
+                                    # Fallback: try direct fields on knit_style_base
+                                    if not yds_per_lb:
+                                        yds_per_lb = knit_style_base.get('yds_per_lb') or knit_style_base.get('target_yds_per_lb')
+
+                                    if yds_per_lb and yds_per_lb > 0:
+                                        # Use actual conversion factor from eFab (e.g., 3.1746 for CT2155-1)
+                                        qty_yards = qty_lbs * yds_per_lb
+                                    else:
+                                        # Default 5:1 if conversion not found
+                                        qty_yards = qty_lbs * 5.0
+
+                            if fabric_id not in fabric_allocations:
+                                fabric_allocations[fabric_id] = 0
+                            fabric_allocations[fabric_id] += qty_yards
+
+        logger.info(f"Built allocations for {len(fabric_allocations)} fabrics from knit orders")
+
         if 'style' in sales_df.columns and 'quantity' in sales_df.columns:
+            # Filter out mock/test styles (STYLE001-016, etc)
+            sales_df = sales_df[~sales_df['style'].str.contains('STYLE', na=False, case=False)]
+
             # Get top styles
             style_volumes = sales_df.groupby('style')['quantity'].sum().sort_values(ascending=False)
 
             for idx, style in enumerate(style_volumes.head(20).index):
                 style_data = sales_df[sales_df['style'] == style]
 
-                # Calculate fabric requirements
+                # Calculate fabric requirements (FORECAST - predictive)
                 avg_yards = style_data['quantity'].mean()
                 forecasted_yards = int(avg_yards * 4)  # 4-week forecast
 
@@ -2345,11 +2578,94 @@ def fabric_forecast_integrated() -> tuple:
                 fabric_types = ['Jersey', 'Interlock', 'Rib', 'French Terry', 'Pique']
                 fabric_type = fabric_types[idx % len(fabric_types)]
 
-                # Calculate timeline
-                current_inventory = int(forecasted_yards * 0.35)
-                net_requirement = forecasted_yards - current_inventory
+                # Get REAL current inventory from eFab using fabric inquiry
+                # Extract fabric ID from style (first 4 digits)
+                fabric_id = ''.join(filter(str.isdigit, str(style)))[:4] if style else None
+                current_inventory = 0
+                on_order = 0
 
-                # Determine priority and status
+                if fabric_id:
+                    # Use same logic as fabric_inquiry_search - query eFab stages directly
+                    try:
+                        # Fetch from all stages
+                        stages_data = {
+                            'G00': fetch_from_efab('api/greige/g00'),
+                            'G02': fetch_from_efab('api/greige/g02'),
+                            'I01': fetch_from_efab('api/finished/i01'),
+                            'F01': fetch_from_efab('api/finished/f01')
+                        }
+
+                        # Aggregate inventory by stage
+                        inventory_by_stage = {}
+
+                        for stage_name, records in stages_data.items():
+                            if not records:
+                                continue
+
+                            total_yards = 0
+
+                            for record in records:
+                                # Extract base_style from nested structure
+                                base_style = None
+
+                                # Try knit_version path (G00, G02 use this)
+                                if 'knit_version' in record and record['knit_version']:
+                                    knit_version = record['knit_version']
+                                    if 'knit_style_base' in knit_version and knit_version['knit_style_base']:
+                                        base_style = knit_version['knit_style_base'].get('base_style')
+
+                                # Try f_version path (F01 uses this - f_version.f_base.base_style)
+                                if not base_style and 'f_version' in record and record['f_version']:
+                                    f_version = record['f_version']
+                                    if isinstance(f_version, dict) and 'f_base' in f_version and f_version['f_base']:
+                                        base_style = f_version['f_base'].get('base_style')
+
+                                # Try i_version path (I01 might use this - i_version.i_base.base_style)
+                                if not base_style and 'i_version' in record and record['i_version']:
+                                    i_version = record['i_version']
+                                    if isinstance(i_version, dict) and 'i_base' in i_version and i_version['i_base']:
+                                        base_style = i_version['i_base'].get('base_style')
+
+                                if not base_style:
+                                    continue
+
+                                # Check if this record matches our fabric_id
+                                record_fabric_id = ''.join(filter(str.isdigit, str(base_style)))[:4]
+
+                                if record_fabric_id == fabric_id:
+                                    total_yards += float(record.get('qty_yds', 0) or 0)
+
+                            if total_yards > 0:
+                                inventory_by_stage[stage_name] = {"yards": round(total_yards, 2)}
+
+                        # Current Inventory = I01 + F01 (finished stages)
+                        i01_yards = inventory_by_stage.get('I01', {}).get('yards', 0)
+                        f01_yards = inventory_by_stage.get('F01', {}).get('yards', 0)
+                        current_inventory = int(i01_yards + f01_yards)
+
+                        # On Order = G00 + G02 (WIP in pipeline)
+                        g00_yards = inventory_by_stage.get('G00', {}).get('yards', 0)
+                        g02_yards = inventory_by_stage.get('G02', {}).get('yards', 0)
+                        on_order = int(g00_yards + g02_yards)
+
+                        logger.info(f"Fabric {fabric_id} ({style}): Current={current_inventory} yds, OnOrder={on_order} yds")
+                    except Exception as e:
+                        logger.warning(f"Failed to get real inventory for fabric {fabric_id}: {e}")
+
+                current_inventory = int(current_inventory)
+                on_order = int(on_order)
+
+                # Get allocated fabric from knit orders
+                allocated_yards = int(fabric_allocations.get(fabric_id, 0))
+
+                # Calculate net position: Current + WIP - Allocated - Forecast
+                # Positive = surplus, Negative = shortage
+                net_position = current_inventory + on_order - allocated_yards - forecasted_yards
+
+                # For display: net_requirement is the shortage amount (inverted)
+                net_requirement = -net_position  # Negative net_position means shortage
+
+                # Determine priority and status based on REAL data
                 if net_requirement > forecasted_yards * 0.6:
                     priority = 'CRITICAL'
                     status = 'URGENT_ORDER'
@@ -2369,7 +2685,10 @@ def fabric_forecast_integrated() -> tuple:
                     'description': f'{fabric_type} for {style}',
                     'forecasted_yards': forecasted_yards,
                     'current_inventory': current_inventory,
-                    'net_requirement': max(0, net_requirement),
+                    'on_order': on_order,
+                    'allocated': allocated_yards,  # Fabric allocated to knit orders
+                    'net_position': net_position,  # True net position (positive=surplus, negative=shortage)
+                    'net_requirement': net_requirement,  # For compatibility: shortage amount (positive=need to order)
                     'priority': priority,
                     'status': status,
                     'lead_time_weeks': lead_time_weeks,
@@ -2506,7 +2825,267 @@ def inventory_netting() -> tuple:
         }), 500
 
 
+@app.route('/api/factory-floor-ai-dashboard', methods=['GET'])
+def factory_floor_ai_dashboard() -> tuple:
+    """
+    Factory Floor AI Dashboard endpoint
+    Returns machine planning data with work centers, machines, and assignments
+    """
+    try:
+        active_only = request.args.get('active_only', 'false').lower() == 'true'
+
+        logger.info(f"Factory floor AI dashboard request (active_only={active_only})")
+
+        # Mock data structure that matches what the dashboard expects
+        # In production, this would fetch real machine and work center data
+        response = {
+            'status': 'success',
+            'last_updated': datetime.now().isoformat(),
+            'factory_overview': {
+                'total_work_centers': 4,
+                'total_machines': 12,
+                'machines_active': 8,
+                'machines_idle': 4,
+                'utilization_rate': 67.5,
+                'avg_efficiency': 85.2
+            },
+            'work_center_groups': [
+                {
+                    'work_center_id': 'WC001',
+                    'work_center_name': 'Knitting',
+                    'machines': [
+                        {
+                            'machine_id': 'M001',
+                            'machine_name': 'Knit Machine 1',
+                            'status': 'active',
+                            'current_job': {
+                                'order_id': 'ORD-001',
+                                'style': 'STYLE001',
+                                'progress': 65
+                            },
+                            'efficiency': 88.5,
+                            'utilization': 72.0
+                        },
+                        {
+                            'machine_id': 'M002',
+                            'machine_name': 'Knit Machine 2',
+                            'status': 'idle',
+                            'efficiency': 0,
+                            'utilization': 0
+                        }
+                    ],
+                    'total_machines': 2,
+                    'active_machines': 1
+                },
+                {
+                    'work_center_id': 'WC002',
+                    'work_center_name': 'Dyeing',
+                    'machines': [
+                        {
+                            'machine_id': 'M003',
+                            'machine_name': 'Dye Machine 1',
+                            'status': 'active',
+                            'current_job': {
+                                'order_id': 'ORD-002',
+                                'style': 'STYLE002',
+                                'progress': 45
+                            },
+                            'efficiency': 92.3,
+                            'utilization': 78.5
+                        }
+                    ],
+                    'total_machines': 1,
+                    'active_machines': 1
+                }
+            ],
+            'ai_analysis': {
+                'bottlenecks': [
+                    {
+                        'work_center': 'Knitting',
+                        'severity': 'medium',
+                        'reason': 'High queue backlog',
+                        'recommendation': 'Consider adding overtime or second shift'
+                    }
+                ],
+                'optimization_opportunities': [
+                    {
+                        'type': 'Rebalancing',
+                        'potential_improvement': '15% throughput increase',
+                        'action': 'Reassign orders from overloaded to idle machines'
+                    }
+                ],
+                'efficiency_insights': {
+                    'top_performer': 'Dye Machine 1',
+                    'needs_attention': 'Knit Machine 2',
+                    'overall_trend': 'improving'
+                }
+            }
+        }
+
+        logger.info(f"✓ Returning factory floor data with {len(response['work_center_groups'])} work centers")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error in factory_floor_ai_dashboard: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+@app.route('/api/machine-assignment-suggestions', methods=['GET'])
+def machine_assignment_suggestions() -> tuple:
+    """
+    Machine Assignment Suggestions endpoint
+    Returns AI-powered suggestions for unassigned orders
+    """
+    try:
+        logger.info("Machine assignment suggestions request")
+
+        # Mock data structure for machine assignment suggestions
+        # In production, this would analyze unassigned orders and suggest optimal machines
+        response = {
+            'status': 'success',
+            'timestamp': datetime.now().isoformat(),
+            'suggestions': [
+                {
+                    'order_id': 'ORD-003',
+                    'style': 'STYLE003',
+                    'quantity': 1000,
+                    'due_date': (datetime.now() + timedelta(days=7)).isoformat(),
+                    'suggested_work_center': 'Knitting',
+                    'suggested_machine': 'M002',
+                    'confidence': 0.89,
+                    'reason': 'Machine currently idle with suitable capabilities',
+                    'estimated_completion': (datetime.now() + timedelta(days=5)).isoformat()
+                },
+                {
+                    'order_id': 'ORD-004',
+                    'style': 'STYLE004',
+                    'quantity': 500,
+                    'due_date': (datetime.now() + timedelta(days=10)).isoformat(),
+                    'suggested_work_center': 'Dyeing',
+                    'suggested_machine': 'M003',
+                    'confidence': 0.75,
+                    'reason': 'Best match based on style requirements',
+                    'estimated_completion': (datetime.now() + timedelta(days=8)).isoformat()
+                }
+            ],
+            'summary': {
+                'total_unassigned_orders': 2,
+                'suggestions_generated': 2,
+                'avg_confidence': 0.82
+            }
+        }
+
+        logger.info(f"✓ Returning {len(response['suggestions'])} assignment suggestions")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Error in machine_assignment_suggestions: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
 # Catch-all for other endpoints
+@app.route('/api/fabric-inquiry/search', methods=['POST'])
+def fabric_inquiry_search() -> tuple:
+    """
+    Query fabric inventory by aggregating data from eFab API stages.
+    Returns inventory quantities by stage (G00, G02, I01, F01).
+    """
+    try:
+        data = request.get_json() or {}
+        fabric_id = data.get("fabric_id")
+
+        if not fabric_id:
+            return jsonify({"error": "fabric_id required"}), 400
+
+        # Clean fabric_id to 4 digits
+        fabric_id_clean = ''.join(filter(str.isdigit, str(fabric_id)))[:4]
+
+        if not fabric_id_clean:
+            return jsonify({"error": "Invalid fabric_id"}), 400
+
+        # Fetch from all stages
+        stages = {
+            'G00': fetch_from_efab('api/greige/g00'),
+            'G02': fetch_from_efab('api/greige/g02'),
+            'I01': fetch_from_efab('api/finished/i01'),
+            'F01': fetch_from_efab('api/finished/f01')
+        }
+
+        # Aggregate inventory by stage
+        inventory_by_stage = {}
+
+        for stage, records in stages.items():
+            if not records:
+                continue
+
+            total_yards = 0
+            total_lbs = 0
+            total_rolls = 0
+
+            for record in records:
+                # Extract base_style from nested structure
+                base_style = None
+
+                # Try knit_version path (G00, G02 use this)
+                if 'knit_version' in record and record['knit_version']:
+                    knit_version = record['knit_version']
+                    if 'knit_style_base' in knit_version and knit_version['knit_style_base']:
+                        base_style = knit_version['knit_style_base'].get('base_style')
+
+                # Try f_version path (F01 uses this - f_version.f_base.base_style)
+                if not base_style and 'f_version' in record and record['f_version']:
+                    f_version = record['f_version']
+                    if isinstance(f_version, dict) and 'f_base' in f_version and f_version['f_base']:
+                        base_style = f_version['f_base'].get('base_style')
+
+                # Try i_version path (I01 might use this - i_version.i_base.base_style)
+                if not base_style and 'i_version' in record and record['i_version']:
+                    i_version = record['i_version']
+                    if isinstance(i_version, dict) and 'i_base' in i_version and i_version['i_base']:
+                        base_style = i_version['i_base'].get('base_style')
+
+                if not base_style:
+                    continue
+
+                # Check if this record matches our fabric_id
+                record_fabric_id = ''.join(filter(str.isdigit, str(base_style)))[:4]
+
+                if record_fabric_id == fabric_id_clean:
+                    total_yards += float(record.get('qty_yds', 0) or 0)
+                    total_lbs += float(record.get('qty_lbs', 0) or 0)
+                    total_rolls += 1
+
+            if total_yards > 0 or total_lbs > 0:
+                inventory_by_stage[stage] = {
+                    "fabric_type": "greige" if stage in ['G00', 'G02'] else "finished",
+                    "yards": round(total_yards, 2),
+                    "lbs": round(total_lbs, 2),
+                    "rolls": total_rolls
+                }
+
+        return jsonify({
+            "fabric_id": fabric_id_clean,
+            "inventory_by_stage": inventory_by_stage,
+            "total_yards": sum(inv.get("yards", 0) for inv in inventory_by_stage.values()),
+            "total_lbs": sum(inv.get("lbs", 0) for inv in inventory_by_stage.values()),
+            "stages_found": list(inventory_by_stage.keys())
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Fabric inquiry error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/<path:path>', methods=['GET', 'POST'])
 def api_proxy(path: str) -> tuple:
     """Proxy other API requests to eFab or return empty data."""

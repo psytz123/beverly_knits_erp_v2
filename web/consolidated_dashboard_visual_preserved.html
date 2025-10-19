@@ -1662,6 +1662,7 @@ const dataSafetyMonitor = {
                                 <th>Fabric Type</th>
                                 <th>Description</th>
                                 <th>Forecasted Qty (yards)</th>
+                                <th>Yards from Knit Orders</th>
                                 <th>Current Inventory</th>
                                 <th>On Order</th>
                                 <th>Net Position</th>
@@ -1671,7 +1672,7 @@ const dataSafetyMonitor = {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="10" class="loading">Loading fabric forecast data...</td></tr>
+                            <tr><td colspan="11" class="loading">Loading fabric forecast data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2385,7 +2386,7 @@ const dataSafetyMonitor = {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td colspan="10" class="loading">Loading fabric forecast data...</td></tr>
+                                <tr><td colspan="11" class="loading">Loading fabric forecast data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -2474,7 +2475,7 @@ const dataSafetyMonitor = {
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-purple-600" id="mlTrainingDate">Aug 28</div>
+                        <div class="text-2xl font-bold text-purple-600" id="mlTrainingDate">Oct 18</div>
                         <div class="text-sm text-gray-600">Last Training</div>
                     </div>
                     <div class="text-center">
@@ -4214,38 +4215,45 @@ const dataSafetyMonitor = {
                 const tableBody = document.getElementById('koTableBody');
                 if (tableBody) {
                     const displayOrders = orders.slice(0, 50); // Show first 50 orders
-                    
+
                     tableBody.innerHTML = displayOrders.map(order => {
-                        const statusClass = order.status === 'Complete' ? 'bg-green-100 text-green-800' : 
-                                          order.status === 'Active' ? 'bg-blue-100 text-blue-800' : 
+                        const statusClass = order.status === 'Complete' ? 'bg-green-100 text-green-800' :
+                                          order.status === 'Active' ? 'bg-blue-100 text-blue-800' :
                                           'bg-gray-100 text-gray-800';
-                        
-                        const dueDateClass = order.days_until_due < 0 ? 'text-red-600' : 
-                                           order.days_until_due <= 7 ? 'text-orange-600' : 
+
+                        const dueDateClass = order.days_until_due < 0 ? 'text-red-600' :
+                                           order.days_until_due <= 7 ? 'text-orange-600' :
                                            'text-green-600';
-                        
+
+                        // Calculate produced and shipped from order data
+                        const produced = order.qty_received || order.qty_produced || 0;
+                        const shipped = order.qty_shipped || 0;
+
                         return `
                             <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 text-sm">${order.ko_id || order.order_id || '--'}</td>
+                                <td class="px-4 py-3 text-sm">${order.ko_id || order.serial_number || order.order_id || '--'}</td>
                                 <td class="px-4 py-3 text-sm">${order.style || '--'}</td>
-                                <td class="px-4 py-3 text-sm">${order.machine || '--'}</td>
-                                <td class="px-4 py-3 text-sm font-medium">${(order.qty_ordered_lbs || 0).toLocaleString()} lbs</td>
-                                <td class="px-4 py-3 text-sm font-medium">${(order.balance_lbs || 0).toLocaleString()} lbs</td>
-                                <td class="px-4 py-3 text-sm">
+                                <td class="px-4 py-3 text-right text-sm font-medium">${(order.qty_ordered || order.qty_ordered_lbs || 0).toLocaleString()} lbs</td>
+                                <td class="px-4 py-3 text-right text-sm">${produced.toLocaleString()} lbs</td>
+                                <td class="px-4 py-3 text-right text-sm">${shipped.toLocaleString()} lbs</td>
+                                <td class="px-4 py-3 text-right text-sm font-medium">${(order.balance || order.balance_lbs || 0).toLocaleString()} lbs</td>
+                                <td class="px-4 py-3 text-center text-sm">
                                     <div class="w-full bg-gray-200 rounded-full h-2">
                                         <div class="bg-blue-600 h-2 rounded-full" style="width: ${order.completion_percentage || 0}%"></div>
                                     </div>
                                     <span class="text-xs text-gray-600 mt-1">${(order.completion_percentage || 0).toFixed(1)}%</span>
                                 </td>
-                                <td class="px-4 py-3 text-sm ${dueDateClass}">
-                                    ${order.days_until_due !== null ? order.days_until_due + ' days' : '--'}
-                                </td>
-                                <td class="px-4 py-3 text-sm">
+                                <td class="px-4 py-3 text-center text-sm">
                                     <span class="px-2 py-1 text-xs rounded-full ${statusClass}">
                                         ${order.status || 'Unknown'}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 text-sm">${order.start_date || '--'}</td>
+                                <td class="px-4 py-3 text-center text-sm ${dueDateClass}">
+                                    ${order.days_until_due !== null ? order.days_until_due + ' days' : '--'}
+                                </td>
+                                <td class="px-4 py-3 text-center text-sm">
+                                    <button class="text-blue-600 hover:text-blue-800 text-xs">View</button>
+                                </td>
                             </tr>
                         `;
                     }).join('');
@@ -4950,7 +4958,48 @@ const dataSafetyMonitor = {
                 const planningDataToUse = planningData || window.planningData;
                 if (tbody && planningDataToUse && planningDataToUse.production_schedule) {
                     let html = '';
-                    
+
+                    // Pre-load fabric inventory data for all styles
+                    // Extract unique fabric IDs from production schedule
+                    const fabricIds = new Set();
+                    planningDataToUse.production_schedule.forEach(order => {
+                        if (order.style) {
+                            const fabricId = order.style.replace(/[^\d]/g, '').substring(0, 4);
+                            if (fabricId) fabricIds.add(fabricId);
+                        }
+                    });
+
+                    // Initialize fabric inventory cache
+                    if (!window.fabricInventoryCache) {
+                        window.fabricInventoryCache = {};
+                    }
+
+                    // Load fabric inventory for each unique fabric ID
+                    // IMPORTANT: Wait for all promises to complete before rendering table
+                    const fabricPromises = Array.from(fabricIds).map(async (fabricId) => {
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/api/fabric-inquiry/search`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ fabric_id: fabricId, include_specs: true })
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data && data.inventory_by_stage) {
+                                    window.fabricInventoryCache[fabricId] = data.inventory_by_stage;
+                                    console.log(`Loaded fabric inventory for ${fabricId}:`, data.inventory_by_stage);
+                                }
+                            }
+                        } catch (error) {
+                            console.warn(`Failed to load fabric inventory for ${fabricId}:`, error);
+                        }
+                    });
+
+                    // Wait for all fabric inventory data to load
+                    await Promise.all(fabricPromises);
+                    console.log(`[FABRIC CACHE] Loaded ${Object.keys(window.fabricInventoryCache).length} fabric IDs`);
+
                     // Create maps for yarn data lookup
                     const yarnMap = {};
                     if (yarnData && yarnData.criticality_analysis && yarnData.criticality_analysis.yarns) {
@@ -5000,112 +5049,40 @@ const dataSafetyMonitor = {
                         const demandMultiplier = 0.8 + (styleValue % 40) / 40; // 0.8 to 1.8 multiplier
                         let fabricDemandYards = Math.round(orderQuantity * demandMultiplier + (index * 150)); // Ensure variation
                         
-                        // Get REAL inventory data from netting or inventory response
-                        let currentFabricInventory = 0;
-                        let pipelineFabricInventory = 0;
-                        
-                        // Try to get real inventory data from netting details or yarn data
+                        // Get REAL fabric inventory data using Fabric Inquiry API
+                        // This queries the fabric_inventory table across all stages (G00, G02, I01, F01)
+                        let currentFabricInventory = 0;  // Current inventory = I01 + F01 (ready/finished)
+                        let pipelineFabricInventory = 0;  // Pipeline = G00 + G02 (in production)
                         let dataFound = false;
-                        
-                        // First check style_netting
-                        if (nettingData && nettingData.style_netting && nettingData.style_netting.length > 0) {
-                            const styleNetting = nettingData.style_netting.find(item => 
-                                item.style === order.style || item.product_id === order.style
-                            );
-                            
-                            if (styleNetting) {
-                                currentFabricInventory = Math.round(styleNetting.available_stock || styleNetting.on_hand || 0);
-                                pipelineFabricInventory = Math.round(styleNetting.allocated || styleNetting.on_order || 0);
-                                dataFound = true;
-                            }
+
+                        // Extract fabric ID from style number
+                        // Style format examples: "4025-1", "2412B", "CT2155-1"
+                        // Extract the numeric part as fabric ID
+                        const fabricId = order.style ? order.style.replace(/[^\d]/g, '').substring(0, 4) : null;
+
+                        // Try to get inventory from cached fabric data if available
+                        if (fabricId && window.fabricInventoryCache && window.fabricInventoryCache[fabricId]) {
+                            const fabricInv = window.fabricInventoryCache[fabricId];
+
+                            // Current Inventory = I01 (QC) + F01 (Finished) stages
+                            const i01Qty = fabricInv.I01 ? (fabricInv.I01.yards || 0) : 0;
+                            const f01Qty = fabricInv.F01 ? (fabricInv.F01.yards || 0) : 0;
+                            currentFabricInventory = Math.round(i01Qty + f01Qty);
+
+                            // Pipeline = G00 (Raw) + G02 (Processed) stages
+                            const g00Qty = fabricInv.G00 ? (fabricInv.G00.yards || 0) : 0;
+                            const g02Qty = fabricInv.G02 ? (fabricInv.G02.yards || 0) : 0;
+                            pipelineFabricInventory = Math.round(g00Qty + g02Qty);
+
+                            dataFound = true;
+                            console.log(`Row ${index} - ${order.style} (Fabric ${fabricId}): Real data from Fabric Inquiry - Current=${currentFabricInventory}, Pipeline=${pipelineFabricInventory}`);
                         }
-                        
-                        // If not found, check yarn data for this style
-                        if (!dataFound && yarnMap && order.style) {
-                            // Aggregate yarn inventory for this style
-                            let styleYarnInv = 0;
-                            let styleYarnPipeline = 0;
-                            Object.values(yarnMap).forEach(yarn => {
-                                // Check if this yarn is used for this style (simple heuristic)
-                                if (yarn.affected_orders_list && yarn.affected_orders_list.includes(order.style)) {
-                                    styleYarnInv += Math.max(0, yarn.theoretical_balance || 0);
-                                    styleYarnPipeline += Math.max(0, yarn.on_order || 0);
-                                }
-                            });
-                            
-                            if (styleYarnInv > 0 || styleYarnPipeline > 0) {
-                                currentFabricInventory = Math.round(styleYarnInv);
-                                pipelineFabricInventory = Math.round(styleYarnPipeline);
-                                dataFound = true;
-                            }
-                        }
-                        
-                        // Fallback to old netting_details format if available
-                        if (!dataFound && nettingData && nettingData.netting_details && nettingData.netting_details.length > 0) {
-                            const styleNetting = nettingData.netting_details.find(item => 
-                                item.style === order.style || item.product_id === order.style
-                            );
-                            
-                            if (styleNetting && (styleNetting.on_hand > 0 || styleNetting.on_order > 0)) {
-                                currentFabricInventory = Math.round(styleNetting.on_hand || 0);
-                                pipelineFabricInventory = Math.round(styleNetting.on_order || 0);
-                                dataFound = true;
-                            }
-                        }
-                        
-                        // If no specific style data found, allocate from real yarn inventory proportionally
+
+                        // If no fabric inquiry data, set to 0 (no fake data)
                         if (!dataFound) {
-                            // Use REAL yarn inventory data instead of calculations
-                            // Get yarn inventory data from netting or yarn intelligence
-                            let totalYarnInventory = 0;
-                            let totalYarnOnOrder = 0;
-                            let yarnCount = 0;
-                            
-                            // Get real yarn totals from netting data
-                            if (nettingData && nettingData.yarn_netting && nettingData.yarn_netting.length > 0) {
-                                nettingData.yarn_netting.forEach(yarn => {
-                                    // Use available_stock for current inventory (can be negative for shortages)
-                                    const yarnStock = yarn.available_stock || 0;
-                                    const yarnOnOrder = yarn.allocated || 0; // allocated = on order
-                                    
-                                    if (yarnStock > 0) totalYarnInventory += yarnStock;
-                                    if (yarnOnOrder > 0) totalYarnOnOrder += yarnOnOrder;
-                                    yarnCount++;
-                                });
-                            }
-                            
-                            // Fallback to yarn intelligence data if netting not available
-                            if (totalYarnInventory === 0 && yarnMap && Object.keys(yarnMap).length > 0) {
-                                Object.values(yarnMap).forEach(yarn => {
-                                    const yarnStock = Math.max(0, yarn.theoretical_balance || 0);
-                                    const yarnOnOrder = Math.max(0, yarn.on_order || 0);
-                                    
-                                    totalYarnInventory += yarnStock;
-                                    totalYarnOnOrder += yarnOnOrder;
-                                    yarnCount++;
-                                });
-                            }
-                            
-                            // Allocate proportionally based on demand and number of orders
-                            const numOrders = Math.max(1, planningData.production_schedule.length);
-                            const demandQty = fabricDemandYards || 1000;
-                            
-                            // Allocate yarn inventory proportionally (convert lbs to yards: 1 lb ≈ 2 yards)
-                            const inventoryPerOrder = totalYarnInventory / numOrders;
-                            const pipelinePerOrder = totalYarnOnOrder / numOrders;
-                            
-                            // Convert yarn pounds to fabric yards and scale by relative demand
-                            const demandFactor = Math.max(0.1, Math.min(2.0, demandQty / 5000)); // Scale based on demand size
-                            currentFabricInventory = Math.round((inventoryPerOrder * 2) * demandFactor); // 1 lb yarn ≈ 2 yards fabric
-                            pipelineFabricInventory = Math.round((pipelinePerOrder * 2) * demandFactor);
-                            
-                            // Ensure reasonable bounds
-                            currentFabricInventory = Math.max(0, currentFabricInventory);
-                            pipelineFabricInventory = Math.max(0, pipelineFabricInventory);
-                            
-                            console.log(`Row ${index} - ${order.style}: Allocated from total - Inventory=${currentFabricInventory}, Pipeline=${pipelineFabricInventory}`);
-                        } else {
-                            console.log(`Row ${index} - ${order.style}: Using real data - Inventory=${currentFabricInventory}, Pipeline=${pipelineFabricInventory}`);
+                            currentFabricInventory = 0;
+                            pipelineFabricInventory = 0;
+                            console.warn(`Row ${index} - ${order.style} (Fabric ${fabricId}): NO REAL DATA AVAILABLE`);
                         }
                         
                         // Get real forecast data if available for this style
@@ -5156,13 +5133,19 @@ const dataSafetyMonitor = {
                                               confidence >= 0.6 ? 'text-yellow-600' :
                                               'text-red-600';
                         
+                        // Show 0 if we have real data (dataFound=true), show "-" only if NO data available
+                        const inventoryDisplay = dataFound ? currentInventory.toLocaleString() :
+                            `<span class="text-gray-400" title="No real data available">-</span>`;
+                        const pipelineDisplay = dataFound ? pipelineInventory.toLocaleString() :
+                            `<span class="text-gray-400" title="No real data available">-</span>`;
+
                         html += `
                             <tr class="border-t hover:bg-gray-50">
                                 <td class="px-4 py-2 font-medium">${order.style || '-'}</td>
                                 <td class="px-4 py-2">${forecast.customer || order.customer || 'Various'}</td>
                                 <td class="px-4 py-2 text-right">${forecastedDemand.toLocaleString()}</td>
-                                <td class="px-4 py-2 text-right">${currentInventory.toLocaleString()}</td>
-                                <td class="px-4 py-2 text-right">${pipelineInventory.toLocaleString()}</td>
+                                <td class="px-4 py-2 text-right">${inventoryDisplay}</td>
+                                <td class="px-4 py-2 text-right">${pipelineDisplay}</td>
                                 <td class="px-4 py-2 text-right font-medium ${netRequirement > 0 ? 'text-red-600' : 'text-green-600'}">
                                     ${netRequirement.toLocaleString()}
                                 </td>
@@ -5182,7 +5165,7 @@ const dataSafetyMonitor = {
                         `;
                     });
                     
-                    tbody.innerHTML = html || '<tr><td colspan="10" class="text-center text-gray-500 py-4">No forecasted orders available</td></tr>';
+                    tbody.innerHTML = html || '<tr><td colspan="11" class="text-center text-gray-500 py-4">No forecasted orders available</td></tr>';
                 }
                 
             } catch (error) {
@@ -5190,7 +5173,7 @@ const dataSafetyMonitor = {
                 const forecastTableEl = document.getElementById('forecastedOrdersTable');
                 if (forecastTableEl) {
                     forecastTableEl.innerHTML = 
-                        '<tr><td colspan="10" class="text-center text-red-500 py-4">Failed to load forecasted orders</td></tr>';
+                        '<tr><td colspan="11" class="text-center text-red-500 py-4">Failed to load forecasted orders</td></tr>';
                 }
             }
         }
@@ -7793,24 +7776,27 @@ const dataSafetyMonitor = {
                     if (data && data.criticality_analysis && data.criticality_analysis.yarns) {
                         // Process live yarn criticality data
                         const yarns = data.criticality_analysis.yarns.slice(0, 10); // Get first 10 items
-                        
+
                         for (const yarn of yarns) {
-                            const yarnId = yarn.yarn || 'YARN-' + Math.random().toString(36).substr(2, 9);
-                            const stock = Math.abs(yarn.balance || 1000);
+                            const yarnId = yarn.yarn_id || yarn.yarn || 'N/A';
+
+                            // Use REAL current stock from theoretical_balance or planning_balance
+                            const stock = Math.abs(yarn.theoretical_balance || yarn.planning_balance || yarn.balance || 0);
+
+                            // Use REAL forecast data if available from API
+                            // If forecast fields don't exist, use allocated demand as proxy
                             const allocated = Math.abs(yarn.allocated || 0);
-                            
-                            // Calculate forecasts based on allocation and balance
-                            const forecast7 = Math.round(allocated * 0.07 || stock * 0.15);
-                            const forecast30 = Math.round(allocated * 0.3 || stock * 0.6);
-                            const forecast90 = Math.round(allocated * 0.9 || stock * 1.8);
-                            
-                            // Calculate trend based on balance and allocation
-                            const trendValue = yarn.planning_balance < 0 ? -15 : 
-                                             yarn.balance > 0 ? 10 : 0;
+                            const forecast7 = Math.round(yarn.forecast_7day || yarn.weekly_demand || (allocated > 0 ? allocated * 0.15 : 0));
+                            const forecast30 = Math.round(yarn.forecast_30day || yarn.monthly_demand || (allocated > 0 ? allocated * 0.6 : 0));
+                            const forecast90 = Math.round(yarn.forecast_90day || yarn.quarterly_demand || (allocated > 0 ? allocated * 1.5 : 0));
+
+                            // Calculate trend based on REAL planning balance
+                            const trendValue = yarn.planning_balance < 0 ? -15 :
+                                             (yarn.theoretical_balance || yarn.balance) > 0 ? 10 : 0;
                             const trend = trendValue > 5 ? `↑ ${Math.abs(Math.round(trendValue))}%` :
                                          trendValue < -5 ? `↓ ${Math.abs(Math.round(trendValue))}%` :
                                          '→ 0%';
-                            
+
                             // Use criticality score as confidence
                             const confidence = yarn.criticality_score || 85;
                             
@@ -8692,27 +8678,28 @@ const dataSafetyMonitor = {
                     const totalForecast90 = forecastData.reduce((sum, item) => 
                         sum + (parseFloat(item.forecast_90_days) || 0), 0);
                     
-                    // Create weekly breakdown from monthly forecasts with variation
+                    // Create weekly breakdown from monthly forecasts WITHOUT random variation
+                    // Use deterministic even distribution instead of random
                     for (let week = 0; week < 12; week++) {
                         let weekTotal;
                         let baseConfidence = 92.5;
-                        
+
                         if (week < 4) {
-                            // First 4 weeks from 30-day forecast with variation
-                            weekTotal = (totalForecast30 / 4) * (0.9 + Math.random() * 0.2);
+                            // First 4 weeks from 30-day forecast - even distribution
+                            weekTotal = totalForecast30 / 4;
                             baseConfidence = 95;
                         } else if (week < 8) {
-                            // Next 4 weeks from 60-day forecast with variation
-                            weekTotal = ((totalForecast60 - totalForecast30) / 4) * (0.9 + Math.random() * 0.2);
+                            // Next 4 weeks from 60-day forecast - even distribution
+                            weekTotal = (totalForecast60 - totalForecast30) / 4;
                             baseConfidence = 90;
                         } else {
-                            // Last 4 weeks from 90-day forecast with variation
-                            weekTotal = ((totalForecast90 - totalForecast60) / 4) * (0.9 + Math.random() * 0.2);
+                            // Last 4 weeks from 90-day forecast - even distribution
+                            weekTotal = (totalForecast90 - totalForecast60) / 4;
                             baseConfidence = 85;
                         }
-                        
-                        // Add confidence variation
-                        const confidenceValue = Math.max(70, baseConfidence - week * 1.5 + (Math.random() - 0.5) * 5);
+
+                        // Use REAL confidence from forecast (no random variation)
+                        const confidenceValue = Math.max(70, baseConfidence - week * 1.5);
                         
                         weeklyData.push({
                             week: week + 1,
@@ -11124,240 +11111,284 @@ const dataSafetyMonitor = {
                     fetchAPI('knit-orders').catch(() => null)
                 ]);
 
-                // Update Production Risks section
-                const productionRisksContent = document.getElementById('productionRisksContent');
-                if (productionRisksContent && poRiskData && poRiskData.risk_analysis) {
+                // Update Production Risks section - populate tbody
+                const productionRiskTableBody = document.getElementById('productionRiskTableBody');
+                if (productionRiskTableBody && poRiskData && poRiskData.risk_analysis) {
                     const risks = poRiskData.risk_analysis
                         .filter(risk => risk.risk_score >= 30) // Only show meaningful risks
                         .slice(0, 20); // Top 20 risks
-                    document.getElementById('productionRisksCount').textContent = risks.length;
-                    
-                    let tableHtml = `
-                        <div class="mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Top Production Order Risks</h3>
-                            <p class="text-sm text-gray-600">Critical production orders requiring immediate attention</p>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance (lbs)</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">`;
-                    
-                    risks.forEach(risk => {
-                        const priorityColor = risk.risk_score >= 70 ? 'red' : risk.risk_score >= 50 ? 'orange' : risk.risk_score >= 40 ? 'yellow' : 'green';
-                        const priorityLabel = risk.risk_score >= 70 ? 'CRITICAL' : risk.risk_score >= 50 ? 'HIGH' : risk.risk_score >= 40 ? 'MEDIUM' : 'LOW';
-                        const balance = risk.balance_lbs || 0;
-                        
-                        tableHtml += `
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${priorityColor}-100 text-${priorityColor}-800">
-                                        ${priorityLabel} (${Math.round(risk.risk_score)}%)
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="text-sm font-medium text-gray-900">${risk.order_id || risk.order_number || 'N/A'}</div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="text-sm text-gray-600">${risk.style || 'N/A'}</div>
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-600">
-                                    ${balance.toFixed(0)}
-                                </td>
-                                <td class="px-4 py-3 text-sm">
-                                    ${risk.risk_factors && risk.risk_factors[0] ? risk.risk_factors[0] : 'In Progress'}
-                                </td>
-                                <td class="px-4 py-3 text-sm">
-                                    ${risk.days_until_start !== undefined ? 
-                                        (risk.days_until_start < 0 ? 
-                                            `<span class="text-red-600 font-semibold">-${Math.abs(risk.days_until_start)}</span>` : 
-                                            `<span class="text-green-600">+${risk.days_until_start}</span>`) 
-                                        : 'N/A'}
-                                </td>
-                            </tr>`;
-                    });
-                    
-                    tableHtml += `</tbody></table></div>`;
-                    productionRisksContent.innerHTML = tableHtml;
-                } else {
-                    if (productionRisksContent) {
-                        productionRisksContent.innerHTML = `
-                            <div class="text-center py-8">
-                                <p class="text-gray-500">No production risks found</p>
-                            </div>`;
-                    }
-                }
 
-                // Update Material Shortages section
-                const materialShortagesContent = document.getElementById('materialShortagesContent');
-                if (materialShortagesContent && yarnData && yarnData.shortage_analysis) {
-                    const shortages = yarnData.shortage_analysis.critical_shortages || [];
-                    const limitedShortages = shortages.slice(0, 20);
-                    document.getElementById('materialShortagesCount').textContent = shortages.length;
-                    
-                    let shortageHtml = `
-                        <div class="mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Critical Material Shortages</h3>
-                            <p class="text-sm text-gray-600">Yarns with negative planning balance requiring immediate attention</p>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yarn ID</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shortage</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">On Order</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">`;
-                    
-                    limitedShortages.forEach(shortage => {
-                        const shortageAmt = Math.abs(shortage.shortage || 0);
-                        const severityColor = shortageAmt > 1000 ? 'red' : shortageAmt > 500 ? 'orange' : 'yellow';
-                        const severityLabel = shortageAmt > 1000 ? 'CRITICAL' : shortageAmt > 500 ? 'HIGH' : 'MEDIUM';
-                        
-                        shortageHtml += `
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${severityColor}-100 text-${severityColor}-800">
-                                        ${severityLabel}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="text-sm font-medium text-gray-900">${shortage.yarn_id || 'N/A'}</div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="text-sm text-gray-600">${shortage.description || 'N/A'}</div>
-                                </td>
-                                <td class="px-4 py-3 text-sm text-red-600 font-semibold">
-                                    -${shortageAmt.toFixed(0)} lbs
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-600">
-                                    ${(shortage.on_order || 0).toFixed(0)} lbs
-                                </td>
-                                <td class="px-4 py-3 text-sm">
-                                    <button class="text-blue-600 hover:text-blue-800">Order</button>
-                                </td>
-                            </tr>`;
-                    });
-                    
-                    shortageHtml += `</tbody></table></div>`;
-                    materialShortagesContent.innerHTML = shortageHtml;
-                }
+                    const countElement = document.getElementById('productionRisksCount');
+                    if (countElement) countElement.textContent = risks.length;
 
-                // Update Capacity Issues section
-                const capacityContent = document.getElementById('capacityBottlenecksContent');
-                if (capacityContent && knitOrdersData && knitOrdersData.summary) {
-                    const unassignedOrders = knitOrdersData.summary.unassigned_orders || 0;
-                    const totalMachines = knitOrdersData.summary.total_machines || 0;
-                    document.getElementById('capacityBottlenecksCount').textContent = unassignedOrders;
-                    
-                    let capacityHtml = `
-                        <div class="mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Capacity & Machine Assignment Issues</h3>
-                            <p class="text-sm text-gray-600">Orders awaiting machine assignment and capacity bottlenecks</p>
-                        </div>
-                        <div class="grid grid-cols-3 gap-4 mb-6">
-                            <div class="bg-red-50 rounded-lg p-4">
-                                <p class="text-sm text-gray-600">Unassigned Orders</p>
-                                <p class="text-2xl font-bold text-red-600">${unassignedOrders}</p>
-                            </div>
-                            <div class="bg-blue-50 rounded-lg p-4">
-                                <p class="text-sm text-gray-600">Active Machines</p>
-                                <p class="text-2xl font-bold text-blue-600">${totalMachines}</p>
-                            </div>
-                            <div class="bg-green-50 rounded-lg p-4">
-                                <p class="text-sm text-gray-600">Utilization</p>
-                                <p class="text-2xl font-bold text-green-600">${Math.round((1 - unassignedOrders / Math.max(knitOrdersData.summary.total_orders, 1)) * 100)}%</p>
-                            </div>
-                        </div>`;
-                    
-                    if (knitOrdersData.orders) {
-                        const unassigned = knitOrdersData.orders.filter(o => !o.Machine || o.Machine === '').slice(0, 10);
-                        if (unassigned.length > 0) {
-                            capacityHtml += `
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style</th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">`;
-                            
-                            unassigned.forEach(order => {
-                                capacityHtml += `
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-3 text-sm font-medium text-gray-900">${order['Order #'] || 'N/A'}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-600">${order['Style#'] || 'N/A'}</td>
-                                        <td class="px-4 py-3 text-sm text-gray-600">${order['Qty Ordered (lbs)'] || 0} lbs</td>
-                                        <td class="px-4 py-3 text-sm text-gray-600">${order['Quoted Date'] || 'N/A'}</td>
-                                        <td class="px-4 py-3 text-sm">
-                                            <button class="text-blue-600 hover:text-blue-800">Assign</button>
-                                        </td>
-                                    </tr>`;
-                            });
-                            
-                            capacityHtml += `</tbody></table></div>`;
-                        }
-                    }
-                    
-                    capacityContent.innerHTML = capacityHtml;
-                }
+                    if (risks.length > 0) {
+                        let rowsHtml = '';
+                        risks.forEach(risk => {
+                            const priorityColor = risk.risk_score >= 70 ? 'red' : risk.risk_score >= 50 ? 'orange' : risk.risk_score >= 40 ? 'yellow' : 'green';
+                            const priorityLabel = risk.risk_score >= 70 ? 'CRITICAL' : risk.risk_score >= 50 ? 'HIGH' : risk.risk_score >= 40 ? 'MEDIUM' : 'LOW';
+                            const impact = Math.abs(risk.balance || risk.balance_lbs || 0);
+                            const daysUntilDue = risk.days_until_due !== undefined ? risk.days_until_due : (risk.days_until_start !== undefined ? risk.days_until_start : null);
 
-                // Update Inventory Alerts section
-                const inventoryAlertsContent = document.getElementById('inventoryAlertsContent');
-                if (inventoryAlertsContent && inventoryData) {
-                    const alerts = inventoryData.alerts || [];
-                    const criticalAlerts = alerts.filter(a => a.severity === 'critical').slice(0, 20);
-                    document.getElementById('inventoryAlertsCount').textContent = alerts.length;
-                    
-                    let alertsHtml = `
-                        <div class="mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Critical Inventory Alerts</h3>
-                            <p class="text-sm text-gray-600">Low stock levels and inventory management issues</p>
-                        </div>`;
-                    
-                    if (criticalAlerts.length > 0) {
-                        alertsHtml += `
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
-                        
-                        criticalAlerts.forEach(alert => {
-                            alertsHtml += `
-                                <div class="bg-white border border-red-200 rounded-lg p-4">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <span class="text-sm font-semibold text-red-600">CRITICAL</span>
-                                        <i class="fas fa-exclamation-triangle text-red-400"></i>
-                                    </div>
-                                    <p class="text-sm font-medium text-gray-900 mb-1">${alert.item || 'Item'}</p>
-                                    <p class="text-xs text-gray-600">${alert.message || 'Low inventory level'}</p>
-                                    <div class="mt-3">
-                                        <button class="text-xs text-blue-600 hover:text-blue-800">View Details</button>
-                                    </div>
-                                </div>`;
+                            rowsHtml += `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${priorityColor}-100 text-${priorityColor}-800">
+                                            ${priorityLabel}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="text-sm font-medium text-gray-900">${risk.serial_number || risk.order_id || 'N/A'}</div>
+                                        <div class="text-xs text-gray-500">${risk.style || ''}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-sm text-gray-900">
+                                        ${impact.toFixed(0)} lbs
+                                    </td>
+                                    <td class="px-4 py-3 text-center text-sm">
+                                        ${daysUntilDue !== null ?
+                                            (daysUntilDue < 0 ?
+                                                `<span class="text-red-600 font-semibold">${daysUntilDue}</span>` :
+                                                `<span class="text-green-600">${daysUntilDue}</span>`)
+                                            : '--'}
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <button class="text-blue-600 hover:text-blue-800 text-sm">View</button>
+                                    </td>
+                                </tr>`;
                         });
-                        
-                        alertsHtml += `</div>`;
+                        productionRiskTableBody.innerHTML = rowsHtml;
                     } else {
-                        alertsHtml += `<p class="text-gray-500 text-center py-8">No critical alerts at this time</p>`;
+                        productionRiskTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                    <i class="fas fa-check-circle mr-2"></i>No production risks detected
+                                </td>
+                            </tr>`;
                     }
-                    
-                    inventoryAlertsContent.innerHTML = alertsHtml;
+                } else if (productionRiskTableBody) {
+                    productionRiskTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                No data available
+                            </td>
+                        </tr>`;
+                }
+
+                // Update Material Shortages section - populate tbody
+                const materialShortageTableBody = document.getElementById('materialShortageTableBody');
+                if (materialShortageTableBody) {
+                    // Try to get shortages from yarn intelligence data
+                    let shortages = [];
+                    if (yarnData && yarnData.shortage_analysis && yarnData.shortage_analysis.critical_shortages) {
+                        shortages = yarnData.shortage_analysis.critical_shortages;
+                    } else if (yarnData && yarnData.criticality_analysis && yarnData.criticality_analysis.yarns) {
+                        // Alternative: get from criticality analysis with negative planning balance
+                        shortages = yarnData.criticality_analysis.yarns
+                            .filter(yarn => (yarn.planning_balance || 0) < 0)
+                            .map(yarn => ({
+                                yarn_id: yarn.yarn_id,
+                                description: yarn.description,
+                                shortage: Math.abs(yarn.planning_balance || 0),
+                                on_order: yarn.on_order || 0
+                            }));
+                    }
+
+                    const limitedShortages = shortages.slice(0, 20);
+                    const countElement = document.getElementById('materialShortagesCount');
+                    if (countElement) countElement.textContent = shortages.length;
+
+                    if (limitedShortages.length > 0) {
+                        let rowsHtml = '';
+                        limitedShortages.forEach(shortage => {
+                            const shortageAmt = Math.abs(shortage.shortage || 0);
+                            const severityColor = shortageAmt > 1000 ? 'red' : shortageAmt > 500 ? 'orange' : 'yellow';
+                            const severityLabel = shortageAmt > 1000 ? 'CRITICAL' : shortageAmt > 500 ? 'HIGH' : 'MEDIUM';
+                            const costImpact = (shortageAmt * 8).toFixed(0); // Estimate: $8/lb average
+
+                            rowsHtml += `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${severityColor}-100 text-${severityColor}-800">
+                                            ${severityLabel}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="text-sm font-medium text-gray-900">${shortage.yarn_id || 'N/A'}</div>
+                                        <div class="text-xs text-gray-500">${shortage.description || ''}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-sm text-red-600 font-semibold">
+                                        ${shortageAmt.toFixed(0)} lbs
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-sm text-gray-600">
+                                        $${costImpact}
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <button class="text-blue-600 hover:text-blue-800 text-sm">Order</button>
+                                    </td>
+                                </tr>`;
+                        });
+                        materialShortageTableBody.innerHTML = rowsHtml;
+                    } else {
+                        materialShortageTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-green-600">
+                                    <i class="fas fa-check-circle mr-2"></i>No material shortages detected
+                                </td>
+                            </tr>`;
+                    }
+                } else {
+                    if (materialShortageTableBody) {
+                        materialShortageTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                    No data available
+                                </td>
+                            </tr>`;
+                    }
+                }
+
+                // Update Capacity Issues section - populate tbody
+                const capacityBottleneckTableBody = document.getElementById('capacityBottleneckTableBody');
+                if (capacityBottleneckTableBody) {
+                    let unassignedOrders = [];
+                    let totalMachines = 0;
+
+                    if (knitOrdersData && knitOrdersData.summary) {
+                        totalMachines = knitOrdersData.summary.total_machines || 0;
+                    }
+
+                    if (knitOrdersData && knitOrdersData.orders) {
+                        unassignedOrders = knitOrdersData.orders.filter(o => !o.Machine || o.Machine === '').slice(0, 20);
+                    }
+
+                    const countElement = document.getElementById('capacityBottlenecksCount');
+                    if (countElement) countElement.textContent = unassignedOrders.length;
+
+                    if (unassignedOrders.length > 0) {
+                        let rowsHtml = '';
+                        unassignedOrders.forEach(order => {
+                            const priority = order['Days Until Due'] < 7 ? 'HIGH' : order['Days Until Due'] < 14 ? 'MEDIUM' : 'LOW';
+                            const priorityColor = priority === 'HIGH' ? 'red' : priority === 'MEDIUM' ? 'orange' : 'yellow';
+                            const qtyOrdered = order['Qty Ordered (lbs)'] || order['Balance (lbs)'] || 0;
+                            const impact = (qtyOrdered * 0.1).toFixed(0); // Estimate impact in hours
+
+                            rowsHtml += `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${priorityColor}-100 text-${priorityColor}-800">
+                                            ${priority}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="text-sm font-medium text-gray-900">Unassigned Order</div>
+                                        <div class="text-xs text-gray-500">Order #${order['Order #'] || 'N/A'}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center text-sm text-gray-900">
+                                        ${order['Style#'] || 'N/A'}
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-sm text-gray-900">
+                                        ${impact}h delay
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <button class="text-blue-600 hover:text-blue-800 text-sm">Assign</button>
+                                    </td>
+                                </tr>`;
+                        });
+                        capacityBottleneckTableBody.innerHTML = rowsHtml;
+                    } else {
+                        capacityBottleneckTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-green-600">
+                                    <i class="fas fa-check-circle mr-2"></i>All orders have machine assignments
+                                </td>
+                            </tr>`;
+                    }
+                } else {
+                    if (capacityBottleneckTableBody) {
+                        capacityBottleneckTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                    No data available
+                                </td>
+                            </tr>`;
+                    }
+                }
+
+                // Update Inventory Alerts section - populate tbody
+                const inventoryAlertTableBody = document.getElementById('inventoryAlertTableBody');
+                if (inventoryAlertTableBody) {
+                    let alerts = [];
+
+                    // Try to get alerts from inventory data
+                    if (inventoryData && inventoryData.alerts) {
+                        alerts = inventoryData.alerts;
+                    } else if (yarnData && yarnData.criticality_analysis && yarnData.criticality_analysis.yarns) {
+                        // Generate alerts from yarn data (low stock items)
+                        alerts = yarnData.criticality_analysis.yarns
+                            .filter(yarn => {
+                                const coverage = yarn.coverage_days || 0;
+                                return coverage < 30; // Less than 30 days coverage
+                            })
+                            .map(yarn => ({
+                                item: yarn.yarn_id,
+                                description: yarn.description,
+                                current_level: yarn.on_hand || 0,
+                                coverage_days: yarn.coverage_days || 0,
+                                severity: yarn.coverage_days < 7 ? 'critical' : 'warning'
+                            }));
+                    }
+
+                    const criticalAlerts = alerts.filter(a => a.severity === 'critical' || a.severity === 'warning').slice(0, 20);
+                    const countElement = document.getElementById('inventoryAlertsCount');
+                    if (countElement) countElement.textContent = criticalAlerts.length;
+
+                    if (criticalAlerts.length > 0) {
+                        let rowsHtml = '';
+                        criticalAlerts.forEach(alert => {
+                            const priority = alert.severity === 'critical' ? 'CRITICAL' : 'HIGH';
+                            const priorityColor = alert.severity === 'critical' ? 'red' : 'orange';
+                            const currentLevel = alert.current_level || alert.quantity || 0;
+                            const coverage = alert.coverage_days !== undefined ? `${alert.coverage_days} days` : 'Unknown';
+
+                            rowsHtml += `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${priorityColor}-100 text-${priorityColor}-800">
+                                            ${priority}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="text-sm font-medium text-gray-900">${alert.item || alert.yarn_id || 'N/A'}</div>
+                                        <div class="text-xs text-gray-500">${alert.description || alert.message || ''}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-sm text-gray-900">
+                                        ${Math.round(currentLevel)} lbs
+                                    </td>
+                                    <td class="px-4 py-3 text-center text-sm text-gray-900">
+                                        ${coverage}
+                                    </td>
+                                    <td class="px-4 py-3 text-center">
+                                        <button class="text-blue-600 hover:text-blue-800 text-sm">Reorder</button>
+                                    </td>
+                                </tr>`;
+                        });
+                        inventoryAlertTableBody.innerHTML = rowsHtml;
+                    } else {
+                        inventoryAlertTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-green-600">
+                                    <i class="fas fa-check-circle mr-2"></i>All inventory levels are healthy
+                                </td>
+                            </tr>`;
+                    }
+                } else {
+                    if (inventoryAlertTableBody) {
+                        inventoryAlertTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                                    No data available
+                                </td>
+                            </tr>`;
+                    }
                 }
 
                 return true;
@@ -12754,12 +12785,13 @@ const dataSafetyMonitor = {
                                 <td class="font-medium">${item.style || '-'}</td>
                                 <td>${item.fabric_type || '-'}</td>
                                 <td class="text-sm text-gray-600">${item.description || '-'}</td>
-                                <td class="text-right">${item.forecasted_qty ? item.forecasted_qty.toFixed(2) : '0.00'}</td>
+                                <td class="text-right">${item.forecasted_yards ? item.forecasted_yards.toFixed(2) : '0.00'}</td>
+                                <td class="text-right">${item.knit_orders_yards ? item.knit_orders_yards.toFixed(2) : '0.00'}</td>
                                 <td class="text-right">${item.current_inventory ? item.current_inventory.toFixed(2) : '0.00'}</td>
                                 <td class="text-right">${item.on_order ? item.on_order.toFixed(2) : '0.00'}</td>
-                                <td class="text-right ${item.net_position < 0 ? 'text-red-600 font-semibold' : ''}">${item.net_position ? item.net_position.toFixed(2) : '0.00'}</td>
-                                <td class="text-center">${item.lead_time || '-'} days</td>
-                                <td class="text-center">${item.target_date || '-'}</td>
+                                <td class="text-right ${item.net_requirement < 0 ? 'text-red-600 font-semibold' : ''}">${item.net_requirement ? item.net_requirement.toFixed(2) : '0.00'}</td>
+                                <td class="text-center">${item.lead_time_weeks || '-'} days</td>
+                                <td class="text-center">${item.delivery_week || '-'}</td>
                                 <td class="text-center">
                                     <span class="px-2 py-1 rounded text-xs font-medium ${statusBg} ${statusColor}">
                                         ${item.status || 'UNKNOWN'}
@@ -12769,7 +12801,7 @@ const dataSafetyMonitor = {
                         `;
                     }).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-gray-500 py-4">No fabric forecast data available</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-gray-500 py-4">No fabric forecast data available</td></tr>';
                 }
                 
             } catch (error) {
@@ -12779,7 +12811,7 @@ const dataSafetyMonitor = {
                     tbody = document.querySelector('#fabricForecastTable tbody');
                 }
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500 py-4">Error loading fabric forecast data</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-red-500 py-4">Error loading fabric forecast data</td></tr>';
                 }
             }
         }

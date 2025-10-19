@@ -61,7 +61,7 @@ def execute_batch(statements: list) -> dict:
             "Authorization": f"Bearer {auth_token}",
             "Content-Type": "application/json"
         },
-        timeout=120.0
+        timeout=300.0
     )
 
     response.raise_for_status()
@@ -162,8 +162,8 @@ def import_sales_report(file_path: str):
     if skipped > 0:
         logger.info(f"⚠ Skipped {skipped} rows due to missing/invalid data")
 
-    # Batch insert in groups of 50 for efficiency
-    batch_size = 50
+    # Batch insert in groups of 200 for faster performance
+    batch_size = 200
     total_inserted = 0
 
     for i in range(0, len(records_to_insert), batch_size):
@@ -189,9 +189,9 @@ def import_sales_report(file_path: str):
         try:
             execute_batch(statements)
             total_inserted += len(batch)
-            logger.info(f"✓ Inserted batch {i//batch_size + 1}: {total_inserted}/{len(records_to_insert)} records")
+            logger.info(f"Inserted batch {i//batch_size + 1}: {total_inserted}/{len(records_to_insert)} records")
         except Exception as e:
-            logger.error(f"❌ Error inserting batch: {e}")
+            logger.error(f"Error inserting batch: {e}")
             continue
 
     # Verify data in database

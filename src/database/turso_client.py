@@ -77,15 +77,26 @@ class TursoClient:
             data = response.json()
 
             # Parse Turso response format
-            if "results" in data and len(data["results"]) > 0:
-                result = data["results"][0]
+            # Response can be either [{"results": {...}}] or {"results": [...]}
+            if isinstance(data, list) and len(data) > 0:
+                # Format: [{"results": {"columns": [...], "rows": [...]}}]
+                result = data[0].get("results", {})
+            elif isinstance(data, dict) and "results" in data:
+                # Format: {"results": [{"columns": [...], "rows": [...]}]}
+                results_list = data["results"]
+                if isinstance(results_list, list) and len(results_list) > 0:
+                    result = results_list[0]
+                else:
+                    result = data["results"]
+            else:
+                return []
 
-                if "rows" in result and "columns" in result:
-                    rows = result["rows"]
-                    columns = result["columns"]
+            if "rows" in result and "columns" in result:
+                rows = result["rows"]
+                columns = result["columns"]
 
-                    # Convert to list of dicts
-                    return [dict(zip(columns, row)) for row in rows]
+                # Convert to list of dicts
+                return [dict(zip(columns, row)) for row in rows]
 
             return []
 
