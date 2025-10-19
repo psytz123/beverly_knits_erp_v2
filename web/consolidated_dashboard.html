@@ -980,7 +980,25 @@ const dataSafetyMonitor = {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-    </style>
+    
+        /* Spinner animation for loading states */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner-border {
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            vertical-align: text-bottom;
+            border: 0.25em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+
+</style>
 </head>
 <body style="background-color: var(--light-gray);">
     <!-- Header -->
@@ -1932,9 +1950,10 @@ const dataSafetyMonitor = {
                                     <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 0)">Yarn ID</th>
                                     <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 1)">Description</th>
                                     <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 2)">Current Balance</th>
+                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 3)">Forecasted Requirement<br><span class="text-xs font-normal">(4-week ML)</span></th>
                                     <th colspan="9" class="text-center">Weekly PO Receipts (lbs)</th>
-                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 12)">Total On Order</th>
-                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 13)">First Shortage</th>
+                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 13)">Total On Order</th>
+                                    <th rowspan="2" class="sortable" onclick="sortTable('timePhased', 14)">First Shortage</th>
                                     <th rowspan="2">Action</th>
                                 </tr>
                                 <tr>
@@ -1950,7 +1969,7 @@ const dataSafetyMonitor = {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td colspan="15" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading time-phased PO data...</td></tr>
+                                <tr><td colspan="16" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading time-phased PO data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -3835,6 +3854,104 @@ const dataSafetyMonitor = {
                 return { error: true, message: error.message, data: [] };
             }
         }
+
+
+        /**
+         * Simple table sorting function.
+         * @param {string} tableId - Table identifier
+         * @param {number} columnIndex - Column to sort by
+         */
+        function sortTable(tableId, columnIndex) {
+            // Simple placeholder - table sorting functionality
+            // Can be enhanced with actual sorting logic if needed
+            console.log(`Sort table ${tableId} by column ${columnIndex}`);
+        }
+
+        /**
+         * Display API error message in a table container.
+         * @param {HTMLElement} container - Table body or container element
+         * @param {string} message - Error message to display
+         * @param {number} colspan - Number of columns to span
+         */
+        function displayApiErrorInTable(container, message, colspan = 10) {
+            if (!container) return;
+
+            const errorHtml = `
+                <tr>
+                    <td colspan="${colspan}" class="text-center py-8">
+                        <div class="inline-block bg-red-50 border border-red-200 rounded-lg p-6 text-left max-w-2xl">
+                            <div class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-red-600 mt-1 mr-4 text-2xl"></i>
+                                <div class="flex-1">
+                                    <h3 class="text-red-800 font-semibold text-lg mb-2">API Error</h3>
+                                    <p class="text-red-700 mb-3">${message}</p>
+                                    <div class="bg-white border border-red-200 rounded p-3 text-sm text-gray-700">
+                                        <p class="font-semibold mb-2">Troubleshooting:</p>
+                                        <ul class="list-disc list-inside space-y-1">
+                                            <li>Check that eFab API server is running on <code class="bg-gray-100 px-1 rounded">localhost:5006</code></li>
+                                            <li>Verify network connectivity</li>
+                                            <li>Check browser console for detailed errors</li>
+                                        </ul>
+                                    </div>
+                                    <button onclick="location.reload()" class="mt-3 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm">
+                                        <i class="fas fa-sync-alt mr-2"></i>Retry
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            container.innerHTML = errorHtml;
+        }
+
+        /**
+         * Display loading state in a table container.
+         * @param {HTMLElement} container - Table body or container element
+         * @param {string} message - Loading message
+         * @param {number} colspan - Number of columns to span
+         */
+        function displayLoadingInTable(container, message = 'Loading data from eFab API...', colspan = 10) {
+            if (!container) return;
+
+            const loadingHtml = `
+                <tr>
+                    <td colspan="${colspan}" class="text-center py-8">
+                        <div class="inline-block bg-blue-50 rounded-lg p-6">
+                            <div class="spinner-border text-blue-600 mb-3" role="status" style="width: 3rem; height: 3rem; border: 4px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p class="text-blue-800 font-medium">${message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            container.innerHTML = loadingHtml;
+        }
+
+        /**
+         * Display "no data" message in a table container.
+         * @param {HTMLElement} container - Table body or container element
+         * @param {string} message - Message to display
+         * @param {number} colspan - Number of columns to span
+         */
+        function displayNoDataInTable(container, message = 'No data available', colspan = 10) {
+            if (!container) return;
+
+            const noDataHtml = `
+                <tr>
+                    <td colspan="${colspan}" class="text-center py-6">
+                        <div class="text-gray-500">
+                            <i class="fas fa-info-circle text-3xl mb-3"></i>
+                            <p class="font-medium">${message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            container.innerHTML = noDataHtml;
+        }
+
         
         // Forward declarations for critical functions
         let loadOverviewData, loadProductionData, updateKnitOrderSummary, loadForecastedOrders, loadAIProductionSuggestions, loadKnitOrders, refreshKnitOrders;
@@ -5075,33 +5192,105 @@ const dataSafetyMonitor = {
             console.log('Loading forecasted orders with net requirements...');
             
             try {
-                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
-                
-                // Fetch multiple APIs for comprehensive live data including yarn intelligence
-                const [planningResponse, inventoryResponse, forecastResponse, nettingResponse, kpisResponse, yarnResponse] = await Promise.all([
-                    fetch(baseUrl + '/api/production-planning'),
-                    fetch(baseUrl + '/api/inventory-intelligence-enhanced'),
-                    fetch(baseUrl + '/api/ml-forecast-detailed'),
-                    fetch(baseUrl + '/api/inventory-netting'),
-                    fetch(baseUrl + '/api/comprehensive-kpis'),
-                    fetch(baseUrl + '/api/yarn-intelligence')
-                ]);
-                
-                if (!planningResponse.ok || !inventoryResponse.ok) {
-                    throw new Error('Failed to fetch planning data');
+                // Show loading state
+                const forecastTableEl = document.getElementById('forecastedOrdersTable');
+                if (forecastTableEl) {
+                    displayLoadingInTable(forecastTableEl, 'Loading forecasted orders from eFab API...', 10);
                 }
                 
-                // Store in global variables for access in other functions
-                window.planningData = await planningResponse.json();
-                window.inventoryData = await inventoryResponse.json();
-                const forecastData = await forecastResponse.json();
-                const nettingData = await nettingResponse.json();
-                const kpisData = await kpisResponse.json();
-                const yarnData = await yarnResponse.json();
-                
-                // Also keep local references for this function
-                const planningData = window.planningData;
-                const inventoryData = window.inventoryData;
+
+                const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
+
+                // Fetch APIs with graceful fallbacks - don't let one failure break everything
+                console.log('Fetching production data from multiple endpoints...');
+
+                let planningData = null, inventoryData = null, forecastData = null;
+                let nettingData = null, kpisData = null, yarnData = null;
+
+                // Fetch planning data (CRITICAL)
+                try {
+                    const response = await fetch(baseUrl + '/api/production-planning');
+                    if (response.ok) {
+                        planningData = await response.json();
+                        window.planningData = planningData;
+                        console.log('✓ Production planning data loaded');
+                    } else {
+                        console.warn(`⚠ Production planning failed: ${response.status}`);
+                    }
+                } catch (e) {
+                    console.error('✗ Production planning error:', e.message);
+                }
+
+                // Fetch inventory data (CRITICAL)
+                try {
+                    const response = await fetch(baseUrl + '/api/inventory-intelligence-enhanced');
+                    if (response.ok) {
+                        inventoryData = await response.json();
+                        window.inventoryData = inventoryData;
+                        console.log('✓ Inventory intelligence data loaded');
+                    } else {
+                        console.warn(`⚠ Inventory intelligence failed: ${response.status}`);
+                    }
+                } catch (e) {
+                    console.error('✗ Inventory intelligence error:', e.message);
+                }
+
+                // Fetch ML forecast (OPTIONAL)
+                try {
+                    const response = await fetch(baseUrl + '/api/ml-forecast-detailed');
+                    if (response.ok) {
+                        forecastData = await response.json();
+                        console.log('✓ ML forecast data loaded');
+                    } else {
+                        console.warn(`⚠ ML forecast failed: ${response.status}`);
+                    }
+                } catch (e) {
+                    console.error('✗ ML forecast error:', e.message);
+                }
+
+                // Fetch inventory netting (OPTIONAL)
+                try {
+                    const response = await fetch(baseUrl + '/api/inventory-netting');
+                    if (response.ok) {
+                        nettingData = await response.json();
+                        console.log('✓ Inventory netting data loaded');
+                    } else {
+                        console.warn(`⚠ Inventory netting failed: ${response.status}`);
+                    }
+                } catch (e) {
+                    console.error('✗ Inventory netting error:', e.message);
+                }
+
+                // Fetch KPIs (OPTIONAL)
+                try {
+                    const response = await fetch(baseUrl + '/api/comprehensive-kpis');
+                    if (response.ok) {
+                        kpisData = await response.json();
+                        console.log('✓ KPIs data loaded');
+                    } else {
+                        console.warn(`⚠ KPIs failed: ${response.status}`);
+                    }
+                } catch (e) {
+                    console.error('✗ KPIs error:', e.message);
+                }
+
+                // Fetch yarn intelligence (IMPORTANT)
+                try {
+                    const response = await fetch(baseUrl + '/api/yarn-intelligence');
+                    if (response.ok) {
+                        yarnData = await response.json();
+                        console.log('✓ Yarn intelligence data loaded');
+                    } else {
+                        console.warn(`⚠ Yarn intelligence failed: ${response.status}`);
+                    }
+                } catch (e) {
+                    console.error('✗ Yarn intelligence error:', e.message);
+                }
+
+                // Check if we have minimum required data
+                if (!planningData && !inventoryData && !yarnData) {
+                    throw new Error('All critical data sources failed - cannot display forecasted orders');
+                }
                 
                 console.log('Production planning data:', planningData);
                 console.log('Inventory intelligence:', inventoryData);
@@ -5461,12 +5650,30 @@ const dataSafetyMonitor = {
             } catch (error) {
                 console.error('Error loading forecasted orders:', error);
                 const forecastTableEl = document.getElementById('forecastedOrdersTable');
-                if (forecastTableEl) {
-                    forecastTableEl.innerHTML = 
-                        '<tr><td colspan="10" class="text-center text-red-500 py-4">Failed to load forecasted orders</td></tr>';
+                
+                // Determine error type and display appropriate message
+                let errorMessage = 'Failed to load forecasted orders';
+                
+                if (error.message && error.message.includes('fetch')) {
+                    errorMessage = 'eFab API unavailable - Cannot connect to server on localhost:5006';
+                } else if (error.message && error.message.includes('planning data')) {
+                    errorMessage = 'eFab API unavailable - Cannot load production orders';
+                } else if (error.name === 'TypeError') {
+                    errorMessage = 'Network error - Please check your connection';
+                } else {
+                    errorMessage = `Error: ${error.message || 'Unknown error occurred'}`;
                 }
+                
+                if (forecastTableEl) {
+                    displayApiErrorInTable(forecastTableEl, errorMessage, 10);
+                }
+                
+                // Reset summary cards to zero
+                document.getElementById('totalDemand90Days').textContent = '0';
+                document.getElementById('totalAvailableInventory').textContent = '0';
+                document.getElementById('netProductionRequired').textContent = '0';
+                document.getElementById('criticalYarnCount').textContent = '0';
             }
-        }
         
         // Load AI Production Suggestions
         window.loadAIProductionSuggestions = async function() {
@@ -11303,7 +11510,7 @@ const dataSafetyMonitor = {
                             ${(item.net_position || 0).toLocaleString()}
                         </td>
                         <td class="px-4 py-3 text-sm">${item.lead_time || 'N/A'}</td>
-                        <td class="px-4 py-3 text-sm">${item.target_date || 'TBD'}</td>
+                        <td class="px-4 py-3 text-sm">${item.target_date || item.delivery_week || 'TBD'}</td>
                         <td class="px-4 py-3 text-sm">
                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${statusColor}-100 text-${statusColor}-800">
                                 ${item.status || 'OK'}
@@ -12966,12 +13173,27 @@ const dataSafetyMonitor = {
         // Load Fabric Forecast Table
         window.loadFabricForecast = async function() {
             try {
+                // Show loading state
+                let tbody = document.querySelector('#mlFabricForecastTable tbody');
+                if (!tbody) {
+                    tbody = document.querySelector('#fabricForecastTable tbody');
+                }
+                if (tbody) {
+                    displayLoadingInTable(tbody, 'Loading fabric forecast data from eFab API...', 10);
+                }
+                
                 console.log('=== Loading fabric forecast data ===');
                 const data = await fetchAPI('/api/fabric-forecast-integrated');
                 console.log('Fabric forecast data received:', data);
                 
-                if (!data || data.status === 'error') {
-                    throw new Error(`API error: ${data?.message || 'Unknown error'}`);
+                // Check for backend error status
+                if (data && data.status === 'error') {
+                    throw new Error(data.message || 'eFab API unavailable - Cannot load fabric forecast');
+                }
+                
+                // Check for fetchAPI error (returned by wrapper)
+                if (data && data.error) {
+                    throw new Error(data.message || 'API request failed');
                 }
                 
                 // Update summary cards
@@ -12989,7 +13211,7 @@ const dataSafetyMonitor = {
                 }
                 
                 // Update table - try ML Forecasting tab first, then fallback to production tab
-                let tbody = document.querySelector('#mlFabricForecastTable tbody');
+                tbody = document.querySelector('#mlFabricForecastTable tbody');
                 if (!tbody) {
                     tbody = document.querySelector('#fabricForecastTable tbody');
                 }
@@ -13018,8 +13240,8 @@ const dataSafetyMonitor = {
                                 <td class="text-right">${item.current_inventory ? item.current_inventory.toFixed(2) : '0.00'}</td>
                                 <td class="text-right">${item.on_order ? item.on_order.toFixed(2) : '0.00'}</td>
                                 <td class="text-right ${item.net_position < 0 ? 'text-red-600 font-semibold' : ''}">${item.net_position ? item.net_position.toFixed(2) : '0.00'}</td>
-                                <td class="text-center">${item.lead_time || '-'} days</td>
-                                <td class="text-center">${item.target_date || '-'}</td>
+                                <td class="text-center">${item.lead_time || '-'}</td>
+                                <td class="text-center">${item.target_date || item.delivery_week || '-'}</td>
                                 <td class="text-center">
                                     <span class="px-2 py-1 rounded text-xs font-medium ${statusBg} ${statusColor}">
                                         ${item.status || 'UNKNOWN'}
@@ -13034,13 +13256,54 @@ const dataSafetyMonitor = {
                 
             } catch (error) {
                 console.error('Error loading fabric forecast:', error);
-                let tbody = document.querySelector('#mlFabricForecastTable tbody');
+
+                // Determine error type and display appropriate message
+                let errorMessage = 'Failed to load fabric forecast data';
+                let errorDetails = '';
+
+                if (error.message && error.message.includes('eFab API unavailable')) {
+                    errorMessage = '⚠️ eFab API Unavailable';
+                    errorDetails = 'Cannot connect to eFab server. Please check if the server is running on port 5006.';
+                } else if (error.message && error.message.includes('No knit orders')) {
+                    errorMessage = '📋 No Production Orders';
+                    errorDetails = 'No knit orders are available to generate fabric forecast. Please add production orders first.';
+                } else if (error.message && error.message.includes('API error')) {
+                    errorMessage = '⚠️ API Error';
+                    errorDetails = error.message;
+                } else if (error.name === 'TypeError') {
+                    errorMessage = '🔌 Network Error';
+                    errorDetails = 'Cannot connect to server. Check if the API server is running on http://localhost:5006';
+                } else {
+                    errorMessage = '❌ Error Loading Forecast';
+                    errorDetails = error.message || 'An unknown error occurred while fetching fabric forecast data.';
+                }
+
+                tbody = document.querySelector('#mlFabricForecastTable tbody');
                 if (!tbody) {
                     tbody = document.querySelector('#fabricForecastTable tbody');
                 }
+
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500 py-4">Error loading fabric forecast data</td></tr>';
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="10" class="px-4 py-8 text-center">
+                                <div class="max-w-md mx-auto">
+                                    <div class="text-2xl mb-3">${errorMessage}</div>
+                                    <div class="text-gray-600 mb-4">${errorDetails}</div>
+                                    <button onclick="loadFabricForecast()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                                        <i class="fas fa-sync-alt mr-2"></i>Retry
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
                 }
+
+                // Reset summary cards to zero
+                document.getElementById('fabricStylesCount').textContent = '0';
+                document.getElementById('fabricTypesCount').textContent = '0';
+                document.getElementById('fabricRequiredYards').textContent = '0';
+                document.getElementById('fabricShortageCount').textContent = '0';
             }
         }
 
@@ -13078,7 +13341,7 @@ const dataSafetyMonitor = {
             }
             
             // Show loading state
-            tbody.innerHTML = '<tr><td colspan="15" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading time-phased PO data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="16" class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading time-phased PO data...</td></tr>';
             
             try {
                 // Request time-phased yarn PO data
@@ -13190,13 +13453,18 @@ const dataSafetyMonitor = {
                         // Use Planning Balance as primary (key metric), fallback to Theoretical then Beginning Balance
                         const currentBalance = yarnData["Planning Balance"] || yarnData["Theoretical Balance"] || yarnData["Beginning Balance"] || 0;
                         const balanceClass = currentBalance < 0 ? 'text-red-600 font-bold' : currentBalance < 1000 ? 'text-orange-600' : 'text-gray-700';
-                        
+
+                        // Get forecasted requirement from API response
+                        const forecastedReq = yarnData["Forecasted Requirement"] || 0;
+                        const forecastClass = forecastedReq > currentBalance ? 'text-orange-600 font-medium' : 'text-gray-700';
+
                         row.innerHTML = `
                             <td class="px-4 py-2 font-medium">
                                 ${urgencyIcon} ${yarnId}
                             </td>
                             <td class="px-4 py-2 text-sm" title="${yarnData.description || ''}">${(yarnData.description || '').substring(0, 25)}${(yarnData.description || '').length > 25 ? '...' : ''}</td>
                             <td class="px-4 py-2 text-right ${balanceClass}">${currentBalance.toFixed(0)}</td>
+                            <td class="px-4 py-2 text-right ${forecastClass}" title="4-week ML forecast">${forecastedReq.toFixed(0)}</td>
                             ${formatWeekCell('week_36', yarnData.theoretical_balance)}
                             ${formatWeekCell('week_37', yarnData.theoretical_balance)}
                             ${formatWeekCell('week_38', yarnData.theoretical_balance)}
@@ -13275,7 +13543,7 @@ const dataSafetyMonitor = {
                     if (response.summary && response.summary.display_note) {
                         const noteRow = document.createElement('tr');
                         noteRow.innerHTML = `
-                            <td colspan="15" class="text-center bg-gray-100 text-gray-600 py-2 text-sm italic">
+                            <td colspan="16" class="text-center bg-gray-100 text-gray-600 py-2 text-sm italic">
                                 <i class="fas fa-info-circle mr-2"></i>
                                 ${response.summary.display_note} 
                                 (${response.summary.total_yarns_analyzed} total yarns analyzed, 
@@ -13286,12 +13554,12 @@ const dataSafetyMonitor = {
                     }
                     
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="15" class="text-center text-gray-500 py-4">No time-phased PO data available. Check if Expected_Yarn_Report.csv is loaded.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="16" class="text-center text-gray-500 py-4">No time-phased PO data available. Check if Expected_Yarn_Report.csv is loaded.</td></tr>';
                 }
-                
+
             } catch (error) {
                 console.error('Error loading time-phased PO data:', error);
-                tbody.innerHTML = '<tr><td colspan="15" class="text-center text-red-600 py-4">Error loading time-phased PO data</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="16" class="text-center text-red-600 py-4">Error loading time-phased PO data</td></tr>';
             }
         }
         
@@ -13299,10 +13567,10 @@ const dataSafetyMonitor = {
         function filterTimePhasedByShortage(hasShortage) {
             const tbody = document.querySelector('#timePhasedTable tbody');
             if (!tbody) return;
-            
+
             const rows = tbody.querySelectorAll('tr');
             rows.forEach(row => {
-                const shortageCell = row.cells[13]; // First Shortage column
+                const shortageCell = row.cells[14]; // First Shortage column
                 if (!shortageCell) return;
                 
                 const hasShortageInRow = shortageCell.textContent !== 'None' && shortageCell.textContent !== '-';
@@ -16532,7 +16800,9 @@ Customer: ${order.customer || 'Unknown'}
                 `;
             }
         }
-        
+
+        }  // Close machine planning section
+
         // === END MACHINE PLANNING TAB FUNCTIONS ===
         
         // Close modal when clicking outside

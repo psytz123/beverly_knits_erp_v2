@@ -3448,9 +3448,14 @@ const dataSafetyMonitor = {
             const hostname = window.location.hostname;
             const protocol = window.location.protocol;
             const port = window.location.port;
-            
+
+            // Check if we're on the dashboard ngrok domain
+            if (hostname === 'efab.ngrok.app') {
+                // Use dedicated API ngrok tunnel
+                return 'https://api-efab.ngrok.app';
+            }
             // Check if we're on ngrok or any external domain
-            if (hostname.includes('ngrok') || hostname.includes('railway') || 
+            else if (hostname.includes('ngrok') || hostname.includes('railway') ||
                 hostname.includes('render') || hostname.includes('herokuapp') ||
                 hostname.includes('vercel') || hostname.includes('netlify')) {
                 // External access - use same domain without adding port
@@ -4811,32 +4816,50 @@ const dataSafetyMonitor = {
             
             try {
                 const baseUrl = window.location.protocol + '//' + window.location.hostname + ':5006';
-                
-                // Fetch multiple APIs for comprehensive live data including yarn intelligence
-                const [planningResponse, inventoryResponse, forecastResponse, nettingResponse, kpisResponse, yarnResponse] = await Promise.all([
-                    fetch(baseUrl + '/api/production-planning'),
-                    fetch(baseUrl + '/api/inventory-intelligence-enhanced'),
-                    fetch(baseUrl + '/api/ml-forecast-detailed'),
-                    fetch(baseUrl + '/api/inventory-netting'),
-                    fetch(baseUrl + '/api/comprehensive-kpis'),
-                    fetch(baseUrl + '/api/yarn-intelligence')
-                ]);
-                
-                if (!planningResponse.ok || !inventoryResponse.ok) {
-                    throw new Error('Failed to fetch planning data');
+
+                // Fetch APIs individually with graceful fallbacks - don't let one failure break everything
+                let planningData = null, inventoryData = null, forecastData = null;
+                let nettingData = null, kpisData = null, yarnData = null;
+
+                try {
+                    const r = await fetch(baseUrl + '/api/production-planning');
+                    if (r.ok) { planningData = await r.json(); window.planningData = planningData; console.log('✓ Planning'); }
+                    else { console.warn('⚠ Planning failed:', r.status); }
+                } catch (e) { console.error('✗ Planning error:', e.message); }
+
+                try {
+                    const r = await fetch(baseUrl + '/api/inventory-intelligence-enhanced');
+                    if (r.ok) { inventoryData = await r.json(); window.inventoryData = inventoryData; console.log('✓ Inventory'); }
+                    else { console.warn('⚠ Inventory failed:', r.status); }
+                } catch (e) { console.error('✗ Inventory error:', e.message); }
+
+                try {
+                    const r = await fetch(baseUrl + '/api/ml-forecast-detailed');
+                    if (r.ok) { forecastData = await r.json(); console.log('✓ ML Forecast'); }
+                    else { console.warn('⚠ ML Forecast failed:', r.status); }
+                } catch (e) { console.error('✗ ML Forecast error:', e.message); }
+
+                try {
+                    const r = await fetch(baseUrl + '/api/inventory-netting');
+                    if (r.ok) { nettingData = await r.json(); console.log('✓ Netting'); }
+                    else { console.warn('⚠ Netting failed:', r.status); }
+                } catch (e) { console.error('✗ Netting error:', e.message); }
+
+                try {
+                    const r = await fetch(baseUrl + '/api/comprehensive-kpis');
+                    if (r.ok) { kpisData = await r.json(); console.log('✓ KPIs'); }
+                    else { console.warn('⚠ KPIs failed:', r.status); }
+                } catch (e) { console.error('✗ KPIs error:', e.message); }
+
+                try {
+                    const r = await fetch(baseUrl + '/api/yarn-intelligence');
+                    if (r.ok) { yarnData = await r.json(); console.log('✓ Yarn'); }
+                    else { console.warn('⚠ Yarn failed:', r.status); }
+                } catch (e) { console.error('✗ Yarn error:', e.message); }
+
+                if (!planningData && !inventoryData && !yarnData) {
+                    throw new Error('All critical data sources failed');
                 }
-                
-                // Store in global variables for access in other functions
-                window.planningData = await planningResponse.json();
-                window.inventoryData = await inventoryResponse.json();
-                const forecastData = await forecastResponse.json();
-                const nettingData = await nettingResponse.json();
-                const kpisData = await kpisResponse.json();
-                const yarnData = await yarnResponse.json();
-                
-                // Also keep local references for this function
-                const planningData = window.planningData;
-                const inventoryData = window.inventoryData;
                 
                 console.log('Production planning data:', planningData);
                 console.log('Inventory intelligence:', inventoryData);
@@ -11017,7 +11040,7 @@ const dataSafetyMonitor = {
                             ${(item.net_position || 0).toLocaleString()}
                         </td>
                         <td class="px-4 py-3 text-sm">${item.lead_time || 'N/A'}</td>
-                        <td class="px-4 py-3 text-sm">${item.target_date || 'TBD'}</td>
+                        <td class="px-4 py-3 text-sm">${item.target_date || item.delivery_week || 'TBD'}</td>
                         <td class="px-4 py-3 text-sm">
                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-${statusColor}-100 text-${statusColor}-800">
                                 ${item.status || 'OK'}
@@ -12790,8 +12813,8 @@ const dataSafetyMonitor = {
                                 <td class="text-right">${item.current_inventory ? item.current_inventory.toFixed(2) : '0.00'}</td>
                                 <td class="text-right">${item.on_order ? item.on_order.toFixed(2) : '0.00'}</td>
                                 <td class="text-right ${item.net_requirement < 0 ? 'text-red-600 font-semibold' : ''}">${item.net_requirement ? item.net_requirement.toFixed(2) : '0.00'}</td>
-                                <td class="text-center">${item.lead_time_weeks || '-'} days</td>
-                                <td class="text-center">${item.delivery_week || '-'}</td>
+                                <td class="text-center">${item.lead_time || '-'}</td>
+                                <td class="text-center">${item.target_date || item.delivery_week || '-'}</td>
                                 <td class="text-center">
                                     <span class="px-2 py-1 rounded text-xs font-medium ${statusBg} ${statusColor}">
                                         ${item.status || 'UNKNOWN'}
@@ -12806,12 +12829,32 @@ const dataSafetyMonitor = {
                 
             } catch (error) {
                 console.error('Error loading fabric forecast:', error);
+
+                let errorMsg = '❌ Error Loading Forecast';
+                let errorDetail = error.message || 'Unknown error occurred';
+
+                if (error.message?.includes('eFab API unavailable')) {
+                    errorMsg = '⚠️ eFab API Unavailable';
+                    errorDetail = 'Check if server is running on port 5006';
+                } else if (error.message?.includes('No knit orders')) {
+                    errorMsg = '📋 No Production Orders';
+                    errorDetail = 'Add production orders to generate forecast';
+                }
+
                 let tbody = document.querySelector('#mlFabricForecastTable tbody');
                 if (!tbody) {
                     tbody = document.querySelector('#fabricForecastTable tbody');
                 }
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-red-500 py-4">Error loading fabric forecast data</td></tr>';
+                    tbody.innerHTML = `
+                        <tr><td colspan="11" class="px-4 py-8 text-center">
+                            <div class="text-2xl mb-3">${errorMsg}</div>
+                            <div class="text-gray-600 mb-4">${errorDetail}</div>
+                            <button onclick="loadFabricForecast()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                                <i class="fas fa-sync-alt mr-2"></i>Retry
+                            </button>
+                        </td></tr>
+                    `;
                 }
             }
         }

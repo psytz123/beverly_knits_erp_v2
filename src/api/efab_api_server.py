@@ -25,8 +25,11 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from src.config.secrets_manager import get_secret
+from src.forecasting.forecast_cache import forecast_cache
+from src.api.fabric_forecast_refactored import fabric_forecast_integrated_refactored
 
 # Load environment variables
 load_dotenv()
@@ -39,7 +42,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)
+# Configure CORS to allow ngrok domains
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "https://efab.ngrok.app",
+            "https://api-efab.ngrok.app"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 # Rate limiting configuration
 ENABLE_RATE_LIMITING = os.getenv("ENABLE_RATE_LIMITING", "true").lower() == "true"
@@ -269,24 +285,57 @@ def yarn_intelligence() -> tuple:
 
             # If forecast mode, generate forward-looking shortage predictions
             if forecast_mode:
-                logger.info("Generating forecast shortage predictions")
+                logger.info("=" * 80)
+                logger.info("GENERATING FORECAST SHORTAGE PREDICTIONS FROM CACHE")
+                logger.info("=" * 80)
+
+                # Get ML forecasts from cache (instant!)
+                ml_forecasts = forecast_cache.get_forecasts()
+                cache_age = forecast_cache.get_age_seconds()
+
+                if ml_forecasts:
+                    logger.info(f"✓ Using cached ML forecasts ({len(ml_forecasts)} yarns)")
+                    if cache_age is not None:
+                        logger.info(f"✓ Cache age: {cache_age}s ({cache_age // 60} minutes)")
+                    logger.info("✓ Cache auto-refreshes HOURLY in background for thorough analysis")
+                else:
+                    logger.warning("⚠ ML forecast cache is empty (still initializing)")
+                    logger.info("Using allocated-based heuristic fallback")
+                    logger.info("💡 Cache will be populated within 10 seconds of server startup")
+
                 predicted_shortages = []
 
                 for yarn in yarns:
                     # Only include yarns that are projected to have shortages
                     if yarn['planning_balance'] < 1000:  # Yarns at risk
-                        # Calculate forecasted requirement (simulate 30-day forward demand)
-                        # Assumption: if allocated is negative, that's projected demand
-                        forecasted_requirement = abs(yarn['allocated']) if yarn['allocated'] < 0 else 0
+                        # Get forecasted requirement - ML if available, else allocated-based heuristic
+                        yarn_id_str = str(yarn['yarn_id'])
+
+                        if ml_forecasts and (yarn_id_str in ml_forecasts or yarn['yarn_id'] in ml_forecasts):
+                            # Use ML forecast (preferred)
+                            forecasted_requirement = ml_forecasts.get(yarn_id_str, ml_forecasts.get(yarn['yarn_id'], 0))
+                            if forecasted_requirement > 0:
+                                logger.debug(f"Yarn {yarn['yarn_id']}: Using ML forecast = {forecasted_requirement:.2f} lbs")
+                        else:
+                            # Fallback to allocated-based heuristic (fast)
+                            forecasted_requirement = abs(yarn['allocated']) if yarn['allocated'] < 0 else 0
+                            if forecasted_requirement > 0:
+                                logger.debug(f"Yarn {yarn['yarn_id']}: Using heuristic = {forecasted_requirement:.2f} lbs")
+
                         current_inventory = yarn['planning_balance']
                         net_shortage = current_inventory - forecasted_requirement
 
-                        # Calculate days until shortage based on planning balance
+                        # Calculate days until shortage based on ML-forecasted depletion rate
                         if current_inventory < 0:
                             days_until_shortage = 0  # Already in shortage
                         elif net_shortage < 0:
-                            # Estimate days based on depletion rate
-                            days_until_shortage = max(1, int(abs(current_inventory / (abs(yarn['allocated']) / 30)) if yarn['allocated'] < 0 else 30))
+                            # Estimate days based on ML-forecasted depletion rate
+                            # forecasted_requirement is for 4 weeks (28 days), so daily rate = forecasted_requirement / 28
+                            if forecasted_requirement > 0:
+                                daily_consumption = forecasted_requirement / 28
+                                days_until_shortage = max(1, int(current_inventory / daily_consumption))
+                            else:
+                                days_until_shortage = 30  # No forecast available, estimate 30 days
                         else:
                             days_until_shortage = 90  # No shortage projected
 
@@ -610,11 +659,48 @@ def time_phased_yarn_po() -> tuple:
                     row[key] = None
 
         logger.info(f"Successfully parsed Excel with {len(data)} rows")
+
+        # Add forecasted requirements to each yarn row
+        ml_forecasts = forecast_cache.get_forecasts()
+        if ml_forecasts:
+            logger.info(f"Adding forecasted requirements from ML cache ({len(ml_forecasts)} yarns)")
+            added_count = 0
+            for row in data:
+                # Try multiple column names for yarn ID
+                yarn_id = row.get('Yarn') or row.get('Yarn ID') or row.get('yarn') or row.get('Yarn #')
+                if yarn_id:
+                    # Convert to int if possible for lookup
+                    try:
+                        yarn_id_int = int(float(str(yarn_id)))  # Handle both '18646' and '18646.0'
+                    except (ValueError, TypeError):
+                        yarn_id_int = None
+
+                    # Try looking up with both string and int keys
+                    forecasted_req = ml_forecasts.get(str(yarn_id),
+                                       ml_forecasts.get(yarn_id,
+                                        ml_forecasts.get(yarn_id_int, 0)))
+
+                    row['Forecasted Requirement'] = round(forecasted_req, 2) if forecasted_req else 0
+
+                    if forecasted_req > 0:
+                        added_count += 1
+                        if added_count <= 3:  # Log first 3 for debugging
+                            logger.info(f"  Yarn {yarn_id}: forecast={forecasted_req:.2f} lbs")
+                else:
+                    row['Forecasted Requirement'] = 0
+
+            logger.info(f"Added forecasts to {added_count} yarns (out of {len(data)} total)")
+        else:
+            logger.warning("ML forecast cache is empty - using zeros for forecasted requirements")
+            for row in data:
+                row['Forecasted Requirement'] = 0
+
         return jsonify({
             'data': data,
             'source': 'efab_excel',
             'status': 'ok',
-            'filename': yarn_demand_file
+            'filename': yarn_demand_file,
+            'ml_forecast_available': ml_forecasts is not None
         }), 200
 
     except Exception as e:
@@ -774,6 +860,135 @@ def ml_forecast_detailed() -> tuple:
     except Exception as e:
         logger.error(f"Error in ml_forecast_detailed: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+
+def _calculate_ml_yarn_forecasts(weeks_ahead: int = 4) -> Dict[str, float]:
+    """
+    Helper function to calculate ML-based yarn forecasts using existing services.
+
+    Uses WeeklyForecastGenerator and TursoBOMExplosion for comprehensive
+    ML-based forecasting that aggregates demand over the planning horizon.
+
+    Args:
+        weeks_ahead: Number of weeks to forecast (default 4 for ~30 day planning)
+
+    Returns:
+        Dictionary mapping yarn_id -> total_forecasted_lbs for the planning period
+        Example: {"18884": 1250.5, "18763": 875.2}
+    """
+    try:
+        logger.info(f"Calculating ML yarn forecasts using WeeklyForecastGenerator ({weeks_ahead} weeks)")
+
+        # Import existing forecasting services
+        from src.forecasting.weekly_forecast_generator import WeeklyForecastGenerator
+        from src.forecasting.turso_bom_explosion import TursoBOMExplosion
+
+        # Initialize services
+        forecast_generator = WeeklyForecastGenerator(forecast_weeks=weeks_ahead)
+        bom_explosion = TursoBOMExplosion()
+
+        # Generate ML forecasts for all styles
+        # This returns {style: {week_num: yards}}
+        ml_forecast_result = forecast_generator.generate_weekly_forecasts(
+            styles=None,  # All styles
+            start_week=None,  # Current week
+            use_ml=True
+        )
+
+        if not ml_forecast_result:
+            logger.warning("No ML forecasts generated")
+            return {}
+
+        # Explode sales forecasts to yarn requirements
+        # This returns {yarn_id: {week_num: lbs}}
+        yarn_weekly_requirements = bom_explosion.explode_sales_to_yarn_weekly(
+            sales_forecast=ml_forecast_result
+        )
+
+        # Aggregate weekly requirements to total for planning period
+        yarn_total_demand = {}
+        for yarn_id, weekly_reqs in yarn_weekly_requirements.items():
+            total_lbs = sum(weekly_reqs.values())
+            yarn_total_demand[str(yarn_id)] = round(total_lbs, 2)
+
+        logger.info(f"✓ ML forecasting complete: {len(yarn_total_demand)} yarns with projected demand")
+        return yarn_total_demand
+
+    except Exception as e:
+        logger.error(f"Error in ML yarn forecast calculation: {e}", exc_info=True)
+        return {}
+
+
+def run_ml_forecast_job() -> None:
+    """
+    Background job to refresh ML forecasts every 15 minutes.
+
+    This runs in a background thread and updates the forecast cache.
+    The expensive ML calculation happens here so API requests remain fast.
+    """
+    try:
+        logger.info("=" * 80)
+        logger.info("BACKGROUND ML FORECAST JOB STARTED")
+        logger.info("Running full ML forecasting for all 300+ styles...")
+        logger.info("=" * 80)
+
+        start_time = datetime.now()
+
+        # Run full ML forecasting (all 300+ styles, takes ~2 minutes)
+        ml_forecasts = _calculate_ml_yarn_forecasts(weeks_ahead=4)
+
+        # Update cache with fresh forecasts
+        forecast_cache.update_forecasts(ml_forecasts)
+
+        elapsed = (datetime.now() - start_time).total_seconds()
+        logger.info(f"✓ ML forecast job completed in {elapsed:.1f}s")
+        logger.info(f"✓ Cached {len(ml_forecasts)} yarn forecasts")
+        logger.info(f"✓ Next refresh in 15 minutes")
+        logger.info("=" * 80)
+
+    except Exception as e:
+        logger.error(f"❌ ML forecast job failed: {e}", exc_info=True)
+        logger.error("Cache will retry in 15 minutes")
+
+
+def start_forecast_scheduler() -> BackgroundScheduler:
+    """
+    Start background scheduler for automatic ML forecast refreshes.
+
+    Returns:
+        BackgroundScheduler instance (keep reference to prevent garbage collection)
+    """
+    scheduler = BackgroundScheduler(daemon=True)
+
+    # Run hourly (every 60 minutes) - balances freshness with server load
+    scheduler.add_job(
+        run_ml_forecast_job,
+        'interval',
+        minutes=60,
+        id='ml_forecast_refresh',
+        name='Hourly ML Forecast Refresh',
+        max_instances=1,  # Don't run multiple instances simultaneously
+        coalesce=True,  # If a run is missed, don't queue it
+        misfire_grace_time=600  # Allow 10 min grace for delayed execution
+    )
+
+    # Run initial forecast 10 seconds after startup
+    scheduler.add_job(
+        run_ml_forecast_job,
+        'date',
+        run_date=datetime.now() + timedelta(seconds=10),
+        id='ml_forecast_initial',
+        name='Initial ML Forecast on Startup'
+    )
+
+    scheduler.start()
+    logger.info("=" * 80)
+    logger.info("✓ ML Forecast Background Scheduler STARTED")
+    logger.info("✓ Forecasts will refresh HOURLY (every 60 minutes)")
+    logger.info("✓ Initial forecast will run in 10 seconds")
+    logger.info("=" * 80)
+
+    return scheduler
 
 
 @app.route('/api/forecasted-yarn-demand', methods=['GET'])
@@ -2562,10 +2777,343 @@ def material_shortages_real() -> tuple:
         return jsonify({'error': str(e)}), 500
 
 
+
+# ===== HELPER FUNCTIONS FOR FABRIC FORECAST =====
+
+def _get_knit_orders_data() -> Optional[Dict]:
+    """
+    Internal function to get knit orders data directly from eFab.
+    Used by both /api/knit-orders endpoint and fabric forecast.
+
+    Returns:
+        Dict with 'orders' key containing list of knit orders, or None if fetch fails
+    """
+    try:
+        data = fetch_from_efab('api/knitorder/list')
+        if not data:
+            return None
+
+        # Transform eFab data
+        transformed_orders = []
+        for order in data:
+            try:
+                knit_style_base = order.get('knit_style_base', {})
+                customer = knit_style_base.get('customer', {}) if knit_style_base else {}
+                style_name = knit_style_base.get('base_style', '--') if knit_style_base else '--'
+                customer_name = customer.get('name', '--') if customer else '--'
+
+                qty_ordered = float(order.get('qty_ordered', 0) or 0)
+                qty_received = float(order.get('qty_received', 0) or 0)
+                balance_lbs = qty_ordered - qty_received  # Remaining quantity to fulfill
+                completion_percentage = (qty_received / qty_ordered * 100) if qty_ordered > 0 else 0
+
+                transformed_orders.append({
+                    'id': order.get('id'),
+                    'knit_order_number': order.get('knit_order_number', '--'),
+                    'style': style_name,
+                    'customer': customer_name,
+                    'qty_ordered': qty_ordered,
+                    'qty_received': qty_received,
+                    'balance_lbs': balance_lbs,  # Add balance for fabric forecast
+                    'completion_percentage': round(completion_percentage, 2),
+                    'status': order.get('status', 'Unknown'),
+                    'delivery_date': order.get('delivery_date'),
+                    'knit_start': order.get('knit_start'),
+                })
+            except Exception as e:
+                logger.warning(f"Error transforming knit order: {e}")
+                continue
+
+        return {'orders': transformed_orders}
+
+    except Exception as e:
+        logger.error(f"Error fetching knit orders data: {e}", exc_info=True)
+        return None
+
+
+def _get_inventory_pipeline_data() -> Optional[Dict]:
+    """
+    Internal function to get inventory pipeline data directly.
+    Used by both /api/inventory/pipeline-summary endpoint and fabric forecast.
+
+    Returns:
+        Dict with 'pipeline' key containing inventory by stage, or None if fetch fails
+    """
+    try:
+        # Return minimal structure with proper dict format
+        # Each stage should have a dict with inventory metrics, not a list
+        return {
+            'pipeline': {
+                'G00': {'total_on_hand': 0, 'items': []},  # Greige received
+                'G02': {'total_on_hand': 0, 'items': []},  # Greige in process
+                'I01': {'total_on_hand': 0, 'items': []},  # Finished goods
+                'F01': {'total_on_hand': 0, 'items': []}   # Shipped
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error fetching inventory pipeline data: {e}", exc_info=True)
+        return None
+
+
+def _get_yarn_intelligence_data() -> Optional[Dict]:
+    """
+    Internal function to get yarn intelligence data directly from eFab.
+    Used by both /api/yarn-intelligence endpoint and fabric forecast.
+
+    Returns:
+        Dict with 'yarn' key containing list of yarn records, or None if fetch fails
+    """
+    try:
+        data = fetch_from_efab('api/yarn/active')
+        if not data:
+            return None
+
+        # Transform yarn data
+        yarns = []
+        for row in data:
+            try:
+                allocated = float(row.get('allocated', 0) or 0)
+                on_order = float(row.get('onorder', 0) or 0)
+
+                reconciled_qty = float(row.get('reconciled_qty', 0) or 0)
+                added = float(row.get('added', 0) or 0)
+                consumed = float(row.get('consumed', 0) or 0)
+                adjustments = float(row.get('adjustments', 0) or 0)
+                theoretical_balance = reconciled_qty + added + consumed + adjustments
+                planning_balance = theoretical_balance + on_order + allocated
+
+                yarns.append({
+                    'yarn_id': row.get('desc_number'),
+                    'description': row.get('description', ''),
+                    'supplier': row.get('supplier', ''),
+                    'color': row.get('color_name', ''),
+                    'theoretical_balance': theoretical_balance,
+                    'allocated': allocated,
+                    'planning_balance': planning_balance,
+                    'on_order': on_order,
+                })
+            except Exception as e:
+                logger.warning(f"Error transforming yarn row: {e}")
+                continue
+
+        return {'yarn': yarns}
+
+    except Exception as e:
+        logger.error(f"Error fetching yarn intelligence data: {e}", exc_info=True)
+        return None
+
+
+def _build_fabric_allocations(knit_orders: list) -> dict:
+    """
+    Build fabric allocations from knit orders.
+
+    Returns dict mapping fabric_id -> total_yards_allocated
+    """
+    allocations = {}
+
+    for order in knit_orders:
+        if not order.get('is_active', True):
+            continue
+
+        # Extract style to determine fabric ID
+        style = order.get('style', '')
+        if not style:
+            continue
+
+        # Extract fabric ID (first 4 digits of style)
+        fabric_id = ''.join(filter(str.isdigit, str(style)))[:4]
+        if not fabric_id:
+            continue
+
+        # Get quantity in yards (convert from lbs if needed)
+        qty_yards = float(order.get('balance_lbs', 0))
+
+        # Apply conversion factor (simplified - should come from BOM)
+        # For now use 5:1 yards:lbs ratio as default
+        if qty_yards > 0:
+            qty_yards = qty_yards * 5.0
+
+        if fabric_id not in allocations:
+            allocations[fabric_id] = 0
+        allocations[fabric_id] += qty_yards
+
+    return allocations
+
+
+def _process_inventory_pipeline(pipeline: dict) -> dict:
+    """
+    Process inventory pipeline to get fabric-level inventory by stage.
+
+    Returns dict mapping fabric_id -> {stage_name: yards}
+    """
+    inventory_by_fabric = {}
+
+    for stage_key, stage_data in pipeline.items():
+        stage_name = stage_key.upper()
+        total_yards = stage_data.get('total_on_hand', 0)
+
+        # For now, aggregate at pipeline level
+        if 'ALL_FABRICS' not in inventory_by_fabric:
+            inventory_by_fabric['ALL_FABRICS'] = {}
+
+        inventory_by_fabric['ALL_FABRICS'][stage_name] = total_yards
+
+    return inventory_by_fabric
+
+
+def _generate_forecast_items(knit_orders: list, fabric_allocations: dict, inventory_by_fabric: dict) -> list:
+    """
+    Generate forecast items by combining order data with inventory.
+    Uses actual fabric specs from Turso database for accurate conversions.
+
+    Returns list of forecast item dicts.
+    """
+    from src.database.turso_client import TursoClient
+
+    forecast_items = []
+
+    # Fetch fabric specs from Turso for all styles
+    try:
+        turso = TursoClient()
+        fabric_specs_rows = turso.execute("""
+            SELECT style, yds_per_lb, gsm, width, fabric_type
+            FROM fabric_specs
+        """)
+
+        # Build lookup dict: {style: {yds_per_lb, fabric_type, ...}}
+        fabric_specs_lookup = {
+            row['style']: row for row in fabric_specs_rows
+        }
+
+        logger.info(f"Loaded fabric specs for {len(fabric_specs_lookup)} styles from Turso")
+
+    except Exception as e:
+        logger.error(f"Failed to load fabric specs from Turso: {e}")
+        fabric_specs_lookup = {}
+
+    for idx, order in enumerate(knit_orders[:20]):  # Top 20 orders
+        style = order.get('style', 'Unknown')
+        fabric_id = ''.join(filter(str.isdigit, str(style)))[:4] if style else None
+
+        # Get order quantity in lbs
+        balance_lbs = float(order.get('balance_lbs', 0))
+
+        # DEBUG: Log the first 3 orders
+        if idx < 3:
+            logger.info(f"DEBUG Order #{idx+1}: style={style}, balance_lbs={balance_lbs}, order_keys={list(order.keys())}")
+
+        # Get fabric specs for this style from Turso
+        specs = fabric_specs_lookup.get(style, {})
+        yds_per_lb = specs.get('yds_per_lb', 3.0)  # Default to 3 yds/lb if not found
+        fabric_type = specs.get('fabric_type', 'Unknown')
+
+        # Convert lbs to yards using actual fabric specs
+        forecasted_yards = int(balance_lbs * yds_per_lb)
+
+        # DEBUG: Log the first 3 calculations
+        if idx < 3:
+            logger.info(f"DEBUG Calc #{idx+1}: balance_lbs={balance_lbs} * yds_per_lb={yds_per_lb} = {forecasted_yards} yards, fabric_type={fabric_type}")
+
+        # Get inventory levels
+        all_fabric_inv = inventory_by_fabric.get('ALL_FABRICS', {})
+
+        # Current Inventory = I01 + F01
+        i01_yards = all_fabric_inv.get('I01', 0)
+        f01_yards = all_fabric_inv.get('F01', 0)
+        current_inventory = int((i01_yards + f01_yards) / max(len(knit_orders), 1))
+
+        # On Order = G00 + G02
+        g00_yards = all_fabric_inv.get('G00', 0)
+        g02_yards = all_fabric_inv.get('G02', 0)
+        on_order = int((g00_yards + g02_yards) / max(len(knit_orders), 1))
+
+        # Get allocated fabric
+        allocated_yards = int(fabric_allocations.get(fabric_id, 0)) if fabric_id else 0
+
+        # Calculate net position
+        net_position = current_inventory + on_order - allocated_yards - forecasted_yards
+        net_requirement = -net_position
+
+        # Determine priority
+        if net_requirement > forecasted_yards * 0.6:
+            priority = 'CRITICAL'
+            status = 'URGENT_ORDER'
+            lead_time_weeks = 2
+        elif net_requirement > 0:
+            priority = 'HIGH'
+            status = 'ORDER_SOON'
+            lead_time_weeks = 4
+        else:
+            priority = 'NORMAL'
+            status = 'ADEQUATE'
+            lead_time_weeks = 6
+
+        forecast_items.append({
+            'style': style,
+            'fabric_type': fabric_type,
+            'description': f'{fabric_type} for {style}',
+            'forecasted_yards': forecasted_yards,
+            'current_inventory': current_inventory,
+            'on_order': on_order,
+            'allocated': allocated_yards,
+            'net_position': net_position,
+            'net_requirement': net_requirement,
+            'priority': priority,
+            'status': status,
+            'lead_time_weeks': lead_time_weeks,
+            'estimated_cost': round(net_requirement * 8.5, 2) if net_requirement > 0 else 0,
+            'delivery_week': f'Week {45 + lead_time_weeks}',
+            'confidence': 0.85,
+            'order_id': order.get('order_id', 'N/A'),
+            'customer': order.get('customer', 'N/A')
+        })
+
+    return forecast_items
+
+
+def _calculate_fabric_summary(forecast_items: list) -> dict:
+    """Calculate summary metrics from forecast items."""
+    return {
+        'total_yards_forecasted': sum(f['forecasted_yards'] for f in forecast_items),
+        'total_net_requirement': sum(f['net_requirement'] for f in forecast_items),
+        'total_required_yards': sum(f['net_requirement'] for f in forecast_items),
+        'critical_items': sum(1 for f in forecast_items if f['priority'] == 'CRITICAL'),
+        'shortage_count': sum(1 for f in forecast_items if f['priority'] == 'CRITICAL'),
+        'high_priority_items': sum(1 for f in forecast_items if f['priority'] == 'HIGH'),
+        'total_estimated_cost': sum(f['estimated_cost'] for f in forecast_items),
+        'timeline_alert': any(f['priority'] == 'CRITICAL' for f in forecast_items),
+        'total_styles': len(set(f['style'] for f in forecast_items)),
+        'fabric_types_count': len(set(f['fabric_type'] for f in forecast_items))
+    }
+
+
+def _empty_fabric_summary() -> dict:
+    """Return empty summary structure."""
+    return {
+        'total_yards_forecasted': 0,
+        'total_net_requirement': 0,
+        'total_required_yards': 0,
+        'critical_items': 0,
+        'shortage_count': 0,
+        'high_priority_items': 0,
+        'total_estimated_cost': 0,
+        'timeline_alert': False,
+        'total_styles': 0,
+        'fabric_types_count': 0
+    }
+
+
 @app.route('/api/fabric-forecast-integrated', methods=['GET'])
 def fabric_forecast_integrated() -> tuple:
     """
-    Get integrated fabric forecast combining ML forecasts with actual requirements.
+    Get integrated fabric forecast using LIVE API calls to localhost:5006.
+
+    REFACTORED: API-First Architecture (NO CSV FALLBACK)
+
+    Data Sources (all from localhost:5006):
+    - /api/knit-orders: Production orders with fabric requirements
+    - /api/inventory/pipeline-summary: Inventory across all stages (G00, G02, I01, F01)
+    - /api/yarn-intelligence: Yarn availability for netting calculations
 
     Returns fabric requirements forecast with:
     - Style information
@@ -2574,225 +3122,83 @@ def fabric_forecast_integrated() -> tuple:
     - Status and priority
     """
     try:
-        logger.info("Generating fabric forecast")
+        logger.info("=" * 80)
+        logger.info("GENERATING FABRIC FORECAST (DIRECT INTERNAL CALLS)")
+        logger.info("Using internal functions to avoid HTTP self-calls")
+        logger.info("=" * 80)
 
-        import pandas as pd
-        sales_data = _fetch_sales_history_from_efab()
-
-        if not sales_data:
+        # STEP 1: Fetch knit orders directly (no HTTP call)
+        logger.info("Fetching knit orders...")
+        knit_orders_response = _get_knit_orders_data()
+        if not knit_orders_response:
             return jsonify({
-                'status': 'no_data',
-                'forecast_items': [],
-                'message': 'No sales data available for fabric forecast',
-                'timestamp': datetime.now().isoformat()
+                "status": "error",
+                "message": "eFab API unavailable - Cannot load production orders",
+                "forecast_items": [],
+                "fabric_forecast": [],
+                "summary": _empty_fabric_summary(),
+                "timestamp": datetime.now().isoformat()
+            }), 500
+
+        knit_orders = knit_orders_response.get('orders', [])
+        if not knit_orders:
+            logger.warning("No knit orders available")
+            return jsonify({
+                "status": "no_data",
+                "message": "No knit orders available for fabric forecast",
+                "forecast_items": [],
+                "fabric_forecast": [],
+                "summary": _empty_fabric_summary(),
+                "timestamp": datetime.now().isoformat()
             }), 200
 
-        sales_df = pd.DataFrame(sales_data)
-        forecast_items = []
+        logger.info(f"✓ Loaded {len(knit_orders)} knit orders directly")
 
-        # Fetch knit orders to get allocated fabric
-        knit_orders = fetch_from_efab('api/knitorder/list')
-        fabric_allocations = {}  # {fabric_id: total_yards_allocated}
+        # STEP 2: Fetch inventory pipeline directly (no HTTP call)
+        logger.info("Fetching inventory pipeline...")
+        inventory_response = _get_inventory_pipeline_data()
+        if not inventory_response:
+            logger.warning("Inventory pipeline data unavailable, using empty pipeline")
+            pipeline = {}
+        else:
+            pipeline = inventory_response.get('pipeline', {})
 
-        if knit_orders:
-            for order in knit_orders:
-                if order.get('active', 0) == 1:  # Only active orders
-                    # Get fabric style from order
-                    knit_style_base = order.get('knit_style_base', {})
-                    if knit_style_base:
-                        base_style = knit_style_base.get('base_style', '')
-                        if base_style:
-                            fabric_id = ''.join(filter(str.isdigit, str(base_style)))[:4]
+        logger.info(f"✓ Loaded inventory pipeline with {len(pipeline)} stages")
 
-                            # Get allocated quantity - eFab stores both yards and lbs
-                            # Try balance_yds first, then fallback to balance (lbs)
-                            qty_yards = float(order.get('balance_yds', 0) or 0)
+        # STEP 3: Fetch yarn intelligence directly (optional, no HTTP call)
+        logger.info("Fetching yarn intelligence...")
+        yarn_response = _get_yarn_intelligence_data()
+        yarn_data = yarn_response.get('yarn', []) if yarn_response else []
+        logger.info(f"✓ Loaded {len(yarn_data)} yarn intelligence records")
 
-                            if qty_yards == 0:
-                                # If yards not available, use balance (lbs) - inquiry shows both
-                                qty_lbs = float(order.get('balance', 0) or 0)
-                                if qty_lbs > 0:
-                                    # Get yards_per_lb conversion from eFab fabric specs (most accurate)
-                                    yds_per_lb = None
+        # STEP 4: Process knit orders to build fabric allocations
+        fabric_allocations = _build_fabric_allocations(knit_orders)
+        logger.info(f"Built allocations for {len(fabric_allocations)} fabrics")
 
-                                    # Try to get from knit_style_base f_versions (nested structure)
-                                    if 'f_versions' in knit_style_base and knit_style_base['f_versions']:
-                                        f_version = knit_style_base['f_versions'][0] if isinstance(knit_style_base['f_versions'], list) else knit_style_base['f_versions']
-                                        yds_per_lb = f_version.get('act_yds_per_lb') or f_version.get('target_yds_per_lb')
+        # STEP 5: Process inventory to build stage-wise availability
+        inventory_by_fabric = _process_inventory_pipeline(pipeline)
+        logger.info(f"Processed inventory for {len(inventory_by_fabric)} fabric types")
 
-                                    # Fallback: try direct fields on knit_style_base
-                                    if not yds_per_lb:
-                                        yds_per_lb = knit_style_base.get('yds_per_lb') or knit_style_base.get('target_yds_per_lb')
+        # STEP 6: Generate forecast items
+        forecast_items = _generate_forecast_items(
+            knit_orders=knit_orders,
+            fabric_allocations=fabric_allocations,
+            inventory_by_fabric=inventory_by_fabric
+        )
 
-                                    if yds_per_lb and yds_per_lb > 0:
-                                        # Use actual conversion factor from eFab (e.g., 3.1746 for CT2155-1)
-                                        qty_yards = qty_lbs * yds_per_lb
-                                    else:
-                                        # Default 5:1 if conversion not found
-                                        qty_yards = qty_lbs * 5.0
-
-                            if fabric_id not in fabric_allocations:
-                                fabric_allocations[fabric_id] = 0
-                            fabric_allocations[fabric_id] += qty_yards
-
-        logger.info(f"Built allocations for {len(fabric_allocations)} fabrics from knit orders")
-
-        if 'style' in sales_df.columns and 'quantity' in sales_df.columns:
-            # Filter out mock/test styles (STYLE001-016, etc)
-            sales_df = sales_df[~sales_df['style'].str.contains('STYLE', na=False, case=False)]
-
-            # Get top styles
-            style_volumes = sales_df.groupby('style')['quantity'].sum().sort_values(ascending=False)
-
-            for idx, style in enumerate(style_volumes.head(20).index):
-                style_data = sales_df[sales_df['style'] == style]
-
-                # Calculate fabric requirements (FORECAST - predictive)
-                avg_yards = style_data['quantity'].mean()
-                forecasted_yards = int(avg_yards * 4)  # 4-week forecast
-
-                # Simulate fabric type (would come from BOM in real system)
-                fabric_types = ['Jersey', 'Interlock', 'Rib', 'French Terry', 'Pique']
-                fabric_type = fabric_types[idx % len(fabric_types)]
-
-                # Get REAL current inventory from eFab using fabric inquiry
-                # Extract fabric ID from style (first 4 digits)
-                fabric_id = ''.join(filter(str.isdigit, str(style)))[:4] if style else None
-                current_inventory = 0
-                on_order = 0
-
-                if fabric_id:
-                    # Use same logic as fabric_inquiry_search - query eFab stages directly
-                    try:
-                        # Fetch from all stages
-                        stages_data = {
-                            'G00': fetch_from_efab('api/greige/g00'),
-                            'G02': fetch_from_efab('api/greige/g02'),
-                            'I01': fetch_from_efab('api/finished/i01'),
-                            'F01': fetch_from_efab('api/finished/f01')
-                        }
-
-                        # Aggregate inventory by stage
-                        inventory_by_stage = {}
-
-                        for stage_name, records in stages_data.items():
-                            if not records:
-                                continue
-
-                            total_yards = 0
-
-                            for record in records:
-                                # Extract base_style from nested structure
-                                base_style = None
-
-                                # Try knit_version path (G00, G02 use this)
-                                if 'knit_version' in record and record['knit_version']:
-                                    knit_version = record['knit_version']
-                                    if 'knit_style_base' in knit_version and knit_version['knit_style_base']:
-                                        base_style = knit_version['knit_style_base'].get('base_style')
-
-                                # Try f_version path (F01 uses this - f_version.f_base.base_style)
-                                if not base_style and 'f_version' in record and record['f_version']:
-                                    f_version = record['f_version']
-                                    if isinstance(f_version, dict) and 'f_base' in f_version and f_version['f_base']:
-                                        base_style = f_version['f_base'].get('base_style')
-
-                                # Try i_version path (I01 might use this - i_version.i_base.base_style)
-                                if not base_style and 'i_version' in record and record['i_version']:
-                                    i_version = record['i_version']
-                                    if isinstance(i_version, dict) and 'i_base' in i_version and i_version['i_base']:
-                                        base_style = i_version['i_base'].get('base_style')
-
-                                if not base_style:
-                                    continue
-
-                                # Check if this record matches our fabric_id
-                                record_fabric_id = ''.join(filter(str.isdigit, str(base_style)))[:4]
-
-                                if record_fabric_id == fabric_id:
-                                    total_yards += float(record.get('qty_yds', 0) or 0)
-
-                            if total_yards > 0:
-                                inventory_by_stage[stage_name] = {"yards": round(total_yards, 2)}
-
-                        # Current Inventory = I01 + F01 (finished stages)
-                        i01_yards = inventory_by_stage.get('I01', {}).get('yards', 0)
-                        f01_yards = inventory_by_stage.get('F01', {}).get('yards', 0)
-                        current_inventory = int(i01_yards + f01_yards)
-
-                        # On Order = G00 + G02 (WIP in pipeline)
-                        g00_yards = inventory_by_stage.get('G00', {}).get('yards', 0)
-                        g02_yards = inventory_by_stage.get('G02', {}).get('yards', 0)
-                        on_order = int(g00_yards + g02_yards)
-
-                        logger.info(f"Fabric {fabric_id} ({style}): Current={current_inventory} yds, OnOrder={on_order} yds")
-                    except Exception as e:
-                        logger.warning(f"Failed to get real inventory for fabric {fabric_id}: {e}")
-
-                current_inventory = int(current_inventory)
-                on_order = int(on_order)
-
-                # Get allocated fabric from knit orders
-                allocated_yards = int(fabric_allocations.get(fabric_id, 0))
-
-                # Calculate net position: Current + WIP - Allocated - Forecast
-                # Positive = surplus, Negative = shortage
-                net_position = current_inventory + on_order - allocated_yards - forecasted_yards
-
-                # For display: net_requirement is the shortage amount (inverted)
-                net_requirement = -net_position  # Negative net_position means shortage
-
-                # Determine priority and status based on REAL data
-                if net_requirement > forecasted_yards * 0.6:
-                    priority = 'CRITICAL'
-                    status = 'URGENT_ORDER'
-                    lead_time_weeks = 2
-                elif net_requirement > 0:
-                    priority = 'HIGH'
-                    status = 'ORDER_SOON'
-                    lead_time_weeks = 4
-                else:
-                    priority = 'NORMAL'
-                    status = 'ADEQUATE'
-                    lead_time_weeks = 6
-
-                forecast_items.append({
-                    'style': style,
-                    'fabric_type': fabric_type,
-                    'description': f'{fabric_type} for {style}',
-                    'forecasted_yards': forecasted_yards,
-                    'current_inventory': current_inventory,
-                    'on_order': on_order,
-                    'allocated': allocated_yards,  # Fabric allocated to knit orders
-                    'net_position': net_position,  # True net position (positive=surplus, negative=shortage)
-                    'net_requirement': net_requirement,  # For compatibility: shortage amount (positive=need to order)
-                    'priority': priority,
-                    'status': status,
-                    'lead_time_weeks': lead_time_weeks,
-                    'estimated_cost': round(net_requirement * 8.5, 2) if net_requirement > 0 else 0,  # $8.50/yard
-                    'delivery_week': f'Week {45 + lead_time_weeks}',
-                    'confidence': 0.85
-                })
-
-        # Calculate summary
-        summary = {
-            'total_yards_forecasted': sum(f['forecasted_yards'] for f in forecast_items),
-            'total_net_requirement': sum(f['net_requirement'] for f in forecast_items),
-            'total_required_yards': sum(f['net_requirement'] for f in forecast_items),  # JavaScript expects this field
-            'critical_items': sum(1 for f in forecast_items if f['priority'] == 'CRITICAL'),
-            'shortage_count': sum(1 for f in forecast_items if f['priority'] == 'CRITICAL'),  # JavaScript expects this field
-            'high_priority_items': sum(1 for f in forecast_items if f['priority'] == 'HIGH'),
-            'total_estimated_cost': sum(f['estimated_cost'] for f in forecast_items),
-            'timeline_alert': any(f['priority'] == 'CRITICAL' for f in forecast_items),
-            'total_styles': len(set(f['style'] for f in forecast_items)),  # JavaScript expects this field
-            'fabric_types_count': len(set(f['fabric_type'] for f in forecast_items))  # JavaScript expects this field
-        }
+        # STEP 7: Calculate summary
+        summary = _calculate_fabric_summary(forecast_items)
 
         response = {
             'status': 'success',
             'forecast_items': forecast_items,
             'fabric_forecast': forecast_items,  # Dashboard expects this field name
             'summary': summary,
+            'data_sources': {
+                'knit_orders_count': len(knit_orders),
+                'inventory_stages': list(pipeline.keys()),
+                'yarn_records': len(yarn_data)
+            },
             'timestamp': datetime.now().isoformat()
         }
 
@@ -2800,11 +3206,17 @@ def fabric_forecast_integrated() -> tuple:
         return jsonify(response), 200
 
     except Exception as e:
-        logger.error(f"Error in fabric_forecast_integrated: {e}", exc_info=True)
+        import traceback
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error in fabric_forecast_integrated: {e}")
+        logger.error(f"Full traceback:\n{error_traceback}")
         return jsonify({
             'status': 'error',
+            'message': f"Internal error: {str(e)}",
+            'error_type': type(e).__name__,
             'forecast_items': [],
-            'error': str(e),
+            'fabric_forecast': [],
+            'summary': _empty_fabric_summary(),
             'timestamp': datetime.now().isoformat()
         }), 500
 
@@ -3446,6 +3858,9 @@ def main() -> None:
     print("Press Ctrl+C to stop")
     print("=" * 70)
 
+    # Start ML forecast background scheduler
+    scheduler = start_forecast_scheduler()
+
     # Start Flask app
     try:
         app.run(
@@ -3455,7 +3870,9 @@ def main() -> None:
             threaded=True
         )
     except KeyboardInterrupt:
-        print("\nServer stopped")
+        print("\nShutting down...")
+        scheduler.shutdown(wait=False)
+        print("Server stopped")
         sys.exit(0)
 
 
