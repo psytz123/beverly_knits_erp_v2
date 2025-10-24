@@ -1665,7 +1665,7 @@ const dataSafetyMonitor = {
                                 <th>Yards from Knit Orders</th>
                                 <th>Current Inventory</th>
                                 <th>On Order</th>
-                                <th>Net Position</th>
+                                <th>Net Requirement</th>
                                 <th>Lead Time (days)</th>
                                 <th>Target Date</th>
                                 <th>Status</th>
@@ -12794,7 +12794,11 @@ const dataSafetyMonitor = {
                 }
                 
                 console.log('Fabric forecast data length:', data.fabric_forecast ? data.fabric_forecast.length : 0);
-                
+
+                // Store data for Production tab table
+                allFabricForecastProdOrders = data.fabric_forecast || [];
+                console.log('Stored', allFabricForecastProdOrders.length, 'items in allFabricForecastProdOrders');
+
                 if (data && data.fabric_forecast && data.fabric_forecast.length > 0) {
                     console.log('Populating table with', data.fabric_forecast.length, 'items');
                     tbody.innerHTML = data.fabric_forecast.map(item => {
@@ -12808,11 +12812,11 @@ const dataSafetyMonitor = {
                                 <td class="font-medium">${item.style || '-'}</td>
                                 <td>${item.fabric_type || '-'}</td>
                                 <td class="text-sm text-gray-600">${item.description || '-'}</td>
-                                <td class="text-right">${item.forecasted_yards ? item.forecasted_yards.toFixed(2) : '0.00'}</td>
-                                <td class="text-right">${item.knit_orders_yards ? item.knit_orders_yards.toFixed(2) : '0.00'}</td>
-                                <td class="text-right">${item.current_inventory ? item.current_inventory.toFixed(2) : '0.00'}</td>
-                                <td class="text-right">${item.on_order ? item.on_order.toFixed(2) : '0.00'}</td>
-                                <td class="text-right ${item.net_requirement < 0 ? 'text-red-600 font-semibold' : ''}">${item.net_requirement ? item.net_requirement.toFixed(2) : '0.00'}</td>
+                                <td class="text-right">${(item.forecasted_yards || 0).toLocaleString()}</td>
+                                <td class="text-right">${(item.knit_orders_yards || 0).toLocaleString()}</td>
+                                <td class="text-right">${(item.current_inventory || 0).toLocaleString()}</td>
+                                <td class="text-right">${(item.on_order || 0).toLocaleString()}</td>
+                                <td class="text-right ${item.net_requirement > 0 ? 'text-red-600 font-semibold' : 'text-green-600'}">${(item.net_requirement || 0).toLocaleString()}</td>
                                 <td class="text-center">${item.lead_time || '-'}</td>
                                 <td class="text-center">${item.target_date || item.delivery_week || '-'}</td>
                                 <td class="text-center">
@@ -12826,7 +12830,13 @@ const dataSafetyMonitor = {
                 } else {
                     tbody.innerHTML = '<tr><td colspan="11" class="text-center text-gray-500 py-4">No fabric forecast data available</td></tr>';
                 }
-                
+
+                // Populate Production tab table if it exists
+                if (typeof displayFabricForecastProdPage === 'function') {
+                    console.log('Calling displayFabricForecastProdPage() to populate Production tab table');
+                    displayFabricForecastProdPage();
+                }
+
             } catch (error) {
                 console.error('Error loading fabric forecast:', error);
 

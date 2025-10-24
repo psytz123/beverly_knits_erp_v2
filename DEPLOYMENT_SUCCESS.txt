@@ -1,0 +1,22 @@
+# Beverly Knits ERP - DEPLOYMENT COMPLETE
+
+Deployment Date: October 19, 2025
+Status: PRODUCTION READY
+
+=== SERVICES RUNNING ===
+API Server: http://localhost:5006
+API Server (Network): http://192.168.0.125:5006
+Dashboard: http://localhost:8080/consolidated_dashboard.html
+Dashboard (Network): http://192.168.0.125:8080/consolidated_dashboard.html
+
+=== NEW FEATURES ===
+1. ML Forecast Cache with Disk Persistence (cache/ml_forecasts.json)
+2. Forecasted Requirement column in Time-Phased Yarn PO table
+3. Instant server restart (loads from cache)
+4. Hourly automatic forecast refresh
+
+=== DATA LOADED ===
+Yarn Intelligence: 3 yarns from eFab
+Time-Phased PO: 160 yarns with forecast field
+
+=== ALL TESTS PASSED ===

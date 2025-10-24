@@ -24,7 +24,8 @@
       "mcp__filesystem__list_directory",
       "mcp__filesystem__read_multiple_files",
       "Read(//mnt/e/pythonsdk/**)",
-      "WebFetch(domain:efab.bkiapps.com)"
+      "WebFetch(domain:efab.bkiapps.com)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []
